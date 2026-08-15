@@ -4,6 +4,10 @@
 
 > 当前状态：Phase 0（项目骨架）——脚手架、路由、i18n 框架（当前仅 en-US）、CI 已就绪。
 
+## 版本
+
+当前版本：**0.1.0** ｜ 变更记录见 [CHANGELOG.md](./CHANGELOG.md)（含遗留问题与待办，跨文件核对：package.json / 侧边栏 / PROGRESS.md）
+
 ## 技术栈
 
 | 层 | 选型 | 版本 |

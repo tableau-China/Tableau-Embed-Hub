@@ -7,6 +7,7 @@
 - **目标**：从零构建管理后台模板（React 19 + TypeScript 7 + Vite 8 + Tailwind CSS v4 + shadcn/ui(Radix) + TanStack Router），包含 shadcn-admin 的全部基础功能，**不含** Tableau / AI / 多团队功能；i18n 当前仅 **en-US**，中文/日文后期扩展。
 - **关键决策**：跳过 shadcn-admin 模板（无 Sat Naing 署名义务）、TypeScript 7.1.0-dev（next 开发版，验证未来升级，正式版发布后直接升级）、Vite 8.2.1 最新稳定、i18n 当前仅 en-US（zh-CN / zh-TW / ja-JP 后期扩展）。
 - **注意**：用户原指定路径 `/Users/xilejun/ds_Harness/shadcn_admin_cn` 不存在，实际目录在 `/Users/xilejun/WorkBuddy/ds_Harness/shadcn_admin_cn`。
+- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.1.0**）。
 
 ---
 
