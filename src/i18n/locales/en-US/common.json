@@ -1,0 +1,77 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "users": "Users",
+    "tasks": "Tasks",
+    "settings": "Settings"
+  },
+  "header": {
+    "theme": "Toggle theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System",
+    "account": "Account",
+    "signOut": "Sign out",
+    "role": "Administrator"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Overview of your workspace",
+    "totalUsers": "Total users",
+    "activeTasks": "Active tasks",
+    "revenue": "Revenue",
+    "uptime": "Uptime",
+    "recentActivity": "Recent activity",
+    "activity": {
+      "userCreated": "created a new user account",
+      "taskCompleted": "completed a task",
+      "settingsChanged": "changed workspace settings",
+      "login": "signed in from a new device"
+    }
+  },
+  "users": {
+    "title": "Users",
+    "subtitle": "Manage user accounts",
+    "name": "Name",
+    "email": "Email",
+    "role": "Role",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "tasks": {
+    "title": "Tasks",
+    "subtitle": "Track and manage tasks",
+    "task": "Task",
+    "assignee": "Assignee",
+    "priority": "Priority",
+    "status": "Status",
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low",
+    "todo": "To do",
+    "inProgress": "In progress",
+    "done": "Done"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Manage your preferences",
+    "profile": "Profile",
+    "general": "General",
+    "displayName": "Display name",
+    "displayNamePlaceholder": "Jane Doe",
+    "email": "Email",
+    "emailPlaceholder": "jane@example.com",
+    "language": "Language",
+    "english": "English",
+    "notifications": "Email notifications",
+    "notificationsHint": "Receive email updates about your account activity",
+    "save": "Save changes",
+    "saved": "Settings saved"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "message": "The page you are looking for does not exist.",
+    "back": "Back to dashboard"
+  }
+}

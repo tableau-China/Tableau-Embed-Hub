@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check:i18n
+      # pnpm lint 暂缓：typescript-eslint 尚不支持 TypeScript 7
+      # （硬性拒绝 "typescript-eslint does not support TS 7.0"）
+      # 上游跟踪：https://github.com/typescript-eslint/typescript-eslint/issues/10940
+      # 恢复方法：升级 typescript-eslint 至支持 TS 7 的版本后，取消下面这行注释
+      # - run: pnpm lint
+      - run: pnpm build
+

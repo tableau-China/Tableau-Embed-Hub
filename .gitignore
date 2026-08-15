@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# pnpm content store (sandbox redirects it into the workspace)
+.pnpm-store/
+
+# Build outputs
+dist/
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# TypeScript
+*.tsbuildinfo
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Temp
+tmp/
+temp/
+coverage/
+
