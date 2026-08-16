@@ -97,7 +97,11 @@
     "empty": "No workbooks found.",
     "error": "Failed to load workbooks",
     "errorHint": "Browsers may block Tableau REST API calls (CORS). If so, open the Views page and paste a view URL manually.",
-    "open": "Open workbook"
+    "open": "Open workbook",
+    "dashboardsCount": "{{count}} dashboards",
+    "viewAll": "View all {{count}} dashboards",
+    "collapse": "Collapse",
+    "noDashboards": "No dashboards"
   },
   "views": {
     "title": "Views",
@@ -116,7 +120,8 @@
     "favorite": "Add to favorites",
     "unfavorite": "Remove from favorites",
     "favorited": "Added to favorites",
-    "unfavorited": "Removed from favorites"
+    "unfavorited": "Removed from favorites",
+    "backToWorkbooks": "Back to Workbooks"
   },
   "notFound": {
     "title": "Page not found",

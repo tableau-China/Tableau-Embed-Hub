@@ -2,7 +2,6 @@ import {
   BookOpen,
   ChevronsUpDown,
   Clock,
-  Command,
   LayoutDashboard,
   MonitorPlay,
   Settings,
@@ -87,12 +86,15 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link to="/">
-                <div className="bg-sidebar-primary text-sidebar-primary-foreground flex size-8 items-center justify-center rounded-lg">
-                  <Command className="size-4" />
-                </div>
+                {/* 站点 Logo：与浏览器 favicon 同一张图（Tableau 图标） */}
+                <img
+                  src="/favicon.ico"
+                  alt="shadcn-admin"
+                  className="size-8 shrink-0 rounded-lg"
+                />
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">shadcn-admin</span>
-                  <span className="truncate text-xs opacity-60">v0.2.0</span>
+                  <span className="truncate text-xs opacity-60">v0.2.1</span>
                 </div>
                 <Badge variant="secondary">en</Badge>
               </Link>

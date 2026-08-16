@@ -8,6 +8,8 @@ export interface TableauWorkbook {
   projectName?: string
   updatedAt?: string
   showTabs?: boolean
+  /** 默认视图 ID（Tableau 中打开工作簿时默认展示的视图） */
+  defaultViewId?: string
 }
 
 export interface TableauView {
@@ -92,7 +94,7 @@ export async function fetchWorkbooks(): Promise<TableauWorkbook[]> {
   const data = await apiGet<{
     workbooks?: { workbook?: Array<Record<string, unknown>> }
   }>(
-    `/sites/${siteId}/workbooks?fields=id,name,contentUrl,updatedAt,showTabs${filter}`,
+    `/sites/${siteId}/workbooks?fields=id,name,contentUrl,updatedAt,showTabs,defaultViewId${filter}`,
   )
   const rows = data.workbooks?.workbook ?? []
   return rows.map((w) => {
@@ -105,6 +107,7 @@ export async function fetchWorkbooks(): Promise<TableauWorkbook[]> {
       updatedAt: w.updatedAt ? String(w.updatedAt) : undefined,
       // Tableau 以字符串 "true"/"false" 返回布尔字段，需按字符串比较
       showTabs: w.showTabs === 'true' || w.showTabs === true,
+      defaultViewId: w.defaultViewId ? String(w.defaultViewId) : undefined,
     }
   })
 }
@@ -121,6 +124,48 @@ export async function fetchWorkbookViews(workbookId: string): Promise<TableauVie
     name: String(v.name ?? ''),
     contentUrl: String(v.contentUrl ?? ''),
   }))
+}
+
+export interface TableauViewDetail {
+  id: string
+  name: string
+  /** 视图 contentUrl（"{wbContentUrl}/sheets/{viewUrlName}"） */
+  contentUrl: string
+  /** 视图 URL 名称（Tableau URL 路径片段，URL 安全） */
+  viewUrlName?: string
+  /** 所属工作簿 UUID */
+  workbookId: string
+  /** 所属工作簿 contentUrl（视图 contentUrl 首段，URL 安全） */
+  workbookContentUrl?: string
+}
+
+/**
+ * 按视图 UUID 查询视图详情（GET /views/{viewId}）。
+ * 用于 /views?view=<uuid> 单参数打开：返回视图及其所属工作簿信息，
+ * 无需前端再传 workbook id。
+ */
+export async function fetchViewDetail(viewId: string): Promise<TableauViewDetail | null> {
+  const { siteId } = await getAccessToken()
+  try {
+    // 不带 fields：需同时取 workbook / viewUrlName / contentUrl（fields 白名单不含全部所需字段）
+    const data = await apiGet<{ view?: Record<string, unknown> }>(
+      `/sites/${siteId}/views/${viewId}`,
+    )
+    const v = data.view
+    if (!v?.id || !v?.name) return null
+    const wb = (v.workbook ?? {}) as Record<string, unknown>
+    const contentUrl = String(v.contentUrl ?? '')
+    return {
+      id: String(v.id),
+      name: String(v.name),
+      contentUrl,
+      viewUrlName: v.viewUrlName ? String(v.viewUrlName) : undefined,
+      workbookId: wb.id ? String(wb.id) : '',
+      workbookContentUrl: contentUrl.split('/')[0] || undefined,
+    }
+  } catch {
+    return null
+  }
 }
 
 // ==================== 预览图（previewImage） ====================

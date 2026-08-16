@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { TableauViz } from '@tableau/embedding-api'
 import { useTranslation } from 'react-i18next'
-import { AlertCircle, Loader2 } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
 
 import { TABLEAU_CONFIG } from '@/config/tableau'
 import { cn } from '@/lib/utils'
@@ -121,15 +121,12 @@ export function TableauEmbed({ src, className }: { src?: string; className?: str
           {t('views.embedEmpty')}
         </div>
       )}
-      {src && status === 'loading' && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-sm">
-          <Loader2 className="size-6 animate-spin text-muted-foreground" />
-        </div>
-      )}
+      {/* 加载中不再叠加自定义遮罩层：iframe 内 Tableau 自带加载指示，
+          叠加层会造成"双层 loading"（遮罩 + 原生 spinner 同时可见） */}
       {status === 'error' && (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 p-6 text-center">
-          <AlertCircle className="size-6 text-destructive" />
-          <p className="text-sm text-destructive">{error}</p>
+        <div className="absolute inset-x-0 top-0 z-10 flex items-center gap-2 border-b bg-destructive/10 px-4 py-2 text-sm text-destructive">
+          <AlertCircle className="size-4 shrink-0" />
+          <span className="min-w-0 truncate">{error}</span>
         </div>
       )}
       <div ref={embedRef} className="h-full w-full" />

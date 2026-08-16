@@ -6,10 +6,35 @@
 
 | 版本 | package.json | 侧边栏显示 | PROGRESS.md | CHANGELOG 条目 | 日期 |
 | --- | --- | --- | --- | --- | --- |
+| 0.2.1 | ✅ `0.2.1` | ✅ `v0.2.1` | ✅ 已同步 | ✅ [本节](#021---2026-08-16) | 2026-08-16 |
 | 0.2.0 | ✅ `0.2.0` | ✅ `v0.2.0` | ✅ 已同步 | ✅ [本节](#020---2026-08-16) | 2026-08-16 |
 | 0.1.0 | ✅ `0.1.0` | ✅ `v0.1.0` | ✅ 已同步 | ✅ [本节](#010---2026-08-16) | 2026-08-16 |
 
 > 约定：新版本发布时，先升 `package.json` 的 `version`，再更新本表与下方条目。
+
+## [0.2.1] - 2026-08-16
+
+Views 嵌入体验与链接体系重构（纯前端，无后端依赖）。
+
+### Changed（变更）
+
+- package.json `0.2.0` → `0.2.1`（四文件版本同步）
+
+### Fixed（修复）
+
+- **侧边栏 Logo 换成 Tableau 图标**：`app-sidebar.tsx` 顶部 Logo 由 Lucide Command 图标（深色圆角方块）改为直接使用 `public/favicon.ico`（与浏览器 favicon 同一张图，展开/折叠两种状态均生效）；移除未再使用的 `Command` 导入
+- **点击工作簿直达视图**：/workbooks 卡片点击后进入 /views 并**自动打开默认视图直接嵌入**。`tableau-api.ts` 的 workbooks 查询新增 `defaultViewId` 字段；`views.tsx` 在已选工作簿且未指定视图时，自动选中默认视图（`defaultViewId` 匹配，兜底列表第一个）并回写 URL，嵌入随即加载（下拉选择工作簿同样生效）
+- **/views 页面精简**：删除 "Select workbook" 选择面板（工作簿/视图改由 URL 驱动）；"Manual view URL (fallback)" 收进标题右侧 Info 图标弹层；收藏按钮移至标题右侧；加载/重试错误提示保留在标题下方
+- **Header 重构**：删除面包屑（原 favorites/recents/workbooks/views 段缺失映射导致显示 "Page not found"），改为直接显示当前页面标题（新增 `language-toggle.tsx` 语言按钮置于右上角主题切换旁，当前仅 en-US；Settings 页原静态语言下拉同步移除）
+- **/views 参数改用 UUID**：`/views?workbook=<wbId>&view=<viewId>`（点击 workbooks 卡片、favorites/recents 跳转均传 UUID；旧的名称为参数链接自动重写为 UUID，失效视图兜底到默认视图）。嵌入 iframe 仍用名称路径（实测 UUID / contentUrl `/sheets/` 路径 404），但名称由 API 按 UUID 解析而来，不再经过 URL 编码往返（修复含空格/特殊字符名称导致视图打不开的问题）。`view-store.ts` 的 favorites/recents 记录新增 `workbookId/viewId`（新旧数据兼容，去重按 UUID 优先）
+- **嵌入层 UI 修正**：删除 `tableau-embed.tsx` 自定义加载遮罩（与 iframe 内 Tableau 原生 spinner 叠加成"双层 loading"）；错误提示由全屏遮罩改为顶部非遮挡横幅（视图区域保持可见）
+- **/views 单参数打开（仅视图 UUID）**：workbooks 的 dashboard 卡片链接改为 `linkTo="/views" + linkSearch={{ view: d.id }}`，不再传 workbook id。`tableau-api.ts` 新增 `fetchViewDetail(viewId)`（GET /views/{id}，解析视图名称 + 所属工作簿 id/contentUrl/viewUrlName）；`views.tsx` 在仅含视图 UUID 参数时按详情解析并嵌入（工作簿优先命中受限项目列表取全名，兜底用 contentUrl slug），旧的双参数/名称链接自动重写为 `?view=<uuid>` 单一形态，加载失败纳入错误提示与重试
+- **/views 头部重排**：恢复标题 + 描述（左侧），Info 与收藏按钮移至右侧；Info 弹层现显示**当前视图在 Tableau 服务器上的完整 URL**（只读 + 一键复制），下方保留手动 URL 兜底输入（新增 i18n key：`views.tableauUrl/copyUrl/copied/copyFailed`）
+- **Workbooks 列表未受"访问级别:Samples"限制**：已连接应用的访问级别/域允许列表**仅作用于嵌入工作流**（[官方文档](https://help.tableau.com/current/online/zh-cn/connected_apps_direct.htm)：REST API 授权配置时可忽略），JWT 也没有项目级 claim（注册 claim 仅 kid/iss/alg/sub/aud/exp/iat/jti/scp），故 REST 列表仍返回全部 15 个工作簿。修复：`tableau.ts` 新增 `restrictedProjectName: 'Samples'`，`fetchWorkbooks` 追加 `filter=projectName:eq:Samples` 查询参数（实测 `/projects/{id}/workbooks` 端点在 Cloud 3.23 返回 404 不可用，`filter=projectId:eq:` 亦被拒，`projectName` filter 为可用方案）→ 列表仅返回 Samples 的 2 个工作簿（Superstore、World Indicators）
+
+### Known Issues（遗留问题）
+
+- Tableau Cloud REST API **不支持 CORS**（实测：响应无 ACAO 头、OPTIONS 预检 405）→ 已加 Vite dev 代理（`/tableau-proxy` → https://10ax.online.tableau.com）；**生产部署需在网关/nginx 配置同路径反代**，否则列表不可用；Views 页手动 URL 兜底嵌入不受影响
 
 ## [0.2.0] - 2026-08-16
 
@@ -34,7 +59,6 @@
 
 - **Workbooks 列表 400 错误**：`fetchWorkbooks` 的 `fields` 参数含 `projectName`，Tableau 判定为非法字段名并以 400 / error 409004 拒绝整个请求（实测错误体：`Invalid field names '[..., ProjectName, ...]' for Workbook`）→ 改为 `fields=id,name,contentUrl,updatedAt,showTabs`，项目名改从响应 `location.name`（兜底 `project.name`）解析；顺带修复 `showTabs` 布尔解析（Tableau 以字符串 `"true"/"false"` 返回，原 `Boolean("false")` 恒为 true）
 - **`/favicon.ico` 404**：项目无 favicon（无 `public/` 目录）→ 新增 `public/favicon.svg`（现代浏览器主图标）+ `public/favicon.ico`（32×32 传统兜底）+ `public/apple-touch-icon.png`（180×180 iOS）；`index.html` 补充三个 `<link>` 声明。图标改用 **Tableau 官方彩色 Logo**（来源 [SVG Repo](https://www.svgrepo.com/show/354428/tableau-icon.svg)，9 个 polygon 直接用作 SVG；ICO/PNG 由一次性脚本按 viewBox 光栅化生成，见 `CHANGELOG` 备注）
-- **Workbooks 列表未受"访问级别:Samples"限制**：已连接应用的访问级别/域允许列表**仅作用于嵌入工作流**（[官方文档](https://help.tableau.com/current/online/zh-cn/connected_apps_direct.htm)：REST API 授权配置时可忽略），JWT 也没有项目级 claim（注册 claim 仅 kid/iss/alg/sub/aud/exp/iat/jti/scp），故 REST 列表仍返回全部 15 个工作簿。修复：`tableau.ts` 新增 `restrictedProjectName: 'Samples'`，`fetchWorkbooks` 追加 `filter=projectName:eq:Samples` 查询参数（实测 `/projects/{id}/workbooks` 端点在 Cloud 3.23 返回 404 不可用，`filter=projectId:eq:` 亦被拒，`projectName` filter 为可用方案）→ 列表仅返回 Samples 的 2 个工作簿（Superstore、World Indicators）
 
 ### Known Issues（遗留问题）
 
@@ -89,6 +113,6 @@
 ---
 
 <!-- 后续版本追加格式（复制即可）：
-## [0.2.0] - YYYY-MM-DD
+## [0.3.0] - YYYY-MM-DD
 ### Added / Changed / Fixed / Known Issues / TODO
 -->

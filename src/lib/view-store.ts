@@ -1,7 +1,19 @@
 export interface ViewRef {
+  /** 工作簿名称（展示用；兼容旧数据） */
   workbook: string
+  /** 视图名称（展示用） */
   view: string
+  /** 工作簿 UUID（匹配与 /views URL 参数优先用 UUID） */
+  workbookId?: string
+  /** 视图 UUID */
+  viewId?: string
   accessedAt: string
+}
+
+/** 调用方已知的 UUID（存库时带上，跳转 /views 时作为参数） */
+export interface ViewIds {
+  workbookId?: string
+  viewId?: string
 }
 
 const FAVORITES_KEY = 'shadcn-admin-cn:favorites'
@@ -82,21 +94,32 @@ export const recentsExternalStore = {
   getSnapshot: recentsStore.read,
 }
 
+/** 同一视图判定：双方都有 UUID 时按 UUID 比较，否则按名称（兼容旧数据） */
+function sameView(
+  a: ViewRef,
+  b: { workbook: string; view: string; workbookId?: string; viewId?: string },
+): boolean {
+  if (a.workbookId && b.workbookId && a.viewId && b.viewId) {
+    return a.workbookId === b.workbookId && a.viewId === b.viewId
+  }
+  return a.workbook === b.workbook && a.view === b.view
+}
+
 export function getFavorites(): ViewRef[] {
   return favoritesStore.read()
 }
 
-export function isFavorite(workbook: string, view: string): boolean {
-  return getFavorites().some((f) => f.workbook === workbook && f.view === view)
+export function isFavorite(workbook: string, view: string, ids?: ViewIds): boolean {
+  return getFavorites().some((f) => sameView(f, { workbook, view, ...ids }))
 }
 
 /** 返回切换后的收藏状态（true=已收藏） */
-export function toggleFavorite(workbook: string, view: string): boolean {
+export function toggleFavorite(workbook: string, view: string, ids?: ViewIds): boolean {
   const list = getFavorites()
-  const exists = list.some((f) => f.workbook === workbook && f.view === view)
+  const exists = list.some((f) => sameView(f, { workbook, view, ...ids }))
   const next = exists
-    ? list.filter((f) => !(f.workbook === workbook && f.view === view))
-    : [{ workbook, view, accessedAt: new Date().toISOString() }, ...list]
+    ? list.filter((f) => !sameView(f, { workbook, view, ...ids }))
+    : [{ workbook, view, ...ids, accessedAt: new Date().toISOString() }, ...list]
   favoritesStore.write(next)
   return !exists
 }
@@ -110,9 +133,12 @@ export function getRecents(): ViewRef[] {
   return recentsStore.read()
 }
 
-export function addRecent(workbook: string, view: string) {
-  const list = getRecents().filter((r) => !(r.workbook === workbook && r.view === view))
-  const next = [{ workbook, view, accessedAt: new Date().toISOString() }, ...list].slice(0, MAX_RECENTS)
+export function addRecent(workbook: string, view: string, ids?: ViewIds) {
+  const list = getRecents().filter((r) => !sameView(r, { workbook, view, ...ids }))
+  const next = [
+    { workbook, view, ...ids, accessedAt: new Date().toISOString() },
+    ...list,
+  ].slice(0, MAX_RECENTS)
   recentsStore.write(next)
 }
 

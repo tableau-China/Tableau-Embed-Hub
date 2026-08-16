@@ -12,13 +12,6 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
@@ -31,11 +24,6 @@ function SettingsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{t('settings.title')}</h1>
-        <p className="text-muted-foreground text-sm">{t('settings.subtitle')}</p>
-      </div>
-
       <Tabs defaultValue="profile">
         <TabsList>
           <TabsTrigger value="profile">{t('settings.profile')}</TabsTrigger>
@@ -57,17 +45,7 @@ function SettingsPage() {
                 <Label htmlFor="email">{t('settings.email')}</Label>
                 <Input id="email" type="email" placeholder={t('settings.emailPlaceholder')} />
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="language">{t('settings.language')}</Label>
-                <Select defaultValue="en-US">
-                  <SelectTrigger id="language" className="w-full md:w-64">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="en-US">{t('settings.english')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* 语言选择已移至 Header 右上角（LanguageToggle），见 components/language-toggle.tsx */}
               <div className="flex items-center justify-between rounded-lg border p-4">
                 <div>
                   <div className="text-sm font-medium">{t('settings.notifications')}</div>

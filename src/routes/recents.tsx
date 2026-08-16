@@ -32,18 +32,17 @@ function RecentsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{t('recents.title')}</h1>
-          <p className="text-muted-foreground text-sm">{t('recents.subtitle')}</p>
-        </div>
-        {recents.length > 0 && (
-          <Button variant="outline" size="sm" onClick={clearRecents}>
-            <Trash2 className="size-4" />
-            {t('recents.clear')}
-          </Button>
-        )}
-      </div>
+      {recents.length > 0 && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="self-end"
+          onClick={clearRecents}
+        >
+          <Trash2 className="size-4" />
+          {t('recents.clear')}
+        </Button>
+      )}
 
       {recents.length === 0 ? (
         <Card>
@@ -61,7 +60,10 @@ function RecentsPage() {
               name={r.view}
               subtitle={r.workbook}
               linkTo="/views"
-              linkSearch={{ workbook: r.workbook, view: r.view }}
+              linkSearch={{
+                workbook: r.workbookId ?? r.workbook,
+                view: r.viewId ?? r.view,
+              }}
               thumbnailLoader={() => resolveViewPreviewBlob(r.workbook, r.view)}
               updatedAt={r.accessedAt}
               showFavorite

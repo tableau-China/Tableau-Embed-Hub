@@ -26,11 +26,6 @@ function FavoritesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{t('favorites.title')}</h1>
-        <p className="text-muted-foreground text-sm">{t('favorites.subtitle')}</p>
-      </div>
-
       {favorites.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-2 py-10 text-center">
@@ -47,7 +42,10 @@ function FavoritesPage() {
               name={f.view}
               subtitle={f.workbook}
               linkTo="/views"
-              linkSearch={{ workbook: f.workbook, view: f.view }}
+              linkSearch={{
+                workbook: f.workbookId ?? f.workbook,
+                view: f.viewId ?? f.view,
+              }}
               thumbnailLoader={() => resolveViewPreviewBlob(f.workbook, f.view)}
               updatedAt={f.accessedAt}
               showFavorite

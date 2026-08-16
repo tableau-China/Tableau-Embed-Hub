@@ -42,11 +42,6 @@ function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{t('dashboard.title')}</h1>
-        <p className="text-muted-foreground text-sm">{t('dashboard.subtitle')}</p>
-      </div>
-
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {stats.map((stat) => {
           const Icon = stat.icon

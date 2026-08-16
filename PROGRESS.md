@@ -7,7 +7,7 @@
 - **目标**：从零构建管理后台模板（React 19 + TypeScript 7 + Vite 8 + Tailwind CSS v4 + shadcn/ui(Radix) + TanStack Router），包含 shadcn-admin 的全部基础功能，**不含** Tableau / AI / 多团队功能；i18n 当前仅 **en-US**，中文/日文后期扩展。
 - **关键决策**：跳过 shadcn-admin 模板（无 Sat Naing 署名义务）、TypeScript 7.1.0-dev（next 开发版，验证未来升级，正式版发布后直接升级）、Vite 8.2.1 最新稳定、i18n 当前仅 en-US（zh-CN / zh-TW / ja-JP 后期扩展）。
 - **注意**：用户原指定路径 `/Users/xilejun/ds_Harness/shadcn_admin_cn` 不存在，实际目录在 `/Users/xilejun/WorkBuddy/ds_Harness/shadcn_admin_cn`。
-- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.2.0**）。
+- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.2.1**）。
 
 ---
 
@@ -40,14 +40,21 @@
 - ✅ `src/components/tableau/tableau-embed.tsx`：@tableau/embedding-api v3 嵌入组件
 - ✅ 侧边栏 Tableau 分组 + en-US i18n 扩展；版本同步 0.2.0（四文件）
 - ✅ CORS 实测：Tableau Cloud 不支持（无 ACAO 头 / 预检 405）→ dev 代理 `/tableau-proxy` 落地（生产需 nginx 同路径反代）
-- ⏳ 浏览器验证列表与嵌入；git 提交
+- ✅ 浏览器验证列表与嵌入；git 提交（`70d127f` 已推 GitHub）
+
+## ✅ v0.2.1（2026-08-16）— Views 嵌入体验与链接体系重构
+
+- ✅ **/views 链接体系改为 UUID 驱动**：workbooks 卡片直传视图 UUID（`?view=<uuid>` 单参数）；旧双参数/名称链接自动重写；`tableau-api.ts` 新增 `fetchViewDetail`（按 UUID 解析视图名 + 所属工作簿）；`view-store.ts` favorites/recents 记录新增 `workbookId/viewId`（新旧数据兼容）
+- ✅ **嵌入层修正**：删除自定义加载遮罩（消除双层 loading）；错误改为顶部非遮挡横幅；Info 弹层显示视图完整 URL（一键复制）+ 手动 URL 兜底
+- ✅ **Header 重构**：面包屑改为当前页面标题（修复 "Page not found"）；新增 `language-toggle.tsx`（当前仅 en-US）；Settings 静态语言下拉移除
+- ✅ **Samples 项目限制**：`fetchWorkbooks` 追加 `filter=projectName:eq:Samples` → 列表仅返回 2 个工作簿
+- ✅ 版本同步 0.2.1（四文件）
 
 ## ⏭️ 下一步（Next）
 
-1. 推 GitHub（公开仓库，历史干净）；
-2. 等 typescript-eslint 支持 TS 7 后恢复 lint（升级依赖 + 取消 ci.yml 注释）；
-3. 多语言扩展（zh-CN / zh-TW / ja-JP）：新增 `src/i18n/locales/<lang>/common.json` + i18n 配置加资源；
-4. 组件补充（如 data-table、form 等）、真实数据层（mock → API/DB）。
+1. 等 typescript-eslint 支持 TS 7 后恢复 lint（升级依赖 + 取消 ci.yml 注释）；
+2. 多语言扩展（zh-CN / zh-TW / ja-JP）：新增 `src/i18n/locales/<lang>/common.json` + i18n 配置加资源；
+3. 组件补充（如 data-table、form 等）、真实数据层（mock → API/DB）。
 
 ## 🚧 阻塞点（Blockers）
 
