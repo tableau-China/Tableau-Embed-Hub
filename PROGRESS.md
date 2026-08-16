@@ -7,7 +7,7 @@
 - **目标**：从零构建管理后台模板（React 19 + TypeScript 7 + Vite 8 + Tailwind CSS v4 + shadcn/ui(Radix) + TanStack Router），包含 shadcn-admin 的全部基础功能，**不含** Tableau / AI / 多团队功能；i18n 当前仅 **en-US**，中文/日文后期扩展。
 - **关键决策**：跳过 shadcn-admin 模板（无 Sat Naing 署名义务）、TypeScript 7.1.0-dev（next 开发版，验证未来升级，正式版发布后直接升级）、Vite 8.2.1 最新稳定、i18n 当前仅 en-US（zh-CN / zh-TW / ja-JP 后期扩展）。
 - **注意**：用户原指定路径 `/Users/xilejun/ds_Harness/shadcn_admin_cn` 不存在，实际目录在 `/Users/xilejun/WorkBuddy/ds_Harness/shadcn_admin_cn`。
-- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.1.0**）。
+- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.2.0**）。
 
 ---
 
@@ -27,6 +27,20 @@
 | 10 | 应用代码 | TanStack Router 文件路由（dashboard / users / tasks / settings / 404 catch-all）+ 布局（可折叠侧边栏、头部面包屑、主题切换 next-themes、用户菜单）+ i18n 框架（en-US 59 key，i18next）+ sonner toast + mock 数据表 |
 | 11 | 工具链验证 | `pnpm build`（tsc -b + vite build）✅ 2089 模块；`pnpm check:i18n` ✅ 1 语言 59 key；dev 服务器冒烟测试 ✅（/、/users、404 均 200） |
 | 12 | git 首次提交 | `git init -b main` + 首次提交 `1ff5ebd`（59 文件）；`.pnpm-store/`（沙箱重定向的 pnpm 内容存储）与 dist/node_modules 均已 gitignore |
+
+## ✅ v0.2.0（2026-08-16）— Tableau 迁移
+
+从 pg_explorer 迁移 Tableau 相关页面（纯前端实现，无后端依赖）：
+
+- ✅ 新增路由：`/favorites`、`/recents`、`/workbooks`、`/views`（Views = Tableau 嵌入）
+- ✅ `src/config/tableau.ts`：Connected App 测试凭据明文配置（10ax.online.tableau.com / xilejunchina / wyp@vizwise.cn）
+- ✅ `src/lib/tableau-jwt.ts`：客户端 JWT（jose HS256，5 分钟有效 + 4 分钟刷新）
+- ✅ `src/lib/tableau-api.ts`：REST 客户端（workbooks/views 列表；CORS 受限时手动 URL 兜底）
+- ✅ `src/lib/view-store.ts`：favorites/recents localStorage 持久化
+- ✅ `src/components/tableau/tableau-embed.tsx`：@tableau/embedding-api v3 嵌入组件
+- ✅ 侧边栏 Tableau 分组 + en-US i18n 扩展；版本同步 0.2.0（四文件）
+- ✅ CORS 实测：Tableau Cloud 不支持（无 ACAO 头 / 预检 405）→ dev 代理 `/tableau-proxy` 落地（生产需 nginx 同路径反代）
+- ⏳ 浏览器验证列表与嵌入；git 提交
 
 ## ⏭️ 下一步（Next）
 

@@ -12,5 +12,15 @@ export default defineConfig({
       '@': path.resolve(import.meta.dirname, './src'),
     },
   },
+  server: {
+    proxy: {
+      // Tableau Cloud REST API 不支持 CORS（实测：无 ACAO 头、OPTIONS 预检 405），
+      // 开发环境通过本代理同源转发；生产部署请在网关/nginx 配置相同路径反代。
+      '/tableau-proxy': {
+        target: 'https://10ax.online.tableau.com',
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/tableau-proxy/, ''),
+      },
+    },
+  },
 })
-

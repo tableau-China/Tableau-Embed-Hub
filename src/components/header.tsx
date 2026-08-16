@@ -15,7 +15,6 @@ import {
 const SEGMENT_LABEL_KEYS: Record<string, string> = {
   '': 'nav.dashboard',
   users: 'nav.users',
-  tasks: 'nav.tasks',
   settings: 'nav.settings',
 }
 

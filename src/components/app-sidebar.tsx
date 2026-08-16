@@ -1,9 +1,12 @@
 import {
+  BookOpen,
   ChevronsUpDown,
-  ClipboardList,
+  Clock,
   Command,
   LayoutDashboard,
+  MonitorPlay,
   Settings,
+  Star,
   Users,
 } from 'lucide-react'
 import { Link, useLocation } from '@tanstack/react-router'
@@ -33,16 +36,49 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 
-const NAV_ITEMS = [
+const GENERAL_ITEMS = [
   { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard },
+  { to: '/favorites', labelKey: 'nav.favorites', icon: Star },
+  { to: '/recents', labelKey: 'nav.recents', icon: Clock },
+  { to: '/workbooks', labelKey: 'nav.workbooks', icon: BookOpen },
+  { to: '/views', labelKey: 'nav.views', icon: MonitorPlay },
+] as const
+
+const SETTINGS_ITEMS = [
   { to: '/users', labelKey: 'nav.users', icon: Users },
-  { to: '/tasks', labelKey: 'nav.tasks', icon: ClipboardList },
   { to: '/settings', labelKey: 'nav.settings', icon: Settings },
 ] as const
 
-export function AppSidebar() {
+function NavList({
+  items,
+}: {
+  items: ReadonlyArray<{ to: string; labelKey: string; icon: typeof LayoutDashboard }>
+}) {
   const { t } = useTranslation()
   const { pathname } = useLocation()
+
+  return (
+    <SidebarMenu>
+      {items.map((item) => {
+        const Icon = item.icon
+        const isActive = item.to === '/' ? pathname === '/' : pathname.startsWith(item.to)
+        return (
+          <SidebarMenuItem key={item.to}>
+            <SidebarMenuButton asChild isActive={isActive} tooltip={t(item.labelKey)}>
+              <Link to={item.to}>
+                <Icon />
+                <span>{t(item.labelKey)}</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        )
+      })}
+    </SidebarMenu>
+  )
+}
+
+export function AppSidebar() {
+  const { t } = useTranslation()
 
   return (
     <Sidebar collapsible="icon">
@@ -56,7 +92,7 @@ export function AppSidebar() {
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">shadcn-admin</span>
-                  <span className="truncate text-xs opacity-60">v0.1.0</span>
+                  <span className="truncate text-xs opacity-60">v0.2.0</span>
                 </div>
                 <Badge variant="secondary">en</Badge>
               </Link>
@@ -66,31 +102,15 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>{t('nav.dashboard')}</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('nav.general')}</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {NAV_ITEMS.map((item) => {
-                const Icon = item.icon
-                const isActive =
-                  item.to === '/'
-                    ? pathname === '/'
-                    : pathname.startsWith(item.to)
-                return (
-                  <SidebarMenuItem key={item.to}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive}
-                      tooltip={t(item.labelKey)}
-                    >
-                      <Link to={item.to}>
-                        <Icon />
-                        <span>{t(item.labelKey)}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )
-              })}
-            </SidebarMenu>
+            <NavList items={GENERAL_ITEMS} />
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>{t('nav.settings')}</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <NavList items={SETTINGS_ITEMS} />
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
@@ -108,9 +128,7 @@ export function AppSidebar() {
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold">Admin</span>
-                    <span className="truncate text-xs">
-                      {t('header.role')}
-                    </span>
+                    <span className="truncate text-xs">{t('header.role')}</span>
                   </div>
                   <ChevronsUpDown className="ml-auto size-4" />
                 </SidebarMenuButton>

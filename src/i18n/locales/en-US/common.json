@@ -1,9 +1,15 @@
 {
   "nav": {
+    "general": "General",
+    "tableau": "Tableau",
     "dashboard": "Dashboard",
     "users": "Users",
     "tasks": "Tasks",
-    "settings": "Settings"
+    "settings": "Settings",
+    "favorites": "Favorites",
+    "recents": "Recents",
+    "workbooks": "Workbooks",
+    "views": "Views"
   },
   "header": {
     "theme": "Toggle theme",
@@ -13,6 +19,9 @@
     "account": "Account",
     "signOut": "Sign out",
     "role": "Administrator"
+  },
+  "common": {
+    "clear": "Clear"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -69,9 +78,62 @@
     "save": "Save changes",
     "saved": "Settings saved"
   },
+  "favorites": {
+    "title": "Favorites",
+    "subtitle": "Your starred Tableau views",
+    "empty": "No favorites yet. Open a view in the Views page and click the star.",
+    "open": "Open view",
+    "remove": "Remove"
+  },
+  "recents": {
+    "title": "Recents",
+    "subtitle": "Tableau views you opened recently",
+    "empty": "No recently viewed items yet.",
+    "clear": "Clear all"
+  },
+  "workbooks": {
+    "title": "Workbooks",
+    "subtitle": "Tableau Online workbooks",
+    "empty": "No workbooks found.",
+    "error": "Failed to load workbooks",
+    "errorHint": "Browsers may block Tableau REST API calls (CORS). If so, open the Views page and paste a view URL manually.",
+    "open": "Open workbook"
+  },
+  "views": {
+    "title": "Views",
+    "subtitle": "Embed Tableau views with Connected App JWT",
+    "workbook": "Workbook",
+    "view": "View",
+    "selectWorkbook": "Select workbook",
+    "selectView": "Select view",
+    "manualUrl": "Manual view URL (fallback)",
+    "manualPlaceholder": "https://10ax.online.tableau.com/t/xilejunchina/views/Workbook/View",
+    "loadingWorkbooks": "Loading…",
+    "loadError": "Failed to load from Tableau API (CORS?)",
+    "embedEmpty": "Select a workbook and view above, or paste a view URL to embed.",
+    "embedError": "Failed to load view",
+    "retry": "Retry",
+    "favorite": "Add to favorites",
+    "unfavorite": "Remove from favorites",
+    "favorited": "Added to favorites",
+    "unfavorited": "Removed from favorites"
+  },
   "notFound": {
     "title": "Page not found",
     "message": "The page you are looking for does not exist.",
     "back": "Back to dashboard"
+  },
+  "thumbnailCard": {
+    "open": "Open view",
+    "favorite": "Add to favorites",
+    "unfavorite": "Remove from favorites",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "noDescription": "No additional information",
+    "workbook": "Workbook",
+    "addedAt": "Added at",
+    "accessedAt": "Last accessed",
+    "project": "Project",
+    "id": "ID"
   }
 }

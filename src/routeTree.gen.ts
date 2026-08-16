@@ -11,9 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SplatRouteImport } from './routes/$'
+import { Route as FavoritesRouteImport } from './routes/favorites'
+import { Route as RecentsRouteImport } from './routes/recents'
 import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as UsersRouteImport } from './routes/users'
+import { Route as ViewsRouteImport } from './routes/views'
+import { Route as WorkbooksRouteImport } from './routes/workbooks'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -25,14 +28,19 @@ const SplatRoute = SplatRouteImport.update({
   path: '/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FavoritesRoute = FavoritesRouteImport.update({
+  id: '/favorites',
+  path: '/favorites',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecentsRoute = RecentsRouteImport.update({
+  id: '/recents',
+  path: '/recents',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TasksRoute = TasksRouteImport.update({
-  id: '/tasks',
-  path: '/tasks',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UsersRoute = UsersRouteImport.update({
@@ -40,43 +48,90 @@ const UsersRoute = UsersRouteImport.update({
   path: '/users',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ViewsRoute = ViewsRouteImport.update({
+  id: '/views',
+  path: '/views',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WorkbooksRoute = WorkbooksRouteImport.update({
+  id: '/workbooks',
+  path: '/workbooks',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/favorites': typeof FavoritesRoute
+  '/recents': typeof RecentsRoute
   '/settings': typeof SettingsRoute
-  '/tasks': typeof TasksRoute
   '/users': typeof UsersRoute
+  '/views': typeof ViewsRoute
+  '/workbooks': typeof WorkbooksRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/favorites': typeof FavoritesRoute
+  '/recents': typeof RecentsRoute
   '/settings': typeof SettingsRoute
-  '/tasks': typeof TasksRoute
   '/users': typeof UsersRoute
+  '/views': typeof ViewsRoute
+  '/workbooks': typeof WorkbooksRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/favorites': typeof FavoritesRoute
+  '/recents': typeof RecentsRoute
   '/settings': typeof SettingsRoute
-  '/tasks': typeof TasksRoute
   '/users': typeof UsersRoute
+  '/views': typeof ViewsRoute
+  '/workbooks': typeof WorkbooksRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/$' | '/settings' | '/tasks' | '/users'
+  fullPaths:
+    | '/'
+    | '/$'
+    | '/favorites'
+    | '/recents'
+    | '/settings'
+    | '/users'
+    | '/views'
+    | '/workbooks'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$' | '/settings' | '/tasks' | '/users'
-  id: '__root__' | '/' | '/$' | '/settings' | '/tasks' | '/users'
+  to:
+    | '/'
+    | '/$'
+    | '/favorites'
+    | '/recents'
+    | '/settings'
+    | '/users'
+    | '/views'
+    | '/workbooks'
+  id:
+    | '__root__'
+    | '/'
+    | '/$'
+    | '/favorites'
+    | '/recents'
+    | '/settings'
+    | '/users'
+    | '/views'
+    | '/workbooks'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SplatRoute: typeof SplatRoute
+  FavoritesRoute: typeof FavoritesRoute
+  RecentsRoute: typeof RecentsRoute
   SettingsRoute: typeof SettingsRoute
-  TasksRoute: typeof TasksRoute
   UsersRoute: typeof UsersRoute
+  ViewsRoute: typeof ViewsRoute
+  WorkbooksRoute: typeof WorkbooksRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -95,18 +150,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/favorites': {
+      id: '/favorites'
+      path: '/favorites'
+      fullPath: '/favorites'
+      preLoaderRoute: typeof FavoritesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recents': {
+      id: '/recents'
+      path: '/recents'
+      fullPath: '/recents'
+      preLoaderRoute: typeof RecentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/tasks': {
-      id: '/tasks'
-      path: '/tasks'
-      fullPath: '/tasks'
-      preLoaderRoute: typeof TasksRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/users': {
@@ -116,15 +178,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UsersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/views': {
+      id: '/views'
+      path: '/views'
+      fullPath: '/views'
+      preLoaderRoute: typeof ViewsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/workbooks': {
+      id: '/workbooks'
+      path: '/workbooks'
+      fullPath: '/workbooks'
+      preLoaderRoute: typeof WorkbooksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SplatRoute: SplatRoute,
+  FavoritesRoute: FavoritesRoute,
+  RecentsRoute: RecentsRoute,
   SettingsRoute: SettingsRoute,
-  TasksRoute: TasksRoute,
   UsersRoute: UsersRoute,
+  ViewsRoute: ViewsRoute,
+  WorkbooksRoute: WorkbooksRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
