@@ -28,6 +28,12 @@ pnpm install
 pnpm dev
 ```
 
+## 凭据配置（Tableau Connected App）
+
+- **开箱即用**：未配置环境变量时，应用自动使用内置的混淆开发凭据（仅供开发演示，控制台会输出提示）。
+- **覆盖方式**（推荐，用于自有凭据）：复制 `.env.example` 为 `.env`，填入 Tableau Cloud → 已连接应用中的 `clientId` / `secretId` / `secretValue`。`.env` 已被 `.gitignore` 排除，不会进入 git。
+- ⚠️ **安全边界**：本应用为纯前端，凭据（含内置混淆值）构建后会内联进 JS bundle，混淆仅防明文扫描、**不构成加密**。真正的访问控制依赖 Tableau Cloud 后台的 Connected App 域名白名单、访问级别限制与密钥轮换；如需彻底隐藏密钥，请将 JWT 签发迁移到后端。
+
 ## 脚本
 
 | 命令 | 说明 |

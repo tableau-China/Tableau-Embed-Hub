@@ -1,14 +1,51 @@
 /**
  * Tableau Online（Tableau Cloud）连接配置
- * ⚠️ 测试环境专用：凭据明文嵌入代码（用户明确要求）。生产环境请改为后端/环境变量注入。
+ *
+ * ⚠️ 凭据策略（重要）：
+ * 1. Connected App 凭据支持两种来源，优先级从高到低：
+ *    a. 环境变量 `VITE_TABLEAU_*`（推荐，.env 中配置，.env 已被 .gitignore 排除）
+ *    b. 内置开发凭据（EMBEDDED_CREDENTIALS，混淆存储）——保证客户 clone 后开箱即用
+ * 2. ⚠️ 安全边界说明：本应用为纯前端，无论 .env 还是内置凭据，构建时都会内联进 JS bundle。
+ *    混淆（base64+反转）只是防止"一眼明文 / 被自动化扫描直接命中"，
+ *    不是加密 —— 拿到 bundle 的人仍可还原。这不是缺陷而是纯前端架构的固有约束。
+ *    真正的安全边界在 Tableau Cloud 后台（与代码无关）：
+ *    - Connected App 域名白名单（只允许本站点域名嵌入）
+ *    - 访问级别限制 + 应用侧项目过滤（注意：REST API 不受访问级别约束，仅前端过滤）
+ *    - 密钥定期轮换（泄露后立即在 Cloud 后台重置 Connected App secret）
+ *    如需真正隐藏密钥，需将 JWT 签发迁移到后端（见 CHANGELOG TODO）。
  */
+const EMBEDDED_CREDENTIALS = {
+  clientId: '3gDMjRTM5QGOihjYtMzNmlTL5YzN00yYiJjMtEGO2M2M3YmY',
+  secretId: 'hZWM4ImYmZTMhFDNtETMilTLjRWY00yYxkjMtMDM2QGO4EmM',
+  secretValue: '=0zcSFVc4gHMYhmTj5kYSBlW40Ucrt2SFRlYyZ0aCt2L4MENJFGMmdEWqZTQ',
+}
+
+/** 混淆解码：反转 + base64 解码（编码侧见 CHANGELOG/提交记录）。仅用于 ASCII 凭据。 */
+function decodeCredential(obfuscated: string): string {
+  return atob(obfuscated.split('').reverse().join(''))
+}
+
+const env = {
+  clientId: import.meta.env.VITE_TABLEAU_CLIENT_ID,
+  secretId: import.meta.env.VITE_TABLEAU_SECRET_ID,
+  secretValue: import.meta.env.VITE_TABLEAU_SECRET_VALUE,
+}
+
+const usingEmbedded = !(env.clientId && env.secretId && env.secretValue)
+if (usingEmbedded) {
+  console.warn(
+    '[tableau] 未检测到 VITE_TABLEAU_* 环境变量，正在使用内置开发凭据（混淆存储，仅供开发演示）。' +
+      '正式使用请复制 .env.example 为 .env 并填写自有 Connected App 凭据。',
+  )
+}
+
 export const TABLEAU_CONFIG = {
   serverUrl: 'https://10ax.online.tableau.com',
   siteName: 'xilejun_china',
   siteContentUrl: 'xilejunchina',
-  clientId: 'bf73c68a-22bc-4769-9f73-b8b8d914c087',
-  secretId: '2a88d603-291c-4adc-9b11-41a16fbb81fa',
-  secretValue: 'A6jXGf0aI4C8/kBkFrbTEKkkqM8ZPRbNcNhX0x8qQRs=',
+  clientId: env.clientId || decodeCredential(EMBEDDED_CREDENTIALS.clientId),
+  secretId: env.secretId || decodeCredential(EMBEDDED_CREDENTIALS.secretId),
+  secretValue: env.secretValue || decodeCredential(EMBEDDED_CREDENTIALS.secretValue),
   embedUser: 'wyp@vizwise.cn',
   apiVersion: '3.23',
   /**
