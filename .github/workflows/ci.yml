@@ -10,6 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # 需要完整历史以计算变更基线（github.event.before）
+          fetch-depth: 0
+      # 路径守卫：禁止内部内容（flows/amro/foc/clean-layer 等）进入公开仓库
+      - name: Guard: no internal paths
+        run: bash scripts/check-public-paths.sh
+        env:
+          GITHUB_EVENT_BEFORE: ${{ github.event.before }}
       - uses: pnpm/action-setup@v4
         with:
           version: 11
