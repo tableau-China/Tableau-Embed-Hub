@@ -1,13 +1,13 @@
 # shadcn-admin-cn 项目进度（PROGRESS）
 
-> 更新于 2026-08-16 ｜ 项目根目录：`/Users/xilejun/WorkBuddy/ds_Harness/shadcn_admin_cn`
+> 更新于 2026-09-04 ｜ 项目根目录：`/Users/xilejun/WorkBuddy/ds_Harness/shadcn_admin_cn`
 
 ## 项目概况
 
-- **目标**：从零构建管理后台模板（React 19 + TypeScript 7 + Vite 8 + Tailwind CSS v4 + shadcn/ui(Radix) + TanStack Router），包含 shadcn-admin 的全部基础功能，**不含** Tableau / AI / 多团队功能；i18n 当前仅 **en-US**，中文/日文后期扩展。
+- **目标**：从零构建管理后台模板（React 19 + TypeScript 7 + Vite 8 + Tailwind CSS v4 + shadcn/ui(Radix) + TanStack Router），包含 shadcn-admin 的全部基础功能，**不含** Tableau / AI 功能，v0.4.0 起含**多团队 + 全局用户**（参照 pg-explorer，无内部流程功能）；i18n 当前仅 **en-US**，中文/日文后期扩展。
 - **关键决策**：跳过 shadcn-admin 模板（无 Sat Naing 署名义务）、TypeScript 7.1.0-dev（next 开发版，验证未来升级，正式版发布后直接升级）、Vite 8.2.1 最新稳定、i18n 当前仅 en-US（zh-CN / zh-TW / ja-JP 后期扩展）。
 - **注意**：用户原指定路径 `/Users/xilejun/ds_Harness/shadcn_admin_cn` 不存在，实际目录在 `/Users/xilejun/WorkBuddy/ds_Harness/shadcn_admin_cn`。
-- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.2.1**）。
+- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.4.0**）。
 
 ---
 
@@ -49,6 +49,15 @@
 - ✅ **Header 重构**：面包屑改为当前页面标题（修复 "Page not found"）；新增 `language-toggle.tsx`（当前仅 en-US）；Settings 静态语言下拉移除
 - ✅ **Samples 项目限制**：`fetchWorkbooks` 追加 `filter=projectName:eq:Samples` → 列表仅返回 2 个工作簿
 - ✅ 版本同步 0.2.1（四文件）
+
+## ✅ v0.4.0（2026-09-04）— 多团队 + 全局用户（公开框架线）
+
+- ✅ **数据层** `src/stores/org-store.ts`（zustand 5 + persist）：User(全局) ⇄ TeamMember(岗位 team-admin/analyst/viewer + isDefault) ⇄ Team；默认团队自动维护、最后一名系统管理员/当前用户不可删除；种子 3 团队 + 6 用户 + 10 成员关系
+- ✅ **左上角 Team 切换器**：切换当前用户所属团队；系统管理员可 Create team / Manage teams（新 `/teams` 管理页：团队增删改 + 成员对话框）
+- ✅ **用户 > Team**：`/users` store 化升级（系统管理员/状态/所属团队徽章、增删改、用户↔多团队分配）；底部用户菜单支持演示性 Switch user
+- ✅ **收藏/最近按团队隔离** `lib/view-store.ts`：key 带 activeTeamId + 旧数据自动迁移
+- ✅ 版本同步 0.4.0（package.json / `config/app.ts` APP_VERSION / PROGRESS / CHANGELOG）
+- ✅ 验证：`pnpm build` ✅ / `pnpm check:i18n` ✅ / 公开路径守卫 ✅ / 无头 Chrome 多页面渲染零 console error ✅
 
 ## ⏭️ 下一步（Next）
 

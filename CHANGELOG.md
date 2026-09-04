@@ -6,11 +6,36 @@
 
 | 版本 | package.json | 侧边栏显示 | PROGRESS.md | CHANGELOG 条目 | 日期 |
 | --- | --- | --- | --- | --- | --- |
+| 0.4.0 | ✅ `0.4.0` | ✅ `v0.4.0`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#040---2026-09-04) | 2026-09-04 |
 | 0.2.1 | ✅ `0.2.1` | ✅ `v0.2.1` | ✅ 已同步 | ✅ [本节](#021---2026-08-16) | 2026-08-16 |
 | 0.2.0 | ✅ `0.2.0` | ✅ `v0.2.0` | ✅ 已同步 | ✅ [本节](#020---2026-08-16) | 2026-08-16 |
 | 0.1.0 | ✅ `0.1.0` | ✅ `v0.1.0` | ✅ 已同步 | ✅ [本节](#010---2026-08-16) | 2026-08-16 |
 
 > 约定：新版本发布时，先升 `package.json` 的 `version`，再更新本表与下方条目。
+
+## [0.4.0] - 2026-09-04
+
+多团队 + 全局用户（参照 pg-explorer teams/users 模型）。0.3.x 版本号为内部流程功能线（仅存于本地 custom 分支、未公开），公开框架线版本号直接跳到 0.4.0。
+
+### Added（新增）
+
+- **组织数据层** `src/stores/org-store.ts`（新依赖 zustand 5，localStorage 持久化 `shadcn-admin-cn:org`）：User（全局，位于 Team 之上：name/email/isSystemAdmin/status）⇄ TeamMember（userId+teamId、岗位 team-admin|analyst|viewer、isDefault）⇄ Team（name/slug/description/logo）；默认团队互斥、移除/删除后自动提升或重算 activeTeamId；最后一个系统管理员与当前用户不可删除；种子 3 团队 + 6 用户 + 10 成员关系
+- **左上角 Team 切换器** `components/org/team-switcher.tsx`：点击弹出当前用户所属团队并切换（团队作用域数据随之切换）；系统管理员另有 Create team / Manage teams 入口；无团队空态
+- **底部用户菜单** `components/org/user-menu.tsx`：当前用户 + 全局身份（System administrator / Member）；演示「Switch user」切换身份（体现用户 > team）
+- **新路由 `/teams`**：团队管理页——新建/编辑/删除、成员管理对话框（添加/移除成员、改岗位、设默认团队）；非系统管理员只读
+- **`/users` 升级**：store 驱动全局用户表（状态 / 系统管理员 / 所属团队徽章）、增删改、用户↔多团队分配对话框
+- **收藏/最近按团队隔离** `lib/view-store.ts`：key 带 activeTeamId（`…:favorites:team-<id>`）；旧无后缀数据首次读取自动迁入当前团队后清除；跨标签页同步保留
+- 新组件 `components/org/*`（team-logo / team-dialog / team-members-dialog / user-dialogs）；i18n en-US 新增 teams.\*、users.\* 扩展、common 动作键（共 268 keys）
+
+### Changed（变更）
+
+- 侧边栏头部品牌块 → TeamSwitcher + 品牌注脚（版本单一来源 `src/config/app.ts`）
+- 版本号 `0.2.1` → `0.4.0`（四文件版本同步）
+
+### Verified（验证）
+
+- `pnpm build`（tsc -b + vite build）✅；`pnpm check:i18n` ✅；公开路径守卫 `scripts/check-public-paths.sh` ✅（无内部内容混入）
+- 无头 Chrome（/、/users、/teams、/favorites、/settings）渲染正常、零 console error
 
 ## [0.2.1] - 2026-08-16
 

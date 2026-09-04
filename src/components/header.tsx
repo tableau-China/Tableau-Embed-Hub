@@ -15,6 +15,7 @@ const SEGMENT_TITLE_KEYS: Record<string, string> = {
   recents: 'nav.recents',
   workbooks: 'nav.workbooks',
   views: 'nav.views',
+  teams: 'nav.teams',
 }
 
 /** 一级路由段 → 页面描述 i18n key（紧随标题右侧，小字展示） */
@@ -26,6 +27,7 @@ const SEGMENT_SUBTITLE_KEYS: Record<string, string> = {
   recents: 'recents.subtitle',
   workbooks: 'workbooks.subtitle',
   views: 'views.subtitle',
+  teams: 'teams.subtitle',
 }
 
 export function Header() {

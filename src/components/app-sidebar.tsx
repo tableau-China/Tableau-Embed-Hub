@@ -1,6 +1,6 @@
 import {
   BookOpen,
-  ChevronsUpDown,
+  Building2,
   Clock,
   LayoutDashboard,
   MonitorPlay,
@@ -24,16 +24,9 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from '@/components/ui/sidebar'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
+import { TeamSwitcher } from '@/components/org/team-switcher'
+import { UserMenu } from '@/components/org/user-menu'
+import { APP_VERSION } from '@/config/app'
 
 const GENERAL_ITEMS = [
   { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard },
@@ -45,6 +38,7 @@ const GENERAL_ITEMS = [
 
 const SETTINGS_ITEMS = [
   { to: '/users', labelKey: 'nav.users', icon: Users },
+  { to: '/teams', labelKey: 'nav.teams', icon: Building2 },
   { to: '/settings', labelKey: 'nav.settings', icon: Settings },
 ] as const
 
@@ -82,25 +76,11 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <Link to="/">
-                {/* 站点 Logo：与浏览器 favicon 同一张图（Tableau 图标） */}
-                <img
-                  src="/favicon.ico"
-                  alt="shadcn-admin"
-                  className="size-8 shrink-0 rounded-lg"
-                />
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">shadcn-admin</span>
-                  <span className="truncate text-xs opacity-60">v0.2.1</span>
-                </div>
-                <Badge variant="secondary">en</Badge>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        {/* 左上角：Team 切换器（点击弹出当前用户可用的团队；系统管理员可新建/管理） */}
+        <TeamSwitcher />
+        <div className="hidden truncate px-2 pb-1 text-[11px] text-muted-foreground/80 group-data-[collapsible=icon]:hidden">
+          shadcn-admin · v{APP_VERSION}
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
@@ -117,47 +97,8 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton
-                  size="lg"
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                >
-                  <Avatar className="size-8 rounded-lg">
-                    <AvatarFallback className="rounded-lg">AD</AvatarFallback>
-                  </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">Admin</span>
-                    <span className="truncate text-xs">{t('header.role')}</span>
-                  </div>
-                  <ChevronsUpDown className="ml-auto size-4" />
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                side="right"
-                sideOffset={4}
-                className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-              >
-                <DropdownMenuLabel className="p-0 font-normal">
-                  <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                    <Avatar className="size-8 rounded-lg">
-                      <AvatarFallback className="rounded-lg">AD</AvatarFallback>
-                    </Avatar>
-                    <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-semibold">Admin</span>
-                      <span className="truncate text-xs">admin@example.com</span>
-                    </div>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>{t('header.account')}</DropdownMenuItem>
-                <DropdownMenuItem>{t('header.signOut')}</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        {/* 底部：当前用户（用户位于 Team 之上，可切换身份） */}
+        <UserMenu />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

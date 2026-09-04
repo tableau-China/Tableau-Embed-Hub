@@ -1,3 +1,16 @@
+import { useOrgStore } from '@/stores/org-store'
+
+/**
+ * 收藏 / 最近浏览 store —— 按 Team 隔离（对齐 pg-explorer 的团队作用域语义）。
+ *
+ * - localStorage key 带当前 activeTeamId 后缀（如 shadcn-admin-cn:favorites:team-1）
+ * - 切换团队时（org store activeTeamId 变化）自动失效缓存并触发订阅方重渲染
+ * - v0.4.0 升级迁移：旧的无后缀全局数据首次读取时迁入当前团队，之后清除，避免多团队重复拷贝
+ *
+ * 关键点：getSnapshot 必须返回缓存中的同一引用，直到数据真正变更
+ * （否则 React 每次渲染都拿到新引用 → 无限重渲染 → "Maximum update depth exceeded"）。
+ */
+
 export interface ViewRef {
   /** 工作簿名称（展示用；兼容旧数据） */
   workbook: string
@@ -16,11 +29,23 @@ export interface ViewIds {
   viewId?: string
 }
 
-const FAVORITES_KEY = 'shadcn-admin-cn:favorites'
-const RECENTS_KEY = 'shadcn-admin-cn:recents'
+const KEY_PREFIX = 'shadcn-admin-cn'
+/** v0.3.x 及以前的无后缀全局 key（用于一次性迁移） */
+const LEGACY_FAVORITES_KEY = `${KEY_PREFIX}:favorites`
+const LEGACY_RECENTS_KEY = `${KEY_PREFIX}:recents`
 const FAV_EVENT = 'shadcn-admin-cn:favorites-changed'
 const RECENT_EVENT = 'shadcn-admin-cn:recents-changed'
 const MAX_RECENTS = 30
+
+/** 当前团队后缀：activeTeamId 为空时退回无后缀（理论上不会发生，种子必有默认团队） */
+function teamSuffix(): string {
+  const activeTeamId = useOrgStore.getState().activeTeamId
+  return activeTeamId === null ? 'global' : `team-${activeTeamId}`
+}
+
+function scopedKey(baseKey: string): string {
+  return `${KEY_PREFIX}:${baseKey}:${teamSuffix()}`
+}
 
 function readList(key: string): ViewRef[] {
   try {
@@ -41,17 +66,39 @@ function writeList(key: string, list: ViewRef[]) {
 }
 
 /**
- * 供 useSyncExternalStore 使用的视图 store。
- * 关键点：getSnapshot 必须返回缓存中的同一引用，直到数据真正变更
- * （否则 React 每次渲染都拿到新引用 → 无限重渲染 → "Maximum update depth exceeded"）。
- * 变更时 write() 会失效缓存并派发事件（同页 CustomEvent + 跨标签页 storage 事件）。
+ * v0.3.x → v0.4.0 一次性迁移：旧全局收藏/最近在首次读取时迁入当前团队 key。
+ * 迁移后立即删除旧 key，保证其它团队不会再次拷贝同一份数据。
  */
-function createViewStore(key: string, eventName: string) {
-  let cache: ViewRef[] | null = null
+function adoptLegacyOnce(scoped: string, legacy: string): ViewRef[] {
+  const list = readList(scoped)
+  if (list.length > 0) return list
+  const legacyList = readList(legacy)
+  if (legacyList.length === 0) return list
+  writeList(scoped, legacyList)
+  try {
+    localStorage.removeItem(legacy)
+  } catch {
+    // 忽略
+  }
+  return legacyList
+}
+
+/**
+ * 供 useSyncExternalStore 使用的团队作用域 store。
+ * - read()：key 随 activeTeamId 变化 → 单槽缓存 { suffix, list }；
+ *   变更事件回调会先 invalidate() 再触发 React 读取，快照引用稳定。
+ * - subscribe()：同时监听本 store 变更事件 + org store（团队切换）+ 跨标签页 storage。
+ */
+function createViewStore(baseKey: string, eventName: string, legacyKey: string) {
+  let cache: { suffix: string; list: ViewRef[] } | null = null
 
   const read = (): ViewRef[] => {
-    if (cache === null) cache = readList(key)
-    return cache
+    const suffix = teamSuffix()
+    if (cache !== null && cache.suffix === suffix) return cache.list
+    const key = scopedKey(baseKey)
+    const list = adoptLegacyOnce(key, legacyKey)
+    cache = { suffix, list }
+    return list
   }
 
   const invalidate = () => {
@@ -63,16 +110,29 @@ function createViewStore(key: string, eventName: string) {
       invalidate()
       cb()
     }
+    // 本页签内：收藏/最近写操作派发的 CustomEvent
     window.addEventListener(eventName, onChange)
-    window.addEventListener('storage', onChange)
+    // 跨标签页：storage 事件（只关心本 store 的 key 族）
+    const onStorage = (e: StorageEvent) => {
+      if (!e.key || !e.key.startsWith(`${KEY_PREFIX}:${baseKey}`)) return
+      onChange()
+    }
+    window.addEventListener('storage', onStorage)
+    // 团队切换：activeTeamId 变化 → 失效缓存并通知订阅者
+    const unsubscribeOrg = useOrgStore.subscribe((state, prev) => {
+      if (state.activeTeamId !== prev.activeTeamId) {
+        onChange()
+      }
+    })
     return () => {
       window.removeEventListener(eventName, onChange)
-      window.removeEventListener('storage', onChange)
+      window.removeEventListener('storage', onStorage)
+      unsubscribeOrg()
     }
   }
 
   const write = (list: ViewRef[]) => {
-    writeList(key, list)
+    writeList(scopedKey(baseKey), list)
     invalidate()
     window.dispatchEvent(new CustomEvent(eventName))
   }
@@ -80,8 +140,8 @@ function createViewStore(key: string, eventName: string) {
   return { read, subscribe, write }
 }
 
-const favoritesStore = createViewStore(FAVORITES_KEY, FAV_EVENT)
-const recentsStore = createViewStore(RECENTS_KEY, RECENT_EVENT)
+const favoritesStore = createViewStore('favorites', FAV_EVENT, LEGACY_FAVORITES_KEY)
+const recentsStore = createViewStore('recents', RECENT_EVENT, LEGACY_RECENTS_KEY)
 
 /** 供 useSyncExternalStore 使用（稳定快照 + 变更订阅） */
 export const favoritesExternalStore = {

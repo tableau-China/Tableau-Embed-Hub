@@ -14,6 +14,7 @@ import { Route as SplatRouteImport } from './routes/$'
 import { Route as FavoritesRouteImport } from './routes/favorites'
 import { Route as RecentsRouteImport } from './routes/recents'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as TeamsRouteImport } from './routes/teams'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as ViewsRouteImport } from './routes/views'
 import { Route as WorkbooksRouteImport } from './routes/workbooks'
@@ -43,6 +44,11 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TeamsRoute = TeamsRouteImport.update({
+  id: '/teams',
+  path: '/teams',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UsersRoute = UsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/favorites': typeof FavoritesRoute
   '/recents': typeof RecentsRoute
   '/settings': typeof SettingsRoute
+  '/teams': typeof TeamsRoute
   '/users': typeof UsersRoute
   '/views': typeof ViewsRoute
   '/workbooks': typeof WorkbooksRoute
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
   '/favorites': typeof FavoritesRoute
   '/recents': typeof RecentsRoute
   '/settings': typeof SettingsRoute
+  '/teams': typeof TeamsRoute
   '/users': typeof UsersRoute
   '/views': typeof ViewsRoute
   '/workbooks': typeof WorkbooksRoute
@@ -86,6 +94,7 @@ export interface FileRoutesById {
   '/favorites': typeof FavoritesRoute
   '/recents': typeof RecentsRoute
   '/settings': typeof SettingsRoute
+  '/teams': typeof TeamsRoute
   '/users': typeof UsersRoute
   '/views': typeof ViewsRoute
   '/workbooks': typeof WorkbooksRoute
@@ -98,6 +107,7 @@ export interface FileRouteTypes {
     | '/favorites'
     | '/recents'
     | '/settings'
+    | '/teams'
     | '/users'
     | '/views'
     | '/workbooks'
@@ -108,6 +118,7 @@ export interface FileRouteTypes {
     | '/favorites'
     | '/recents'
     | '/settings'
+    | '/teams'
     | '/users'
     | '/views'
     | '/workbooks'
@@ -118,6 +129,7 @@ export interface FileRouteTypes {
     | '/favorites'
     | '/recents'
     | '/settings'
+    | '/teams'
     | '/users'
     | '/views'
     | '/workbooks'
@@ -129,6 +141,7 @@ export interface RootRouteChildren {
   FavoritesRoute: typeof FavoritesRoute
   RecentsRoute: typeof RecentsRoute
   SettingsRoute: typeof SettingsRoute
+  TeamsRoute: typeof TeamsRoute
   UsersRoute: typeof UsersRoute
   ViewsRoute: typeof ViewsRoute
   WorkbooksRoute: typeof WorkbooksRoute
@@ -171,6 +184,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/teams': {
+      id: '/teams'
+      path: '/teams'
+      fullPath: '/teams'
+      preLoaderRoute: typeof TeamsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/users': {
       id: '/users'
       path: '/users'
@@ -201,6 +221,7 @@ const rootRouteChildren: RootRouteChildren = {
   FavoritesRoute: FavoritesRoute,
   RecentsRoute: RecentsRoute,
   SettingsRoute: SettingsRoute,
+  TeamsRoute: TeamsRoute,
   UsersRoute: UsersRoute,
   ViewsRoute: ViewsRoute,
   WorkbooksRoute: WorkbooksRoute,
