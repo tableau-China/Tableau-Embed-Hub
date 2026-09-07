@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
-import { Button, type ButtonProps } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 
 /**
  * 统一操作按钮（页面 / 弹窗通用，可反复使用）
@@ -39,6 +39,15 @@ export function ActionBar({
   )
 }
 
+/** 与 shadcn Button variant 取值保持一致（不依赖 ButtonProps 导出，兼容各分支基线） */
+type ActionButtonVariant =
+  | 'default'
+  | 'destructive'
+  | 'outline'
+  | 'secondary'
+  | 'ghost'
+  | 'link'
+
 export interface ActionButtonsProps {
   /** 次要按钮文案；不传则不渲染（单操作场景） */
   cancelLabel?: string
@@ -49,7 +58,7 @@ export interface ActionButtonsProps {
   onConfirm: () => void
   confirmDisabled?: boolean
   /** default=主要（保存/创建）；destructive=危险（删除）；outline=中性（关闭） */
-  confirmVariant?: ButtonProps['variant']
+  confirmVariant?: ActionButtonVariant
   className?: string
 }
 
