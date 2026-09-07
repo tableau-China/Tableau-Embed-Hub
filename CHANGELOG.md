@@ -6,12 +6,32 @@
 
 | 版本 | package.json | 侧边栏显示 | PROGRESS.md | CHANGELOG 条目 | 日期 |
 | --- | --- | --- | --- | --- | --- |
+| 0.4.1 | ✅ `0.4.1` | ✅ `v0.4.1`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#041---2026-09-04) | 2026-09-04 |
 | 0.4.0 | ✅ `0.4.0` | ✅ `v0.4.0`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#040---2026-09-04) | 2026-09-04 |
 | 0.2.1 | ✅ `0.2.1` | ✅ `v0.2.1` | ✅ 已同步 | ✅ [本节](#021---2026-08-16) | 2026-08-16 |
 | 0.2.0 | ✅ `0.2.0` | ✅ `v0.2.0` | ✅ 已同步 | ✅ [本节](#020---2026-08-16) | 2026-08-16 |
 | 0.1.0 | ✅ `0.1.0` | ✅ `v0.1.0` | ✅ 已同步 | ✅ [本节](#010---2026-08-16) | 2026-08-16 |
 
 > 约定：新版本发布时，先升 `package.json` 的 `version`，再更新本表与下方条目。
+
+## [0.4.1] - 2026-09-04
+
+多团队交互细节修正 + 操作按钮全局统一（users / teams 页面）。
+
+### Changed（变更）
+
+- **Team 次序稳定为创建次序**：`createTeam` 改为追加队尾；新增 `sortTeamsById`（id 升序，兜底兼容旧持久化数据乱序）；左上角 TeamSwitcher 下拉不再重排（移除原「当前团队置顶 + 名称排序」逻辑），切换只改选中项
+- **Default team 清晰标记**：TeamSwitcher 头部（正在使用默认团队时名称旁星标）、下拉列表（默认团队行 `★ Default` 徽章，与当前项 ✓ 并存）、/teams 页行内 `★ Default` 徽章（与 Active 徽章并存）
+- **公共操作按钮组件** `components/action-bar.tsx`（ActionBar / ActionButtons）：桌面右对齐、窄屏自动堆叠；新建/编辑/删除确认/关闭等按钮统一复用
+- **修复按钮落左问题**：CardHeader 基类 `flex-col` 与追加 `flex-row` 在窄视口冲突 → users/teams 页头改为显式行布局（标题 `flex-1`、按钮 `shrink-0` 恒右）
+- **新增成员/分配团队行右对齐**：成员管理对话框与用户↔团队对话框的 Add 行整体靠右（附小标题 Add a member / Assign to another team）
+- i18n en-US 新增：`teams.defaultLabel` / `teams.addMemberHint` / `users.addMembershipHint`
+
+### Verified（验证）
+
+- `tsc -b` ✅ / `vite build` ✅ / `pnpm check:i18n` ✅（212 keys）
+- CDP 几何实测（1440 / 820 / 400px × /users、/teams）：页头主按钮右缘 = 内容右缘 − padding；弹窗内主操作（Save changes / Create）恒为最右按钮
+- package.json `0.4.0` → `0.4.1`（四文件版本同步）
 
 ## [0.4.0] - 2026-09-04
 

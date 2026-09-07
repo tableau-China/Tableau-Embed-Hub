@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
-import { Button } from '@/components/ui/button'
+import { ActionButtons } from '@/components/action-bar'
 import {
   Dialog,
   DialogContent,
@@ -129,13 +129,13 @@ export function TeamDialog({ team, open, onOpenChange }: TeamDialogProps) {
             </div>
           </div>
         </div>
-        <DialogFooter className="sm:justify-end">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {t('common.cancel')}
-          </Button>
-          <Button onClick={handleSubmit}>
-            {editing ? t('common.save') : t('common.create')}
-          </Button>
+        <DialogFooter>
+          <ActionButtons
+            cancelLabel={t('common.cancel')}
+            onCancel={() => onOpenChange(false)}
+            confirmLabel={editing ? t('common.save') : t('common.create')}
+            onConfirm={handleSubmit}
+          />
         </DialogFooter>
       </DialogContent>
     </Dialog>

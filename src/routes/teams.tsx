@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { Info, Pencil, Plus, Trash2, Users } from 'lucide-react'
+import { Info, Pencil, Plus, Star, Trash2, Users } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -30,9 +30,10 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { TeamDialog } from '@/components/org/team-dialog'
+import { ActionButtons } from '@/components/action-bar'
 import { TeamLogo } from '@/components/org/team-logo'
 import { TeamMembersDialog } from '@/components/org/team-members-dialog'
-import { useOrgStore, type OrgTeam } from '@/stores/org-store'
+import { sortTeamsById, useOrgStore, type OrgTeam } from '@/stores/org-store'
 
 export const Route = createFileRoute('/teams')({
   component: TeamsPage,
@@ -68,6 +69,12 @@ function TeamsPage() {
     }
   }
 
+  // 当前用户的默认团队（成员关系 isDefault）；表格按创建次序（id 升序）展示
+  const orderedTeams = sortTeamsById(teams)
+  const defaultTeamId = members.find(
+    (m) => m.userId === currentUser?.id && m.isDefault,
+  )?.teamId
+
   const handleDelete = () => {
     if (!deletingTeam) return
     const name = deletingTeam.name
@@ -79,22 +86,25 @@ function TeamsPage() {
   return (
     <div className="flex flex-col gap-6">
       <Card>
-        <CardHeader className="flex-row items-start justify-between gap-4 space-y-0">
-          <div>
-            <CardTitle>{t('teams.title')}</CardTitle>
-            <CardDescription>{t('teams.subtitle')}</CardDescription>
+        <CardHeader>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <CardTitle>{t('teams.title')}</CardTitle>
+              <CardDescription>{t('teams.subtitle')}</CardDescription>
+            </div>
+            {isSuperAdmin && (
+              <Button
+                className="shrink-0"
+                onClick={() => {
+                  setEditingTeam(null)
+                  setFormOpen(true)
+                }}
+              >
+                <Plus />
+                {t('teams.newTeam')}
+              </Button>
+            )}
           </div>
-          {isSuperAdmin && (
-            <Button
-              onClick={() => {
-                setEditingTeam(null)
-                setFormOpen(true)
-              }}
-            >
-              <Plus />
-              {t('teams.newTeam')}
-            </Button>
-          )}
         </CardHeader>
         <CardContent>
           {!isSuperAdmin && (
@@ -123,8 +133,9 @@ function TeamsPage() {
                   </TableCell>
                 </TableRow>
               )}
-              {teams.map((team) => {
+              {orderedTeams.map((team) => {
                 const stats = statsOf(team.id)
+                const isDefault = team.id === defaultTeamId
                 return (
                   <TableRow key={team.id}>
                     <TableCell>
@@ -132,8 +143,18 @@ function TeamsPage() {
                         <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border bg-background">
                           <TeamLogo logo={team.logo} className="size-4" />
                         </span>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <span className="font-medium">{team.name}</span>
+                          {isDefault && (
+                            <Badge
+                              variant="outline"
+                              className="gap-1 border-amber-400/50 bg-amber-400/10 text-amber-700 dark:text-amber-400"
+                              title={t('teams.defaultTeam')}
+                            >
+                              <Star className="size-3 fill-amber-400 text-amber-400" />
+                              {t('teams.defaultLabel')}
+                            </Badge>
+                          )}
                           {team.id === activeTeamId && (
                             <Badge variant="secondary">
                               {t('teams.activeLabel')}
@@ -241,12 +262,13 @@ function TeamsPage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeletingTeam(null)}>
-              {t('common.cancel')}
-            </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              {t('teams.deleteTeam')}
-            </Button>
+            <ActionButtons
+              cancelLabel={t('common.cancel')}
+              onCancel={() => setDeletingTeam(null)}
+              confirmLabel={t('teams.deleteTeam')}
+              confirmVariant="destructive"
+              onConfirm={handleDelete}
+            />
           </DialogFooter>
         </DialogContent>
       </Dialog>

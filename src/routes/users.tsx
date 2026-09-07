@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { Info, Pencil, Plus, ShieldCheck, Star, Trash2, Users } from 'lucide-react'
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { ActionButtons } from '@/components/action-bar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -99,22 +100,25 @@ function UsersPage() {
   return (
     <div className="flex flex-col gap-6">
       <Card>
-        <CardHeader className="flex-row items-start justify-between gap-4 space-y-0">
-          <div>
-            <CardTitle>{t('users.title')}</CardTitle>
-            <CardDescription>{t('users.subtitle')}</CardDescription>
+        <CardHeader>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <CardTitle>{t('users.title')}</CardTitle>
+              <CardDescription>{t('users.subtitle')}</CardDescription>
+            </div>
+            {isSuperAdmin && (
+              <Button
+                className="shrink-0"
+                onClick={() => {
+                  setEditingUser(null)
+                  setFormOpen(true)
+                }}
+              >
+                <Plus />
+                {t('users.newUser')}
+              </Button>
+            )}
           </div>
-          {isSuperAdmin && (
-            <Button
-              onClick={() => {
-                setEditingUser(null)
-                setFormOpen(true)
-              }}
-            >
-              <Plus />
-              {t('users.newUser')}
-            </Button>
-          )}
         </CardHeader>
         <CardContent>
           {!isSuperAdmin && (
@@ -282,12 +286,13 @@ function UsersPage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeletingUser(null)}>
-              {t('common.cancel')}
-            </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              {t('users.delete')}
-            </Button>
+            <ActionButtons
+              cancelLabel={t('common.cancel')}
+              onCancel={() => setDeletingUser(null)}
+              confirmLabel={t('users.delete')}
+              confirmVariant="destructive"
+              onConfirm={handleDelete}
+            />
           </DialogFooter>
         </DialogContent>
       </Dialog>

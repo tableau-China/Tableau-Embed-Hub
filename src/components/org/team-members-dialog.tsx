@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { Star, Trash2, UserPlus } from 'lucide-react'
+import { Star, Trash2 } from 'lucide-react'
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { ActionBar, ActionButtons } from '@/components/action-bar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -225,12 +226,12 @@ export function TeamMembersDialog({
 
         {canEdit && candidates.length > 0 && (
           <div className="flex flex-col gap-2 border-t pt-3">
-            <div className="flex items-center gap-2">
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border bg-background text-muted-foreground">
-                <UserPlus className="size-4" />
-              </span>
+            <div className="text-xs font-medium text-muted-foreground">
+              {t('teams.addMemberHint')}
+            </div>
+            <ActionBar>
               <Select value={newUserId} onValueChange={setNewUserId}>
-                <SelectTrigger className="h-8 min-w-0 flex-1">
+                <SelectTrigger className="h-8 w-full sm:w-64">
                   <SelectValue placeholder={t('teams.selectUser')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -262,14 +263,16 @@ export function TeamMembersDialog({
               <Button size="sm" onClick={handleAdd}>
                 {t('common.add')}
               </Button>
-            </div>
+            </ActionBar>
           </div>
         )}
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {t('common.close')}
-          </Button>
+          <ActionButtons
+            confirmLabel={t('common.close')}
+            confirmVariant="outline"
+            onConfirm={() => onOpenChange(false)}
+          />
         </DialogFooter>
       </DialogContent>
     </Dialog>

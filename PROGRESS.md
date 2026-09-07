@@ -7,7 +7,7 @@
 - **目标**：从零构建管理后台模板（React 19 + TypeScript 7 + Vite 8 + Tailwind CSS v4 + shadcn/ui(Radix) + TanStack Router），包含 shadcn-admin 的全部基础功能，**不含** Tableau / AI 功能，v0.4.0 起含**多团队 + 全局用户**（参照 pg-explorer，无内部流程功能）；i18n 当前仅 **en-US**，中文/日文后期扩展。
 - **关键决策**：跳过 shadcn-admin 模板（无 Sat Naing 署名义务）、TypeScript 7.1.0-dev（next 开发版，验证未来升级，正式版发布后直接升级）、Vite 8.2.1 最新稳定、i18n 当前仅 en-US（zh-CN / zh-TW / ja-JP 后期扩展）。
 - **注意**：用户原指定路径 `/Users/xilejun/ds_Harness/shadcn_admin_cn` 不存在，实际目录在 `/Users/xilejun/WorkBuddy/ds_Harness/shadcn_admin_cn`。
-- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.4.0**）。
+- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.4.1**）。
 
 ---
 
@@ -49,6 +49,14 @@
 - ✅ **Header 重构**：面包屑改为当前页面标题（修复 "Page not found"）；新增 `language-toggle.tsx`（当前仅 en-US）；Settings 静态语言下拉移除
 - ✅ **Samples 项目限制**：`fetchWorkbooks` 追加 `filter=projectName:eq:Samples` → 列表仅返回 2 个工作簿
 - ✅ 版本同步 0.2.1（四文件）
+
+## ✅ v0.4.1（2026-09-04）— 多团队次序/Default 标记 + 操作按钮全局统一
+
+- ✅ **Team 次序 = 创建次序**：createTeam 追加队尾；新增 `sortTeamsById`（id 升序兜底旧数据）；TeamSwitcher 下拉不再重排、切换只改选中项
+- ✅ **Default team 标记**：切换器头部星标 / 下拉 `★ Default` 徽章 / /teams 页行内徽章（与 Active 并存）
+- ✅ **公共操作按钮** `components/action-bar.tsx`（ActionBar / ActionButtons，右对齐+窄屏堆叠）：users/teams 页头、新建/编辑/删除/成员管理全部复用
+- ✅ 修复 CardHeader flex-col/flex-row 冲突导致按钮落左（窄视口）——显式行布局替代
+- ✅ 验证：tsc ✅ / build ✅ / check:i18n ✅（212 keys）/ CDP 三档宽度几何断言 ✅；版本同步 0.4.1
 
 ## ✅ v0.4.0（2026-09-04）— 多团队 + 全局用户（公开框架线）
 

@@ -98,7 +98,8 @@
     "switchedTo": "Viewing as {{name}}",
     "noTeamsWarning": "This user is not a member of any team yet",
     "removeTeam": "Remove from team",
-    "removedFromTeam": "Removed from {{team}}"
+    "removedFromTeam": "Removed from {{team}}",
+    "addMembershipHint": "Assign to another team"
   },
   "tasks": {
     "title": "Tasks",
@@ -173,7 +174,9 @@
     "selectTeam": "Select team…",
     "selectTeamRequired": "Select a team to add",
     "manageMembers": "Members",
-    "readOnlyHint": "Only system administrators can create, edit or delete teams."
+    "readOnlyHint": "Only system administrators can create, edit or delete teams.",
+    "defaultLabel": "Default",
+    "addMemberHint": "Add a member"
   },
   "favorites": {
     "title": "Favorites",

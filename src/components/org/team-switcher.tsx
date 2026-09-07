@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Building2, Check, ChevronsUpDown, Plus, ShieldAlert } from 'lucide-react'
+import {
+  Building2,
+  Check,
+  ChevronsUpDown,
+  Plus,
+  ShieldAlert,
+  Star,
+} from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 
 import {
@@ -19,7 +26,7 @@ import {
 } from '@/components/ui/sidebar'
 import { TeamLogo } from '@/components/org/team-logo'
 import { TeamDialog } from '@/components/org/team-dialog'
-import { useOrgStore } from '@/stores/org-store'
+import { sortTeamsById, useOrgStore } from '@/stores/org-store'
 import { cn } from '@/lib/utils'
 
 /**
@@ -43,10 +50,20 @@ export function TeamSwitcher() {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
 
-  const myTeams = teams.filter((team) =>
-    members.some((m) => m.userId === currentUserId && m.teamId === team.id),
+  // 当前用户可用团队：按创建次序（id 升序）展示；切换只改 activeTeamId，不重排
+  const myTeams = sortTeamsById(
+    teams.filter((team) =>
+      members.some((m) => m.userId === currentUserId && m.teamId === team.id),
+    ),
   )
   const activeTeam = myTeams.find((t) => t.id === activeTeamId) ?? myTeams[0] ?? null
+
+  // 当前用户的默认团队（用户切到其他 team 时会被选中的那个）
+  const defaultTeamId =
+    currentUserId === null
+      ? null
+      : (members.find((m) => m.userId === currentUserId && m.isDefault)?.teamId ??
+        null)
 
   // 当前用户尚未加入任何团队
   if (activeTeam === null) {
@@ -90,10 +107,7 @@ export function TeamSwitcher() {
     )
   }
 
-  const sortedTeams = [
-    ...myTeams.filter((team) => team.id !== activeTeam.id),
-  ].sort((a, b) => a.name.localeCompare(b.name))
-  const listTeams = [activeTeam, ...sortedTeams]
+  const isActiveDefault = activeTeam.id === defaultTeamId
 
   return (
     <SidebarMenu>
@@ -109,8 +123,21 @@ export function TeamSwitcher() {
               <div className="flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                 <TeamLogo logo={activeTeam.logo} className="size-4" />
               </div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">{activeTeam.name}</span>
+              <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <span className="truncate font-semibold">{activeTeam.name}</span>
+                  {isActiveDefault && (
+                    <span
+                      title={t('teams.defaultTeam')}
+                      className="inline-flex shrink-0"
+                    >
+                      <Star
+                        className="size-3.5 fill-amber-400 text-amber-400"
+                        aria-label={t('teams.defaultTeam')}
+                      />
+                    </span>
+                  )}
+                </span>
                 <span className="truncate text-xs text-muted-foreground">
                   {activeTeam.description || t('nav.noDescription')}
                 </span>
@@ -127,7 +154,7 @@ export function TeamSwitcher() {
             <DropdownMenuLabel className="text-xs text-muted-foreground">
               {t('nav.switchTeam')}
             </DropdownMenuLabel>
-            {listTeams.map((team) => (
+            {myTeams.map((team) => (
               <DropdownMenuItem
                 key={team.id}
                 onClick={() => {
@@ -140,8 +167,17 @@ export function TeamSwitcher() {
                   <TeamLogo logo={team.logo} className="size-4 shrink-0" />
                 </div>
                 <span className="flex-1 truncate">{team.name}</span>
+                {team.id === defaultTeamId && (
+                  <span
+                    className="inline-flex shrink-0 items-center gap-1 rounded-md border border-amber-400/40 bg-amber-400/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400"
+                    title={t('teams.defaultTeam')}
+                  >
+                    <Star className="size-2.5 fill-amber-400 text-amber-400" />
+                    {t('teams.defaultLabel')}
+                  </span>
+                )}
                 {team.id === activeTeam.id && (
-                  <Check className="size-4 text-primary" />
+                  <Check className="size-4 shrink-0 text-primary" />
                 )}
               </DropdownMenuItem>
             ))}

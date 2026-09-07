@@ -138,6 +138,15 @@ export function userMemberships(members: TeamMember[], userId: number): TeamMemb
   return members.filter((m) => m.userId === userId)
 }
 
+/**
+ * 团队按创建次序展示：id 自增单调，升序即创建次序。
+ * 数组本身由 createTeam 保证追加到末尾，此函数供展示层兜底
+ * （兼容 v0.4.0 早期持久化数据中新建团队被插入队首的乱序）。
+ */
+export function sortTeamsById<T extends OrgTeam>(teams: readonly T[]): T[] {
+  return [...teams].sort((a, b) => a.id - b.id)
+}
+
 /* ============================== 种子数据 ============================== */
 
 const SEED_TEAMS: OrgTeam[] = [
@@ -381,7 +390,8 @@ export const useOrgStore = create<OrgState>()(
               ? [...s.members, member]
               : s.members
           return {
-            teams: [team, ...s.teams],
+            // 新团队追加到末尾：数组次序 = 创建次序（id 自增单调，见 sortTeamsById）
+            teams: [...s.teams, team],
             members,
             activeTeamId: team.id,
           }
