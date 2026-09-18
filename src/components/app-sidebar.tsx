@@ -27,13 +27,27 @@ import {
 import { TeamSwitcher } from '@/components/org/team-switcher'
 import { UserMenu } from '@/components/org/user-menu'
 import { APP_VERSION } from '@/config/app'
+import { useTeamSlug } from '@/hooks/use-current-team'
+import { teamScopedPath } from '@/lib/team-context'
+
+/**
+ * 侧边栏导航分为两层（v0.5.0 起团队身份进入 URL）：
+ *
+ * - **团队作用域**（GENERAL_ITEMS）：URL 形如 `/t/{slug}/workbooks`，
+ *   `to` 写路由模式，渲染时用当前团队 slug 填充 params；
+ * - **跨团队管理页**（SETTINGS_ITEMS）：URL 不带 slug（对齐 pg-explorer 的 /admin/*），
+ *   团队管理、用户管理、系统设置本就跨越单个团队。
+ */
+
+/** 团队作用域路由模式前缀（导航条目据此推导站内相对路径） */
+const TEAM_SCOPE_PATTERN = '/t/$teamSlug'
 
 const GENERAL_ITEMS = [
-  { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard },
-  { to: '/favorites', labelKey: 'nav.favorites', icon: Star },
-  { to: '/recents', labelKey: 'nav.recents', icon: Clock },
-  { to: '/workbooks', labelKey: 'nav.workbooks', icon: BookOpen },
-  { to: '/views', labelKey: 'nav.views', icon: MonitorPlay },
+  { to: '/t/$teamSlug', labelKey: 'nav.dashboard', icon: LayoutDashboard },
+  { to: '/t/$teamSlug/favorites', labelKey: 'nav.favorites', icon: Star },
+  { to: '/t/$teamSlug/recents', labelKey: 'nav.recents', icon: Clock },
+  { to: '/t/$teamSlug/workbooks', labelKey: 'nav.workbooks', icon: BookOpen },
+  { to: '/t/$teamSlug/views', labelKey: 'nav.views', icon: MonitorPlay },
 ] as const
 
 const SETTINGS_ITEMS = [
@@ -42,10 +56,21 @@ const SETTINGS_ITEMS = [
   { to: '/settings', labelKey: 'nav.settings', icon: Settings },
 ] as const
 
-function NavList({
+/** 把 `/t/$teamSlug/flows/foc` 还原成站内相对路径 `/flows/foc`（首页为 ''） */
+function teamRelative(pattern: string): string {
+  return pattern.slice(TEAM_SCOPE_PATTERN.length)
+}
+
+/**
+ * 团队作用域导航：slug 缺失（用户尚无任何团队）时渲染为禁用项，
+ * 避免拼出 `/t//workbooks` 这类无效链接。
+ */
+function TeamNavList({
   items,
+  teamSlug,
 }: {
-  items: ReadonlyArray<{ to: string; labelKey: string; icon: typeof LayoutDashboard }>
+  items: typeof GENERAL_ITEMS
+  teamSlug: string | null
 }) {
   const { t } = useTranslation()
   const { pathname } = useLocation()
@@ -54,7 +79,48 @@ function NavList({
     <SidebarMenu>
       {items.map((item) => {
         const Icon = item.icon
-        const isActive = item.to === '/' ? pathname === '/' : pathname.startsWith(item.to)
+        const relative = teamRelative(item.to)
+        const resolved = teamSlug ? teamScopedPath(teamSlug, relative) : null
+        const isActive =
+          resolved !== null &&
+          (relative === '' ? pathname === resolved : pathname.startsWith(resolved))
+
+        if (!teamSlug) {
+          return (
+            <SidebarMenuItem key={item.to}>
+              <SidebarMenuButton disabled tooltip={t('nav.noTeamAvailable')}>
+                <Icon />
+                <span>{t(item.labelKey)}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )
+        }
+
+        return (
+          <SidebarMenuItem key={item.to}>
+            <SidebarMenuButton asChild isActive={isActive} tooltip={t(item.labelKey)}>
+              <Link to={item.to} params={{ teamSlug }}>
+                <Icon />
+                <span>{t(item.labelKey)}</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        )
+      })}
+    </SidebarMenu>
+  )
+}
+
+/** 跨团队管理页导航（无 slug） */
+function NavList({ items }: { items: typeof SETTINGS_ITEMS }) {
+  const { t } = useTranslation()
+  const { pathname } = useLocation()
+
+  return (
+    <SidebarMenu>
+      {items.map((item) => {
+        const Icon = item.icon
+        const isActive = pathname.startsWith(item.to)
         return (
           <SidebarMenuItem key={item.to}>
             <SidebarMenuButton asChild isActive={isActive} tooltip={t(item.labelKey)}>
@@ -72,6 +138,8 @@ function NavList({
 
 export function AppSidebar() {
   const { t } = useTranslation()
+  // 当前团队 slug 来自 URL（/t/{slug}/...）；管理页回退 activeTeamId
+  const teamSlug = useTeamSlug()
 
   return (
     <Sidebar collapsible="icon">
@@ -86,7 +154,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel>{t('nav.general')}</SidebarGroupLabel>
           <SidebarGroupContent>
-            <NavList items={GENERAL_ITEMS} />
+            <TeamNavList items={GENERAL_ITEMS} teamSlug={teamSlug} />
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>

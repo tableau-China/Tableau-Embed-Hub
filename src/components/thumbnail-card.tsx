@@ -75,10 +75,12 @@ export interface ThumbnailCardProps {
   thumbnailUrl?: string
   /** 自定义缩略图加载器（如 Tableau previewImage 需带认证头；返回 Blob） */
   thumbnailLoader?: (id: string) => Promise<Blob | null>
-  /** 必需：点击卡片跳转路径 */
+  /** 必需：点击卡片跳转路径（可为含 $teamSlug 的路由模式，配合 linkParams 使用） */
   linkTo: string
   /** 跳转搜索参数（如 /views 的 workbook/view） */
   linkSearch?: { workbook?: string; view?: string }
+  /** 跳转路径参数（团队作用域路由需要 teamSlug） */
+  linkParams?: Record<string, string>
 
   // ---- 变体与样式 ----
   variant?: ThumbnailCardVariant
@@ -450,6 +452,7 @@ export function ThumbnailCard({
   thumbnailLoader,
   linkTo,
   linkSearch,
+  linkParams,
   variant = 'card',
   aspectRatio,
   className = '',
@@ -533,7 +536,7 @@ export function ThumbnailCard({
   // ---- 紧凑模式渲染 ----
   if (isCompact) {
     return (
-      <Link to={linkTo as never} search={linkSearch as never} className='group block'>
+      <Link to={linkTo as never} params={linkParams as never} search={linkSearch as never} className='group block'>
         <div
           ref={thumbnailRef}
           className={`aspect-[4/3] bg-muted rounded overflow-hidden relative ${className}`}
@@ -564,7 +567,7 @@ export function ThumbnailCard({
   return (
     <div className={cn('group rounded-md overflow-hidden border bg-card hover:shadow-md transition-shadow', className)}>
       {/* 缩略图区域 */}
-      <Link to={linkTo as never} search={linkSearch as never} className='block'>
+      <Link to={linkTo as never} params={linkParams as never} search={linkSearch as never} className='block'>
         <div ref={thumbnailRef} className='bg-muted relative' style={{ aspectRatio: resolvedAspect }}>
           {thumbnailBody}
           {showFavorite && onToggleFavorite && (
@@ -583,7 +586,7 @@ export function ThumbnailCard({
       <div className={cn('p-3 space-y-1', contentClassName)}>
         {/* 第一行：标题 + titleSuffix + info + 更多 */}
         <div className='flex items-start gap-1.5'>
-          <Link to={linkTo as never} search={linkSearch as never} className='flex-1 min-w-0'>
+          <Link to={linkTo as never} params={linkParams as never} search={linkSearch as never} className='flex-1 min-w-0'>
             <p className='font-medium text-sm truncate leading-tight'>
               {name}
               {titleSuffix && <span className='font-normal text-muted-foreground ml-1'>{titleSuffix}</span>}

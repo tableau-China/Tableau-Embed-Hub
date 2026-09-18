@@ -1,100 +1,18 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { Activity, ClipboardList, DollarSign, Users } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { activeTeamSlug } from '@/lib/team-context'
 
+/**
+ * 根路径 `/` —— 重定向到当前团队的团队作用域首页 `/t/{slug}`。
+ *
+ * v0.5.0 起团队身份进入 URL：所有工作区页面都挂在 /t/{slug} 下，
+ * `/` 只是入口，不再直接渲染 dashboard。
+ * 当前用户尚无任何团队时改跳 /teams（管理员可在此创建团队）。
+ */
 export const Route = createFileRoute('/')({
-  component: DashboardPage,
+  beforeLoad: () => {
+    const teamSlug = activeTeamSlug()
+    if (!teamSlug) throw redirect({ to: '/teams', replace: true })
+    throw redirect({ to: '/t/$teamSlug', params: { teamSlug }, replace: true })
+  },
 })
-
-const RECENT_ACTIVITY = [
-  { id: 1, name: 'Alice Chen', initials: 'AC', action: 'dashboard.activity.userCreated' },
-  { id: 2, name: 'Bob Martin', initials: 'BM', action: 'dashboard.activity.taskCompleted' },
-  { id: 3, name: 'Carol White', initials: 'CW', action: 'dashboard.activity.settingsChanged' },
-  { id: 4, name: 'Dave Kim', initials: 'DK', action: 'dashboard.activity.login' },
-]
-
-function DashboardPage() {
-  const { t } = useTranslation()
-
-  const stats = [
-    { label: t('dashboard.totalUsers'), value: '2,431', icon: Users },
-    { label: t('dashboard.activeTasks'), value: '128', icon: ClipboardList },
-    { label: t('dashboard.revenue'), value: '$48,290', icon: DollarSign },
-    { label: t('dashboard.uptime'), value: '99.98%', icon: Activity },
-  ]
-
-  return (
-    <div className="flex flex-col gap-6">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {stats.map((stat) => {
-          const Icon = stat.icon
-          return (
-            <Card key={stat.label}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {stat.label}
-                </CardTitle>
-                <Icon className="text-muted-foreground size-4" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('dashboard.recentActivity')}</CardTitle>
-          <CardDescription>{t('dashboard.subtitle')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead>Activity</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {RECENT_ACTIVITY.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="size-8">
-                        <AvatarImage src="" alt={item.name} />
-                        <AvatarFallback>{item.initials}</AvatarFallback>
-                      </Avatar>
-                      <span className="font-medium">{item.name}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {t(item.action)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
-  )
-}

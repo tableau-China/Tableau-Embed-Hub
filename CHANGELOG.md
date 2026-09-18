@@ -6,6 +6,7 @@
 
 | 版本 | package.json | 侧边栏显示 | PROGRESS.md | CHANGELOG 条目 | 日期 |
 | --- | --- | --- | --- | --- | --- |
+| 0.5.0 | ✅ `0.5.0` | ✅ `v0.5.0`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#050---2026-09-18) | 2026-09-18 |
 | 0.4.2 | ✅ `0.4.2` | ✅ `v0.4.2`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#042---2026-09-18) | 2026-09-18 |
 | 0.4.1 | ✅ `0.4.1` | ✅ `v0.4.1`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#041---2026-09-04) | 2026-09-04 |
 | 0.4.0 | ✅ `0.4.0` | ✅ `v0.4.0`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#040---2026-09-04) | 2026-09-04 |
@@ -15,6 +16,43 @@
 
 > 约定：新版本发布时，先升 `package.json` 的 `version`，再更新本表与下方条目。
 
+## [0.5.0] - 2026-09-18
+
+**团队身份进入 URL**：每个团队拥有独立的 URL 前缀 `/t/{slug}/...`，不同团队的工作区页面不再共用同一路由（对齐 pg-explorer 的 `/t/{slug}` + `/admin/*` 划分）。此前 slug 只存在 store 与 localStorage 里，URL 无法表达「当前是哪个团队」——分享链接丢失团队、同一浏览器多标签页无法并存两个团队、同一页面在不同团队间无从区分。本次把 URL 确立为团队身份的唯一事实来源。
+
+> 与 v0.4.2 的衔接：上一版把 `slug` 收紧为「新建时手工输入、仅 ASCII、创建后不可改」的稳定标识，正好成为 URL 中可靠的团队键 —— 链接可读、可分享，且**改团队名不会让已发出的链接失效**（`/t/acme_hq/views` 永远指向同一个团队）。本版本因此不做 slug 的任何派生或规范化。
+
+### Added（新增）
+
+- **团队 URL 上下文解析层** `src/lib/team-context.ts`：`parseTeamSlugFromPath` / `findTeamBySlug` / `teamScopedPath` / `resolveCurrentTeam` / `stripTeamPrefix` / `isUserMemberOfTeam` / `userDefaultTeam` / `activeTeamSlug()`（命令式读取，供 beforeLoad 与重定向桩使用）——纯函数为主，URL 优先、store 回退，供导航、数据分区共用同一套判断
+- **React 侧读取入口** `src/hooks/use-current-team.ts`：`useCurrentTeam()`（订阅 pathname + org store）、`useTeamSlug()`（侧边栏导航前缀的唯一来源）
+- **团队作用域布局路由** `src/routes/t.$teamSlug.tsx`：用 URL slug 校验团队并同步 `activeTeamId`；两类兜底页（slug 不存在 → Team not found、非成员 → No access，均带可操作出口），不再渲染半截页面
+- **团队作用域页面**：`t.$teamSlug.index.tsx`（Dashboard）、`.favorites`、`.recents`、`.workbooks`、`.views`（原扁平页面迁移，内容不变，仅路由与链接前缀）
+- **旧路径兼容桩**：`/`、`/favorites`、`/recents`、`/workbooks`、`/views` 保留为 `beforeLoad` 重定向到团队作用域路径（`/views` 旧链接的 `?workbook=&view=` search 参数原样透传）；当前用户无任何团队时统一落到 `/teams`
+- **团队路由浏览器校验** `scripts/check-team-routes.mjs`（`pnpm check:team-routes`）：Node 24 内置 WebSocket 直连 Chrome CDP，14 项断言——根路径与旧路径重定向、未知 slug / 非成员兜底页、管理页无 slug、侧边栏链接前缀、收藏按 URL 团队分区、真实点击 TeamSwitcher 与 UserMenu
+- **i18n** `teamRoute.*` 7 个 key（Team not found / No access / 回退按钮文案）
+
+### Changed（变更）
+
+- **侧边栏导航按团队前缀生成** `src/components/app-sidebar.tsx`：拆成两层——`GENERAL_ITEMS` 用路由模式（`/t/$teamSlug/workbooks`）配合 `useTeamSlug()` 填充 params（不再拼接字符串）；`SETTINGS_ITEMS`（`/users`、`/teams`、`/settings`）保持无 slug 的跨团队管理面。无团队时团队条目渲染为禁用项，避免拼出 `/t//workbooks`
+- **TeamSwitcher 切换团队 = 切换 URL 前缀** `src/components/org/team-switcher.tsx`：高亮团队改由 URL 决定（`useCurrentTeam()`），切换时 `setActiveTeam` + `navigate({ href })` 保留同级子路径——所有团队共用同一套页面，切团队相当于「换个站点看同一个页面」；管理页上则回到团队首页
+- **收藏 / 最近浏览改为 URL 优先分区** `src/lib/view-store.ts`：`teamSuffix()` 先用 pathname 里的 `/t/{slug}` 解析团队，管理页回退 `activeTeamId`。修复两个隐患——①布局把 slug 同步到 activeTeamId 存在一帧延迟，以 URL 为准可保证首帧就落在正确分区；②多标签页可各自停在 `/t/A` 与 `/t/B`，单一 activeTeamId 无法表达
+- **Header 标题解析支持 slug 前缀** `src/components/header.tsx`：`/t/{slug}/xxx` 跳过 `t` 与 slug 两段再取一级路由段，管理页仍取第一段
+- **UserMenu 切换身份后落到合法团队** `src/components/org/user-menu.tsx`：新身份不属于当前 URL 的团队时跳到其默认团队，避免停在「无权限」兜底页；无任何团队时跳 `/teams`
+- **ThumbnailCard** 新增 `linkParams` 属性（团队作用域路由需要 teamSlug），三处 `Link` 同步透传
+
+### Verified（验证）
+
+- `pnpm build`（tsc -b + vite build）✅；`pnpm typecheck` ✅；`pnpm check:i18n` ✅
+- `pnpm check:team-routes` ✅ **14/14**：`/`→`/t/acme_hq`、`/workbooks`→`/t/acme_hq/workbooks`、`/views?view=abc` search 透传、`/t/acme_analytics/recents` 直达、未知 slug→Team not found、`/users` `/teams` `/settings` 无 slug 且侧边栏回退 activeTeamId、侧边栏链接全部带当前 slug、`team-1` 收藏在 acme_analytics 下不可见而在 acme_hq 下可见、点击 TeamSwitcher 后 URL 变 `/t/acme_analytics/workbooks`（保留同级子路径）、点击 UserMenu 切到 Dave Kim 后跳到其默认团队 `/t/acme_data_platform`、再访问 `/t/acme_hq` 显示 No access
+- `bash scripts/check-public-paths.sh` ✅（确认本版本未引入任何内部内容路径）
+- `pnpm lint` ⚠️ 无法运行：typescript-eslint 8.67 尚不支持 TS 7.0（模块加载期即报错，与本版本无关，属既有工具链问题）
+- package.json `0.4.2` → `0.5.0`（四文件版本同步）
+
+### 遗留（Known）
+
+- `/teams`、`/users` 仍是跨团队管理页（无 slug）；若后续需要「团队内成员/设置」视图，按 pg-explorer 的做法应是 `/t/{slug}/users` 与管理面 `/admin/users` 并存
+
 ## [0.4.2] - 2026-09-18
 
 Team `slug` 改为**新建时手工输入**的稳定标识（仅英文、数字、下划线），不再由团队名派生。
@@ -23,7 +61,7 @@ Team `slug` 改为**新建时手工输入**的稳定标识（仅英文、数字�
 
 - `createTeam` 入参新增**必填** `slug`：`{ name, slug, description, logo }`（此前由名称自动生成）。
 - 移除导出 `slugify()` / `uniqueSlug()` / `nextTeamSlug()`；新增 `TEAM_SLUG_PATTERN` / `isValidTeamSlug()` / `sanitizeTeamSlug()` / `teamSlugIssue()`。
-- 种子团队 slug 改为下划线形式（`acme-hq` → `acme_hq`、`acme-analytics` → `acme_analytics`、`acme-data-platform` → `acme_data_platform`），仅影响全新环境；不做自动迁移，已有持久化数据里的旧 slug **保持原值不变**（避免静默改写下游的映射键）。
+- 种子团队 slug 改为下划线形式（`acme_hq` → `acme_hq`、`acme_analytics` → `acme_analytics`、`acme_data_platform` → `acme_data_platform`），仅影响全新环境；不做自动迁移，已有持久化数据里的旧 slug **保持原值不变**（避免静默改写下游的映射键）。
 
 ### Fixed（修复）
 

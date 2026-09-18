@@ -1,13 +1,13 @@
 # shadcn-admin-cn 项目进度（PROGRESS）
 
-> 更新于 2026-09-04 ｜ 项目根目录：`/Users/xilejun/WorkBuddy/ds_Harness/shadcn_admin_cn`
+> 更新于 2026-09-18 ｜ 项目根目录：`/Users/xilejun/WorkBuddy/ds_Harness/shadcn_admin_cn`
 
 ## 项目概况
 
-- **目标**：从零构建管理后台模板（React 19 + TypeScript 7 + Vite 8 + Tailwind CSS v4 + shadcn/ui(Radix) + TanStack Router），包含 shadcn-admin 的全部基础功能，**不含** Tableau / AI 功能，v0.4.0 起含**多团队 + 全局用户**（参照 pg-explorer，无内部流程功能）；i18n 当前仅 **en-US**，中文/日文后期扩展。
+- **目标**：从零构建管理后台模板（React 19 + TypeScript 7 + Vite 8 + Tailwind CSS v4 + shadcn/ui(Radix) + TanStack Router），包含 shadcn-admin 的全部基础功能，**不含** Tableau / AI 功能，v0.4.0 起含**多团队 + 全局用户**（参照 pg-explorer，无内部流程功能），v0.5.0 起**团队身份进入 URL**（`/t/{slug}/...`，对齐 pg-explorer 的 `/t/{slug}` + `/admin/*` 划分）；i18n 当前仅 **en-US**，中文/日文后期扩展。
 - **关键决策**：跳过 shadcn-admin 模板（无 Sat Naing 署名义务）、TypeScript 7.1.0-dev（next 开发版，验证未来升级，正式版发布后直接升级）、Vite 8.2.1 最新稳定、i18n 当前仅 en-US（zh-CN / zh-TW / ja-JP 后期扩展）。
 - **注意**：用户原指定路径 `/Users/xilejun/ds_Harness/shadcn_admin_cn` 不存在，实际目录在 `/Users/xilejun/WorkBuddy/ds_Harness/shadcn_admin_cn`。
-- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.4.2**）。
+- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.5.0**）。
 
 ---
 
@@ -49,6 +49,23 @@
 - ✅ **Header 重构**：面包屑改为当前页面标题（修复 "Page not found"）；新增 `language-toggle.tsx`（当前仅 en-US）；Settings 静态语言下拉移除
 - ✅ **Samples 项目限制**：`fetchWorkbooks` 追加 `filter=projectName:eq:Samples` → 列表仅返回 2 个工作簿
 - ✅ 版本同步 0.2.1（四文件）
+
+## ✅ v0.5.0（2026-09-18）— 团队身份进入 URL（`/t/{slug}/...`）
+
+参照 pg-explorer 的团队 slug 路由：工作区页面全部挂到 `/t/{slug}` 下，跨团队管理页保持无 slug（对标对方的 `/admin/*`）。此前 slug 只在 store/localStorage 里，URL 无法表达团队，导致多团队共用同一路由、分享与多标签页失效。
+
+- ✅ **解析层** `src/lib/team-context.ts`：`parseTeamSlugFromPath` / `resolveCurrentTeam` / `teamScopedPath` / `stripTeamPrefix` / `userDefaultTeam` / `activeTeamSlug()`（命令式）；纯函数为主，URL 优先、store 回退
+- ✅ **React 读取入口** `src/hooks/use-current-team.ts`：`useCurrentTeam()` / `useTeamSlug()`（订阅 pathname + org store）
+- ✅ **布局路由** `src/routes/t.$teamSlug.tsx`：slug 校验 + `activeTeamId` 单向同步（仅值变化时写盘）+ Team not found / No access 两类兜底页
+- ✅ **页面迁移**：`t.$teamSlug.{index,favorites,recents,workbooks,views}`（内容不变，仅路由与链接前缀）
+- ✅ **旧路径兼容桩**：`/`、`/favorites`、`/recents`、`/workbooks`、`/views`（search 透传）→ 重定向到团队作用域路径
+- ✅ **侧边栏**（`app-sidebar.tsx`）：团队条目用路由模式 + `params` 填充（不再拼字符串）；管理条目无 slug；无团队时禁用
+- ✅ **TeamSwitcher**：切团队 = 切 URL 前缀并保留同级子路径（`navigate({ href })`）；高亮由 URL 决定
+- ✅ **view-store**：分区后缀改为 URL 优先 —— 修掉「slug→activeTeamId 有一帧延迟」与「多标签页无法并存两个团队」两个隐患
+- ✅ **Header / UserMenu / ThumbnailCard**：标题解析跳过 `t/{slug}` 两段；切身份后落到合法团队；`linkParams` 透传 teamSlug
+- ✅ **校验脚本** `scripts/check-team-routes.mjs`（`pnpm check:team-routes`）：Chrome CDP 直驱（含真实点击 TeamSwitcher / UserMenu），14/14 通过
+- ✅ 验证：`pnpm build` ✅ / `pnpm typecheck` ✅ / `pnpm check:i18n` ✅ / `pnpm check:team-routes` ✅ 14/14 / `scripts/check-public-paths.sh` ✅
+- ✅ 版本同步 0.5.0（package.json / APP_VERSION / PROGRESS.md / CHANGELOG.md）
 
 ## ✅ v0.4.2（2026-09-18）— Team slug 改为新建时手工输入（仅英文/数字/下划线）
 

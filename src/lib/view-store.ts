@@ -1,10 +1,13 @@
+import { parseTeamSlugFromPath } from '@/lib/team-context'
 import { useOrgStore } from '@/stores/org-store'
 
 /**
  * 收藏 / 最近浏览 store —— 按 Team 隔离（对齐 pg-explorer 的团队作用域语义）。
  *
- * - localStorage key 带当前 activeTeamId 后缀（如 shadcn-admin-cn:favorites:team-1）
- * - 切换团队时（org store activeTeamId 变化）自动失效缓存并触发订阅方重渲染
+ * - localStorage key 带当前团队后缀（如 shadcn-admin-cn:favorites:team-1）
+ * - 团队身份以 **URL 中的 /t/{slug}** 为准（v0.5.0 起团队进入路由），
+ *   管理页等无 slug 路径回退 org store 的 activeTeamId
+ * - 切换团队时（URL slug 变化或 activeTeamId 变化）自动失效缓存并触发订阅方重渲染
  * - v0.4.0 升级迁移：旧的无后缀全局数据首次读取时迁入当前团队，之后清除，避免多团队重复拷贝
  *
  * 关键点：getSnapshot 必须返回缓存中的同一引用，直到数据真正变更
@@ -37,9 +40,24 @@ const FAV_EVENT = 'shadcn-admin-cn:favorites-changed'
 const RECENT_EVENT = 'shadcn-admin-cn:recents-changed'
 const MAX_RECENTS = 30
 
-/** 当前团队后缀：activeTeamId 为空时退回无后缀（理论上不会发生，种子必有默认团队） */
+/**
+ * 当前团队后缀（localStorage key 的分区标识）：
+ * 优先用 URL 里的 /t/{slug} 解析出团队 —— URL 是团队身份的权威来源；
+ * 无 slug 的跨团队管理页回退 activeTeamId；两者都没有时落到 global。
+ *
+ * 以 URL 优先的原因：布局把 slug 同步到 activeTeamId 是一个 effect，
+ * 存在「URL 已切到 B、activeTeamId 仍是 A」的一帧；此外同一浏览器的多个标签页
+ * 可以各自停在 /t/A 与 /t/B，此时 activeTeamId 无法表达两个团队。
+ */
 function teamSuffix(): string {
-  const activeTeamId = useOrgStore.getState().activeTeamId
+  const { teams, activeTeamId } = useOrgStore.getState()
+
+  if (typeof window !== 'undefined') {
+    const slug = parseTeamSlugFromPath(window.location.pathname)
+    const team = slug ? teams.find((t) => t.slug === slug) : undefined
+    if (team) return `team-${team.id}`
+  }
+
   return activeTeamId === null ? 'global' : `team-${activeTeamId}`
 }
 

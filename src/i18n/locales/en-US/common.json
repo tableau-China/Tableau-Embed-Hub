@@ -229,6 +229,15 @@
     "unfavorited": "Removed from favorites",
     "backToWorkbooks": "Back to Workbooks"
   },
+  "teamRoute": {
+    "notFoundTitle": "Team not found",
+    "notFoundMessage": "No team matches the address \"{{slug}}\". The link may be outdated, or the team was renamed or removed.",
+    "noAccessTitle": "You don't have access to this team",
+    "noAccessMessage": "\"{{name}}\" is not one of your teams. Ask an administrator to add you, or open one of your own teams.",
+    "backHome": "Go to dashboard",
+    "manageTeams": "Manage teams",
+    "switchToMyTeam": "Open my team"
+  },
   "notFound": {
     "title": "Page not found",
     "message": "The page you are looking for does not exist.",

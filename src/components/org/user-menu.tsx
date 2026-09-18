@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { ChevronsUpDown, RefreshCcw } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router'
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
@@ -16,6 +17,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
+import { useCurrentTeam } from '@/hooks/use-current-team'
+import { userDefaultTeam } from '@/lib/team-context'
 import { userMemberships, useOrgStore } from '@/stores/org-store'
 
 /**
@@ -25,10 +28,14 @@ import { userMemberships, useOrgStore } from '@/stores/org-store'
  */
 export function UserMenu() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const users = useOrgStore((s) => s.users)
+  const teams = useOrgStore((s) => s.teams)
   const members = useOrgStore((s) => s.members)
   const currentUserId = useOrgStore((s) => s.currentUserId)
   const setCurrentUser = useOrgStore((s) => s.setCurrentUser)
+  // 当前 URL 指向的团队（切换身份后据此判断是否需要换团队）
+  const urlTeam = useCurrentTeam()
 
   const currentUser = users.find((u) => u.id === currentUserId) ?? null
   if (!currentUser) return null
@@ -40,11 +47,30 @@ export function UserMenu() {
 
   const handleSwitch = (userId: number) => {
     setCurrentUser(userId)
-    const mine = userMemberships(members, userId)
-    if (mine.length === 0) {
+    const nextMemberships = userMemberships(members, userId)
+    const switchedName = users.find((u) => u.id === userId)?.name ?? ''
+
+    if (nextMemberships.length === 0) {
       toast.warning(t('users.noTeamsWarning'))
-    } else {
-      toast.success(t('users.switchedTo', { name: users.find((u) => u.id === userId)?.name ?? '' }))
+      void navigate({ to: '/teams', replace: true })
+      return
+    }
+
+    toast.success(t('users.switchedTo', { name: switchedName }))
+
+    // 用户位于 Team 之上：新身份若不属于当前 URL 的团队，跳到其默认团队，
+    // 否则会停在 /t/{别人的团队} 的无权限兜底页（URL 是团队身份的权威来源）。
+    const stillMember =
+      urlTeam !== null && nextMemberships.some((m) => m.teamId === urlTeam.id)
+    if (!stillMember) {
+      const target = userDefaultTeam(teams, members, userId)
+      if (target) {
+        void navigate({
+          to: '/t/$teamSlug',
+          params: { teamSlug: target.slug },
+          replace: true,
+        })
+      }
     }
   }
 

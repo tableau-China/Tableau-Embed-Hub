@@ -1,66 +1,17 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { useSyncExternalStore } from 'react'
-import { useTranslation } from 'react-i18next'
-import { Star } from 'lucide-react'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
-import { Card, CardContent } from '@/components/ui/card'
-import { ThumbnailCard } from '@/components/thumbnail-card'
-import { favoritesExternalStore, removeFavorite } from '@/lib/view-store'
-import { resolveViewPreviewBlob } from '@/lib/tableau-api'
+import { activeTeamSlug } from '@/lib/team-context'
 
+/**
+ * 旧路径兼容桩：/favorites → /t/{slug}/favorites
+ *
+ * v0.5.0 起团队身份进入 URL，旧的书签/外链在这里一次性重定向到团队作用域路径，
+ * 重定向用的是当前 activeTeamId 对应的团队（URL 里已有合法 slug 时优先沿用该 slug）。
+ */
 export const Route = createFileRoute('/favorites')({
-  component: FavoritesPage,
+  beforeLoad: () => {
+    const teamSlug = activeTeamSlug()
+    if (!teamSlug) throw redirect({ to: '/teams', replace: true })
+    throw redirect({ to: '/t/$teamSlug/favorites', params: { teamSlug }, replace: true })
+  },
 })
-
-function formatDate(iso: string): string {
-  const d = new Date(iso)
-  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString()
-}
-
-function FavoritesPage() {
-  const { t } = useTranslation()
-  const favorites = useSyncExternalStore(
-    favoritesExternalStore.subscribe,
-    favoritesExternalStore.getSnapshot,
-  )
-
-  return (
-    <div className="flex flex-col gap-6">
-      {favorites.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-2 py-10 text-center">
-            <Star className="size-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">{t('favorites.empty')}</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {favorites.map((f) => (
-            <ThumbnailCard
-              key={`${f.workbook}/${f.view}`}
-              id={`${f.workbook}/${f.view}`}
-              name={f.view}
-              subtitle={f.workbook}
-              linkTo="/views"
-              linkSearch={{
-                workbook: f.workbookId ?? f.workbook,
-                view: f.viewId ?? f.view,
-              }}
-              thumbnailLoader={() => resolveViewPreviewBlob(f.workbook, f.view)}
-              updatedAt={f.accessedAt}
-              showFavorite
-              isFavorited
-              onToggleFavorite={() => removeFavorite(f.workbook, f.view)}
-              showInfo
-              infoMetaRows={[
-                { label: t('thumbnailCard.workbook'), value: f.workbook },
-                { label: t('thumbnailCard.addedAt'), value: formatDate(f.accessedAt) },
-              ]}
-              menuPreset="favorites"
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}

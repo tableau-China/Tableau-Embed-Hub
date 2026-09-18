@@ -8,7 +8,7 @@ import {
   ShieldAlert,
   Star,
 } from 'lucide-react'
-import { Link } from '@tanstack/react-router'
+import { Link, useLocation, useNavigate } from '@tanstack/react-router'
 
 import {
   DropdownMenu,
@@ -26,22 +26,27 @@ import {
 } from '@/components/ui/sidebar'
 import { TeamLogo } from '@/components/org/team-logo'
 import { TeamDialog } from '@/components/org/team-dialog'
+import { useCurrentTeam } from '@/hooks/use-current-team'
+import { stripTeamPrefix } from '@/lib/team-context'
 import { sortTeamsById, useOrgStore } from '@/stores/org-store'
 import { cn } from '@/lib/utils'
 
 /**
  * 侧边栏顶部 Team 切换器（左上角）：
- * - 点击弹出当前用户所属的全部团队，切换 activeTeamId（团队作用域数据随之切换）
+ * - 点击弹出当前用户所属的全部团队，切换团队 = 切换 /t/{slug} 路由前缀
  * - 系统管理员额外提供「创建团队」与「Manage teams」入口
  */
 export function TeamSwitcher() {
   const { t } = useTranslation()
   const { isMobile } = useSidebar()
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
   const teams = useOrgStore((s) => s.teams)
   const members = useOrgStore((s) => s.members)
   const currentUserId = useOrgStore((s) => s.currentUserId)
-  const activeTeamId = useOrgStore((s) => s.activeTeamId)
   const setActiveTeam = useOrgStore((s) => s.setActiveTeam)
+  // 当前团队以 URL 为准（/t/{slug}/...），管理页回退 activeTeamId
+  const urlTeam = useCurrentTeam()
   const currentUser = useOrgStore((s) =>
     s.users.find((u) => u.id === s.currentUserId),
   )
@@ -50,13 +55,25 @@ export function TeamSwitcher() {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
 
-  // 当前用户可用团队：按创建次序（id 升序）展示；切换只改 activeTeamId，不重排
+  // 当前用户可用团队：按创建次序（id 升序）展示
   const myTeams = sortTeamsById(
     teams.filter((team) =>
       members.some((m) => m.userId === currentUserId && m.teamId === team.id),
     ),
   )
-  const activeTeam = myTeams.find((t) => t.id === activeTeamId) ?? myTeams[0] ?? null
+  // URL 里的团队必须是「我的团队」之一才用于高亮，否则退回首个可用团队
+  const activeTeam =
+    myTeams.find((t) => t.id === urlTeam?.id) ?? myTeams[0] ?? null
+
+  /**
+   * 切换团队：URL 前缀随团队改变（团队作用域数据随之切换）。
+   * 若当前已在某个团队的同级页面内，保留该子路径 —— 所有团队共用同一套页面，
+   * 切团队相当于「换个站点看同一个页面」；管理页（/users、/teams、/settings）则回到团队首页。
+   */
+  const switchTeam = (teamSlug: string, teamId: number) => {
+    setActiveTeam(teamId)
+    navigate({ href: `/t/${teamSlug}${stripTeamPrefix(pathname)}`, replace: true })
+  }
 
   // 当前用户的默认团队（用户切到其他 team 时会被选中的那个）
   const defaultTeamId =
@@ -158,7 +175,7 @@ export function TeamSwitcher() {
               <DropdownMenuItem
                 key={team.id}
                 onClick={() => {
-                  setActiveTeam(team.id)
+                  switchTeam(team.slug, team.id)
                   setDropdownOpen(false)
                 }}
                 className="gap-2 p-2"

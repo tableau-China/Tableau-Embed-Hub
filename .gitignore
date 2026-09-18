@@ -37,4 +37,6 @@ Thumbs.db
 tmp/
 temp/
 coverage/
+# check-team-routes.mjs 的临时 Chrome profile（沙箱下系统 tmpdir 不可写）
+.tmp-chrome-*/
 

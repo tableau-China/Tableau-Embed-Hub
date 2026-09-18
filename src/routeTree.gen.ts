@@ -18,6 +18,12 @@ import { Route as TeamsRouteImport } from './routes/teams'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as ViewsRouteImport } from './routes/views'
 import { Route as WorkbooksRouteImport } from './routes/workbooks'
+import { Route as TTeamSlugRouteImport } from './routes/t.$teamSlug'
+import { Route as TTeamSlugIndexRouteImport } from './routes/t.$teamSlug.index'
+import { Route as TTeamSlugFavoritesRouteImport } from './routes/t.$teamSlug.favorites'
+import { Route as TTeamSlugRecentsRouteImport } from './routes/t.$teamSlug.recents'
+import { Route as TTeamSlugViewsRouteImport } from './routes/t.$teamSlug.views'
+import { Route as TTeamSlugWorkbooksRouteImport } from './routes/t.$teamSlug.workbooks'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -64,6 +70,36 @@ const WorkbooksRoute = WorkbooksRouteImport.update({
   path: '/workbooks',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TTeamSlugRoute = TTeamSlugRouteImport.update({
+  id: '/t/$teamSlug',
+  path: '/t/$teamSlug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TTeamSlugIndexRoute = TTeamSlugIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => TTeamSlugRoute,
+} as any)
+const TTeamSlugFavoritesRoute = TTeamSlugFavoritesRouteImport.update({
+  id: '/favorites',
+  path: '/favorites',
+  getParentRoute: () => TTeamSlugRoute,
+} as any)
+const TTeamSlugRecentsRoute = TTeamSlugRecentsRouteImport.update({
+  id: '/recents',
+  path: '/recents',
+  getParentRoute: () => TTeamSlugRoute,
+} as any)
+const TTeamSlugViewsRoute = TTeamSlugViewsRouteImport.update({
+  id: '/views',
+  path: '/views',
+  getParentRoute: () => TTeamSlugRoute,
+} as any)
+const TTeamSlugWorkbooksRoute = TTeamSlugWorkbooksRouteImport.update({
+  id: '/workbooks',
+  path: '/workbooks',
+  getParentRoute: () => TTeamSlugRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -75,6 +111,12 @@ export interface FileRoutesByFullPath {
   '/users': typeof UsersRoute
   '/views': typeof ViewsRoute
   '/workbooks': typeof WorkbooksRoute
+  '/t/$teamSlug': typeof TTeamSlugRouteWithChildren
+  '/t/$teamSlug/favorites': typeof TTeamSlugFavoritesRoute
+  '/t/$teamSlug/recents': typeof TTeamSlugRecentsRoute
+  '/t/$teamSlug/views': typeof TTeamSlugViewsRoute
+  '/t/$teamSlug/workbooks': typeof TTeamSlugWorkbooksRoute
+  '/t/$teamSlug/': typeof TTeamSlugIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -86,6 +128,11 @@ export interface FileRoutesByTo {
   '/users': typeof UsersRoute
   '/views': typeof ViewsRoute
   '/workbooks': typeof WorkbooksRoute
+  '/t/$teamSlug/favorites': typeof TTeamSlugFavoritesRoute
+  '/t/$teamSlug/recents': typeof TTeamSlugRecentsRoute
+  '/t/$teamSlug/views': typeof TTeamSlugViewsRoute
+  '/t/$teamSlug/workbooks': typeof TTeamSlugWorkbooksRoute
+  '/t/$teamSlug': typeof TTeamSlugIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -98,6 +145,12 @@ export interface FileRoutesById {
   '/users': typeof UsersRoute
   '/views': typeof ViewsRoute
   '/workbooks': typeof WorkbooksRoute
+  '/t/$teamSlug': typeof TTeamSlugRouteWithChildren
+  '/t/$teamSlug/favorites': typeof TTeamSlugFavoritesRoute
+  '/t/$teamSlug/recents': typeof TTeamSlugRecentsRoute
+  '/t/$teamSlug/views': typeof TTeamSlugViewsRoute
+  '/t/$teamSlug/workbooks': typeof TTeamSlugWorkbooksRoute
+  '/t/$teamSlug/': typeof TTeamSlugIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -111,6 +164,12 @@ export interface FileRouteTypes {
     | '/users'
     | '/views'
     | '/workbooks'
+    | '/t/$teamSlug'
+    | '/t/$teamSlug/favorites'
+    | '/t/$teamSlug/recents'
+    | '/t/$teamSlug/views'
+    | '/t/$teamSlug/workbooks'
+    | '/t/$teamSlug/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -122,6 +181,11 @@ export interface FileRouteTypes {
     | '/users'
     | '/views'
     | '/workbooks'
+    | '/t/$teamSlug/favorites'
+    | '/t/$teamSlug/recents'
+    | '/t/$teamSlug/views'
+    | '/t/$teamSlug/workbooks'
+    | '/t/$teamSlug'
   id:
     | '__root__'
     | '/'
@@ -133,6 +197,12 @@ export interface FileRouteTypes {
     | '/users'
     | '/views'
     | '/workbooks'
+    | '/t/$teamSlug'
+    | '/t/$teamSlug/favorites'
+    | '/t/$teamSlug/recents'
+    | '/t/$teamSlug/views'
+    | '/t/$teamSlug/workbooks'
+    | '/t/$teamSlug/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -145,6 +215,7 @@ export interface RootRouteChildren {
   UsersRoute: typeof UsersRoute
   ViewsRoute: typeof ViewsRoute
   WorkbooksRoute: typeof WorkbooksRoute
+  TTeamSlugRoute: typeof TTeamSlugRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -212,8 +283,70 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkbooksRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/t/$teamSlug': {
+      id: '/t/$teamSlug'
+      path: '/t/$teamSlug'
+      fullPath: '/t/$teamSlug'
+      preLoaderRoute: typeof TTeamSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/t/$teamSlug/': {
+      id: '/t/$teamSlug/'
+      path: '/'
+      fullPath: '/t/$teamSlug/'
+      preLoaderRoute: typeof TTeamSlugIndexRouteImport
+      parentRoute: typeof TTeamSlugRoute
+    }
+    '/t/$teamSlug/favorites': {
+      id: '/t/$teamSlug/favorites'
+      path: '/favorites'
+      fullPath: '/t/$teamSlug/favorites'
+      preLoaderRoute: typeof TTeamSlugFavoritesRouteImport
+      parentRoute: typeof TTeamSlugRoute
+    }
+    '/t/$teamSlug/recents': {
+      id: '/t/$teamSlug/recents'
+      path: '/recents'
+      fullPath: '/t/$teamSlug/recents'
+      preLoaderRoute: typeof TTeamSlugRecentsRouteImport
+      parentRoute: typeof TTeamSlugRoute
+    }
+    '/t/$teamSlug/views': {
+      id: '/t/$teamSlug/views'
+      path: '/views'
+      fullPath: '/t/$teamSlug/views'
+      preLoaderRoute: typeof TTeamSlugViewsRouteImport
+      parentRoute: typeof TTeamSlugRoute
+    }
+    '/t/$teamSlug/workbooks': {
+      id: '/t/$teamSlug/workbooks'
+      path: '/workbooks'
+      fullPath: '/t/$teamSlug/workbooks'
+      preLoaderRoute: typeof TTeamSlugWorkbooksRouteImport
+      parentRoute: typeof TTeamSlugRoute
+    }
   }
 }
+
+interface TTeamSlugRouteChildren {
+  TTeamSlugFavoritesRoute: typeof TTeamSlugFavoritesRoute
+  TTeamSlugRecentsRoute: typeof TTeamSlugRecentsRoute
+  TTeamSlugViewsRoute: typeof TTeamSlugViewsRoute
+  TTeamSlugWorkbooksRoute: typeof TTeamSlugWorkbooksRoute
+  TTeamSlugIndexRoute: typeof TTeamSlugIndexRoute
+}
+
+const TTeamSlugRouteChildren: TTeamSlugRouteChildren = {
+  TTeamSlugFavoritesRoute: TTeamSlugFavoritesRoute,
+  TTeamSlugRecentsRoute: TTeamSlugRecentsRoute,
+  TTeamSlugViewsRoute: TTeamSlugViewsRoute,
+  TTeamSlugWorkbooksRoute: TTeamSlugWorkbooksRoute,
+  TTeamSlugIndexRoute: TTeamSlugIndexRoute,
+}
+
+const TTeamSlugRouteWithChildren = TTeamSlugRoute._addFileChildren(
+  TTeamSlugRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -225,6 +358,7 @@ const rootRouteChildren: RootRouteChildren = {
   UsersRoute: UsersRoute,
   ViewsRoute: ViewsRoute,
   WorkbooksRoute: WorkbooksRoute,
+  TTeamSlugRoute: TTeamSlugRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

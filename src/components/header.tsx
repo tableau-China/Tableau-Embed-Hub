@@ -5,35 +5,41 @@ import { LanguageToggle } from '@/components/language-toggle'
 import { ModeToggle } from '@/components/mode-toggle'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Separator } from '@/components/ui/separator'
+import { TEAM_PATH_SEGMENT } from '@/lib/team-context'
 
 /** 一级路由段 → 标题 i18n key（表头直接显示当前页面标题，不再用面包屑） */
 const SEGMENT_TITLE_KEYS: Record<string, string> = {
   '': 'nav.dashboard',
   users: 'nav.users',
+  teams: 'nav.teams',
   settings: 'nav.settings',
   favorites: 'nav.favorites',
   recents: 'nav.recents',
   workbooks: 'nav.workbooks',
   views: 'nav.views',
-  teams: 'nav.teams',
 }
 
 /** 一级路由段 → 页面描述 i18n key（紧随标题右侧，小字展示） */
 const SEGMENT_SUBTITLE_KEYS: Record<string, string> = {
   '': 'dashboard.subtitle',
   users: 'users.subtitle',
+  teams: 'teams.subtitle',
   settings: 'settings.subtitle',
   favorites: 'favorites.subtitle',
   recents: 'recents.subtitle',
   workbooks: 'workbooks.subtitle',
   views: 'views.subtitle',
-  teams: 'teams.subtitle',
+  flows: 'flows.subtitle',
 }
 
 export function Header() {
   const { t } = useTranslation()
   const { pathname } = useRouterState().location
-  const segment = pathname === '/' ? '' : pathname.split('/').filter(Boolean)[0] ?? ''
+  // 团队作用域路径形如 /t/{slug}/workbooks：跳过 't' 与 slug 两段后再取一级路由段；
+  // 管理页（/users、/teams、/settings 无 slug）取第一段。
+  const segments = pathname.split('/').filter(Boolean)
+  const segment =
+    segments[0] === TEAM_PATH_SEGMENT ? segments[2] ?? '' : segments[0] ?? ''
   const titleKey = SEGMENT_TITLE_KEYS[segment] ?? 'notFound.title'
   const subtitleKey = SEGMENT_SUBTITLE_KEYS[segment]
 
