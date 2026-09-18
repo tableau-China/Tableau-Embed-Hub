@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { TEAM_LOGO_OPTIONS } from '@/components/org/team-logo'
-import { slugify, useOrgStore, type OrgTeam } from '@/stores/org-store'
+import { sanitizeTeamSlug, teamSlugIssue, useOrgStore, type OrgTeam } from '@/stores/org-store'
 import { cn } from '@/lib/utils'
 
 interface TeamDialogProps {
@@ -27,7 +27,11 @@ interface TeamDialogProps {
 
 /**
  * 新建 / 编辑团队对话框（仅系统管理员可操作，调用方控制入口可见性）。
- * 字段：名称 / 描述 / Logo 图标；slug 由名称自动生成（对齐 pg-explorer Team.slug 语义）。
+ * 字段：名称 / **slug** / 描述 / Logo 图标。
+ *
+ * `slug` 由用户在**新建时手工输入**，仅允许英文、数字、下划线（会实时过滤非法字符），
+ * 落库后**不可修改**（它是团队的稳定标识，见 OrgTeam.slug）。因此不随 `name` 变化 ——
+ * 名称可以是中文，slug 必须保持 ASCII，避免出现在 URL 里被转义成乱码。
  */
 export function TeamDialog({ team, open, onOpenChange }: TeamDialogProps) {
   const { t } = useTranslation()
@@ -37,15 +41,22 @@ export function TeamDialog({ team, open, onOpenChange }: TeamDialogProps) {
 
   const editing = team !== undefined
   const [name, setName] = useState('')
+  const [slug, setSlug] = useState('')
   const [description, setDescription] = useState('')
   const [logo, setLogo] = useState('building2')
 
   useEffect(() => {
     if (!open) return
     setName(team?.name ?? '')
+    setSlug(team?.slug ?? '')
     setDescription(team?.description ?? '')
     setLogo(team?.logo ?? 'building2')
   }, [open, team])
+
+  /** 新建时的 slug 校验结果（编辑态 slug 不可改，无需校验） */
+  const slugIssue = editing ? null : teamSlugIssue(slug, teams)
+  /** 仅在用户已输入（非空）且与既有团队重复时标红，避免一打开弹窗就报错 */
+  const slugTaken = slug !== '' && slugIssue === 'taken'
 
   const handleSubmit = () => {
     const trimmed = name.trim()
@@ -66,7 +77,17 @@ export function TeamDialog({ team, open, onOpenChange }: TeamDialogProps) {
       updateTeam(team.id, { name: trimmed, description, logo })
       toast.success(t('teams.updated'))
     } else {
-      createTeam({ name: trimmed, description, logo })
+      if (slugIssue !== null) {
+        toast.error(
+          slugIssue === 'empty'
+            ? t('teams.slugRequired')
+            : slugIssue === 'charset'
+              ? t('teams.slugInvalid')
+              : t('teams.slugTaken'),
+        )
+        return
+      }
+      createTeam({ name: trimmed, slug, description, logo })
       toast.success(t('teams.created'))
     }
     onOpenChange(false)
@@ -90,11 +111,35 @@ export function TeamDialog({ team, open, onOpenChange }: TeamDialogProps) {
               onChange={(e) => setName(e.target.value)}
               placeholder={t('teams.namePlaceholder')}
             />
-            {name.trim() !== '' && (
-              <p className="text-xs text-muted-foreground">
-                {t('teams.slugHint', { slug: slugify(name) })}
-              </p>
-            )}
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="team-slug">{t('teams.slugLabel')}</Label>
+            <Input
+              id="team-slug"
+              value={slug}
+              // 实时过滤：中文/空格/连字符等非法字符直接打不进去（不会等到提交才报错）
+              onChange={(e) => setSlug(sanitizeTeamSlug(e.target.value))}
+              placeholder={t('teams.slugPlaceholder')}
+              disabled={editing}
+              autoComplete="off"
+              spellCheck={false}
+              className="font-mono"
+              aria-invalid={slugTaken}
+              aria-describedby="team-slug-hint"
+            />
+            <p
+              id="team-slug-hint"
+              className={cn(
+                'text-xs',
+                slugTaken ? 'text-destructive' : 'text-muted-foreground',
+              )}
+            >
+              {editing
+                ? t('teams.slugLocked')
+                : slugTaken
+                  ? t('teams.slugTaken')
+                  : t('teams.slugHint')}
+            </p>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="team-description">{t('teams.description')}</Label>

@@ -6,6 +6,7 @@
 
 | 版本 | package.json | 侧边栏显示 | PROGRESS.md | CHANGELOG 条目 | 日期 |
 | --- | --- | --- | --- | --- | --- |
+| 0.4.2 | ✅ `0.4.2` | ✅ `v0.4.2`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#042---2026-09-18) | 2026-09-18 |
 | 0.4.1 | ✅ `0.4.1` | ✅ `v0.4.1`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#041---2026-09-04) | 2026-09-04 |
 | 0.4.0 | ✅ `0.4.0` | ✅ `v0.4.0`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#040---2026-09-04) | 2026-09-04 |
 | 0.2.1 | ✅ `0.2.1` | ✅ `v0.2.1` | ✅ 已同步 | ✅ [本节](#021---2026-08-16) | 2026-08-16 |
@@ -13,6 +14,41 @@
 | 0.1.0 | ✅ `0.1.0` | ✅ `v0.1.0` | ✅ 已同步 | ✅ [本节](#010---2026-08-16) | 2026-08-16 |
 
 > 约定：新版本发布时，先升 `package.json` 的 `version`，再更新本表与下方条目。
+
+## [0.4.2] - 2026-09-18
+
+Team `slug` 改为**新建时手工输入**的稳定标识（仅英文、数字、下划线），不再由团队名派生。
+
+### Breaking（不兼容，合并本版本的下游应用需同步调整）
+
+- `createTeam` 入参新增**必填** `slug`：`{ name, slug, description, logo }`（此前由名称自动生成）。
+- 移除导出 `slugify()` / `uniqueSlug()` / `nextTeamSlug()`；新增 `TEAM_SLUG_PATTERN` / `isValidTeamSlug()` / `sanitizeTeamSlug()` / `teamSlugIssue()`。
+- 种子团队 slug 改为下划线形式（`acme-hq` → `acme_hq`、`acme-analytics` → `acme_analytics`、`acme-data-platform` → `acme_data_platform`），仅影响全新环境；不做自动迁移，已有持久化数据里的旧 slug **保持原值不变**（避免静默改写下游的映射键）。
+
+### Fixed（修复）
+
+- **slug 不再允许中文**：字符集收紧为 `^[A-Za-z0-9_]+$`（英文、数字、下划线）。中文 slug 会出现在 URL / 路由参数 / 配置键里并被百分号转义（`试单` → `%E8%AF%95%E5%8D%95`），既不可读，又容易在复制粘贴、nginx 规则、日志排查时出错。
+- **slug 不再随团队名变化**：此前 `updateTeam` 每改一次名就重算 slug，而 `slugify` 又把非 ASCII 全部抹成 `-`。凡以 slug 作「团队 → 应用形态 / 数据源 / 权限」映射键的下游模块，在团队页改一次名即**静默失配并回落到默认团队** —— 外部表现是「某个团队的内容和默认团队一模一样」，且没有任何报错。现在改名只改 `name`（名称可以是中文）。
+
+### Added（新增）
+
+- 新建团队对话框新增 **Team slug** 输入框：实时过滤非法字符（中文/空格/连字符打不进去）、与既有团队重复时即时标红、提交前统一校验。
+- `sanitizeTeamSlug()`（输入过滤）与 `teamSlugIssue()`（空 / 非法字符 / 重复），表单与 store 共用同一口径。
+
+### Changed（变更）
+
+- 编辑态 slug 输入框置灰只读，提示「创建时固定，不可编辑」。
+- `OrgTeam.slug` 注释明确：字符集、唯一、与 `name` 解耦，外部模块应以其为团队身份。
+- i18n en-US 新增 `teams.slugLabel` / `slugPlaceholder` / `slugRequired` / `slugInvalid` / `slugTaken`；`slugHint` 改为规则说明、`slugLocked` 改为编辑态只读说明。
+
+### Verified（验证）
+
+- `pnpm typecheck` ✅ / `pnpm build` ✅ / `pnpm check:i18n` ✅（218 keys）
+- 合法性实测：`dev_api` ✅ / `Dev_API2` ✅；`dev-api`、`dev api`、`dev.api`、`试单`、`JST_API_测试`、空 ❌
+- 输入过滤实测：`JST API 测试（Dev API）` → `JSTAPIDevAPI`；`dev-api` → `devapi`；`Dev_HQ-01` → `Dev_HQ01`；`试单` → `''`
+- 校验实测：`''` → `empty`；`dev-api` → `charset`；已占用 → `taken`；空闲 → `null`
+- 端到端（真跑 store）：新建团队 slug 取输入值；把 team1 改名为英文名再改成中文名，slug 恒为原值；全部团队 slug 均为 ASCII ✅
+- package.json `0.4.1` → `0.4.2`（四文件版本同步）
 
 ## [0.4.1] - 2026-09-04
 

@@ -35,7 +35,15 @@ export interface OrgUser {
 export interface OrgTeam {
   id: number
   name: string
-  /** URL 友好的标识符（自动生成，不可编辑） */
+  /**
+   * 团队的**稳定标识**，由创建者在新建时**手工输入**，且**创建后不可修改**：
+   * - 字符集：仅英文、数字、下划线（`TEAM_SLUG_PATTERN`），唯一；
+   *   不允许中文/空格/连字符 —— slug 会进 URL 与配置键，非 ASCII 会被转义成乱码。
+   * - 与 `name` 解耦：`name` 可随意改（含中文），`slug` 不会跟着变。
+   *
+   * 外部模块（路由、按团队切换应用形态/数据源、权限映射等）应把它当作团队身份来用；
+   * **不要**用会变的 `name` 当映射键，否则一次改名就会静默失配。
+   */
   slug: string
   description: string
   /** TeamLogo 图标 key（lucide 图标名，见 components/org/team-logo.tsx） */
@@ -104,14 +112,46 @@ export function initialsOf(name: string): string {
     .toUpperCase()
 }
 
-/** name → URL slug（小写字母数字 + 连字符） */
-export function slugify(name: string): string {
-  const base = name
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-  return base || 'team'
+/**
+ * Team slug 允许的字符集：**仅英文、数字、下划线**。
+ *
+ * 刻意不允许中文、空格、连字符等：slug 会出现在 URL、路由参数、配置键、日志里，
+ * 非 ASCII 字符一律被百分号转义（`试单` → `%E8%AF%95%E5%8D%95`），既不可读，
+ * 又容易在复制粘贴、nginx 规则、日志排查时出错。slug 由创建者**手工输入**，
+ * 不再由团队名自动派生（名称是中文时派生结果必然不可用）。
+ */
+export const TEAM_SLUG_PATTERN = /^[A-Za-z0-9_]+$/
+
+/** slug 是否合法（非空且仅含英文/数字/下划线） */
+export function isValidTeamSlug(slug: string): boolean {
+  return TEAM_SLUG_PATTERN.test(slug)
+}
+
+/**
+ * 输入过滤：丢弃所有非法字符（中文、空格、连字符、标点…）。
+ * 供输入框 onChange 使用 —— 敲入非法字符时直接打不进去，而不是等提交才报错。
+ */
+export function sanitizeTeamSlug(input: string): string {
+  return input.replace(/[^A-Za-z0-9_]/g, '')
+}
+
+/** slug 校验结果；`null` = 可用 */
+export type TeamSlugIssue = 'empty' | 'charset' | 'taken'
+
+/**
+ * 校验团队 slug：为空 / 含非法字符 / 与既有团队重复。
+ * 表单与 store 共用同一口径，避免「前端放行、落库才出问题」。
+ * `excludeTeamId`：忽略指定团队自身已占用的 slug。
+ */
+export function teamSlugIssue(
+  slug: string,
+  teams: readonly Pick<OrgTeam, 'id' | 'slug'>[],
+  excludeTeamId?: number,
+): TeamSlugIssue | null {
+  if (slug === '') return 'empty'
+  if (!isValidTeamSlug(slug)) return 'charset'
+  const taken = teams.some((t) => t.id !== excludeTeamId && t.slug === slug)
+  return taken ? 'taken' : null
 }
 
 export function isMemberOf(
@@ -153,21 +193,21 @@ const SEED_TEAMS: OrgTeam[] = [
   {
     id: 1,
     name: 'Acme HQ',
-    slug: 'acme-hq',
+    slug: 'acme_hq',
     description: 'Headquarters workspace · default team of the Administrator',
     logo: 'building2',
   },
   {
     id: 2,
     name: 'Acme Analytics',
-    slug: 'acme-analytics',
+    slug: 'acme_analytics',
     description: 'Tableau workbooks, views and embedded analytics demos',
     logo: 'monitor-play',
   },
   {
     id: 3,
     name: 'Acme Data Platform',
-    slug: 'acme-data-platform',
+    slug: 'acme_data_platform',
     description: 'Data platform & governance pipeline demos',
     logo: 'workflow',
   },
@@ -265,7 +305,11 @@ interface OrgState {
   updateUser: (id: number, patch: Partial<Pick<OrgUser, 'name' | 'email' | 'initials' | 'isSystemAdmin' | 'status'>>) => void
   deleteUser: (id: number) => void
 
-  createTeam: (data: { name: string; description: string; logo: string }) => OrgTeam
+  /**
+   * 新建团队。`slug` 由调用方（新建表单）提供并已通过 `teamSlugIssue` 校验：
+   * 非空、仅英文/数字/下划线、且未被其它团队占用。slug 落库后即固定不变。
+   */
+  createTeam: (data: { name: string; slug: string; description: string; logo: string }) => OrgTeam
   updateTeam: (id: number, patch: Partial<Pick<OrgTeam, 'name' | 'description' | 'logo'>>) => void
   deleteTeam: (id: number) => void
 
@@ -370,7 +414,8 @@ export const useOrgStore = create<OrgState>()(
         const team: OrgTeam = {
           id: nextId(get().teams),
           name: data.name.trim(),
-          slug: slugify(data.name),
+          // slug 由用户输入，在此落库后固定不变（改名/改描述都不会动它）
+          slug: data.slug.trim(),
           description: data.description.trim(),
           logo: data.logo,
         }
@@ -407,10 +452,8 @@ export const useOrgStore = create<OrgState>()(
                   ...t,
                   ...patch,
                   name: patch.name !== undefined ? patch.name.trim() : t.name,
-                  slug:
-                    patch.name !== undefined && patch.name.trim() !== t.name
-                      ? slugify(patch.name)
-                      : t.slug,
+                  // 注意：**不重算 slug**。slug 是团队稳定标识（创建时定），
+                  // 改名只改展示名；否则按 slug 做团队→应用/数据源映射的模块会静默失配。
                   description:
                     patch.description !== undefined
                       ? patch.description.trim()
