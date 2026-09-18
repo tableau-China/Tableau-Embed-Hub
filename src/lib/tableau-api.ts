@@ -1,5 +1,8 @@
+import { queryOptions } from '@tanstack/react-query'
+
 import { TABLEAU_CONFIG } from '@/config/tableau'
 import { createTableauJwt } from '@/lib/tableau-jwt'
+import { queryClient } from '@/lib/query-client'
 
 export interface TableauWorkbook {
   id: string
@@ -21,10 +24,18 @@ export interface TableauView {
 interface CachedAuth {
   token: string
   siteId: string
-  expiresAt: number
 }
 
-let authCache: CachedAuth | null = null
+/** Tableau REST 错误（带 HTTP 状态码，供调用方按状态分类处理） */
+export class TableauApiError extends Error {
+  readonly status: number
+
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = 'TableauApiError'
+    this.status = status
+  }
+}
 
 async function safeText(res: Response): Promise<string> {
   try {
@@ -34,10 +45,12 @@ async function safeText(res: Response): Promise<string> {
   }
 }
 
-/** 用 JWT 换取 REST API access token（POST /auth/signin） */
-async function getAccessToken(): Promise<CachedAuth> {
-  if (authCache && authCache.expiresAt > Date.now() + 30_000) return authCache
+/* ==================== 认证：REST 令牌即一条 Query ==================== */
 
+const authQueryKey = ['tableau', 'auth'] as const
+
+/** 用 JWT 换取 REST API access token（POST /auth/signin）—— 认证查询的 queryFn */
+async function signIn(): Promise<CachedAuth> {
   const jwt = await createTableauJwt(['tableau:content:read', 'tableau:views:*', 'tableau:workbooks:*'])
   const res = await fetch(
     `${TABLEAU_CONFIG.apiBaseUrl}/api/${TABLEAU_CONFIG.apiVersion}/auth/signin`,
@@ -53,7 +66,10 @@ async function getAccessToken(): Promise<CachedAuth> {
     },
   )
   if (!res.ok) {
-    throw new Error(`Tableau signin failed: ${res.status} ${(await safeText(res)).slice(0, 200)}`)
+    throw new TableauApiError(
+      `Tableau signin failed: ${res.status} ${(await safeText(res)).slice(0, 200)}`,
+      res.status,
+    )
   }
   const data = (await res.json()) as {
     credentials?: { token?: string; site?: { id?: string } }
@@ -61,24 +77,62 @@ async function getAccessToken(): Promise<CachedAuth> {
   const token = data.credentials?.token
   const siteId = data.credentials?.site?.id
   if (!token || !siteId) {
-    throw new Error('Tableau signin response missing token/siteId')
+    throw new TableauApiError('Tableau signin response missing token/siteId', res.status)
   }
-  authCache = { token, siteId, expiresAt: Date.now() + 4 * 60_000 }
-  return authCache
+  return { token, siteId }
 }
 
-async function apiGet<T>(path: string): Promise<T> {
+/**
+ * 获取 REST 访问令牌 —— 统一走 Query 缓存层（替代旧模块级 authCache）：
+ * - staleTime = 令牌有效期(5 分钟) − 1 分钟余量：窗口内并发调用共享同一令牌（single-flight）
+ * - gcTime = Infinity：应用存活期间不回收
+ * - 令牌意外提前失效由 apiRequest 的 401 → invalidate → 重试 闭环兜底，
+ *   不再依赖「掐时间判断过期」。
+ */
+export function getAccessToken(): Promise<CachedAuth> {
+  return queryClient.fetchQuery({
+    queryKey: authQueryKey,
+    queryFn: signIn,
+    staleTime: TABLEAU_CONFIG.tokenTtlSeconds * 1000 - 60_000,
+    gcTime: Infinity,
+  })
+}
+
+/** 作废认证缓存：令牌 401 后调用，下一次 getAccessToken 会重新登录 */
+function invalidateAuth(): Promise<void> {
+  return queryClient.invalidateQueries({ queryKey: authQueryKey })
+}
+
+/**
+ * 带认证头的 REST 请求：401 → 作废认证缓存 → 重新登录 → 重试一次。
+ * 比「提前 30 秒判断过期」更可靠：即使时钟偏差或密钥轮换导致令牌提前失效也能自愈。
+ */
+async function apiRequest<T>(
+  path: string,
+  headers: Record<string, string>,
+  parse: (res: Response) => Promise<T>,
+  attempt = 0,
+): Promise<T> {
   const { token } = await getAccessToken()
   const res = await fetch(
     `${TABLEAU_CONFIG.apiBaseUrl}/api/${TABLEAU_CONFIG.apiVersion}${path}`,
-    {
-      headers: { 'X-Tableau-Auth': token, Accept: 'application/json' },
-    },
+    { headers: { ...headers, 'X-Tableau-Auth': token } },
   )
-  if (!res.ok) {
-    throw new Error(`Tableau API ${path} failed: ${res.status} ${(await safeText(res)).slice(0, 200)}`)
+  if (res.status === 401 && attempt === 0) {
+    await invalidateAuth()
+    return apiRequest(path, headers, parse, attempt + 1)
   }
-  return (await res.json()) as T
+  if (!res.ok) {
+    throw new TableauApiError(
+      `Tableau API ${path} failed: ${res.status} ${(await safeText(res)).slice(0, 200)}`,
+      res.status,
+    )
+  }
+  return parse(res)
+}
+
+function apiGet<T>(path: string): Promise<T> {
+  return apiRequest(path, { Accept: 'application/json' }, (res) => res.json() as Promise<T>)
 }
 
 /** 站点内 workbooks 列表 */
@@ -168,68 +222,69 @@ export async function fetchViewDetail(viewId: string): Promise<TableauViewDetail
   }
 }
 
-// ==================== 预览图（previewImage） ====================
-
-// 预览图 blob 缓存：`${kind}:${id}` -> blob
-const previewBlobCache = new Map<string, Blob>()
-// 名称解析缓存：`${workbookName}/${viewName}` -> blob
-const resolvedPreviewCache = new Map<string, Blob | null>()
+/* ==================== 预览图（previewImage）：blob 也是 Query ==================== */
 
 /**
- * 获取 workbook / view 的预览图 blob（带 X-Tableau-Auth 认证头，经 /tableau-proxy 同源代理）。
+ * workbook / view 预览图 blob（带 X-Tableau-Auth 认证头，经 /tableau-proxy 同源代理）。
  * 走 blob 而非 <img src>：浏览器 img 无法携带认证头。
  * 端点与老项目 pg-explorer 一致：
  * - workbook: /workbooks/{id}/previewImage?maxAge=60
  * - view:     /views/{id}/image?maxAge=60&resolution=high（previewImage 在 Cloud 返回 404，用导出端点）
  * 注意：不能发送 Accept: image/png（Tableau 网关返回 406），依赖默认 Accept。
  */
-export async function getPreviewImageBlob(
+async function fetchPreviewImageBlob(
   kind: 'workbook' | 'view',
   id: string,
 ): Promise<Blob | null> {
-  const cacheKey = `${kind}:${id}`
-  if (previewBlobCache.has(cacheKey)) return previewBlobCache.get(cacheKey)!
+  const { siteId } = await getAccessToken()
+  const path =
+    kind === 'workbook'
+      ? `/sites/${siteId}/workbooks/${id}/previewImage?maxAge=60`
+      : `/sites/${siteId}/views/${id}/image?maxAge=60&resolution=high`
   try {
-    const { token, siteId } = await getAccessToken()
-    const path =
-      kind === 'workbook'
-        ? `/sites/${siteId}/workbooks/${id}/previewImage?maxAge=60`
-        : `/sites/${siteId}/views/${id}/image?maxAge=60&resolution=high`
-    const res = await fetch(`${TABLEAU_CONFIG.apiBaseUrl}/api/${TABLEAU_CONFIG.apiVersion}${path}`, {
-      headers: { 'X-Tableau-Auth': token },
-    })
-    if (!res.ok) return null
-    const blob = await res.blob()
-    previewBlobCache.set(cacheKey, blob)
-    return blob
-  } catch {
-    return null
+    return await apiRequest(path, {}, (res) => res.blob())
+  } catch (err) {
+    // 404 = 该视图无预览图：返回 null（占位图），不重试；
+    // 其余错误抛给 Query 按 retry/retryDelay 退避重试（替代旧失败缓存）。
+    if (err instanceof TableauApiError && err.status === 404) return null
+    throw err
   }
 }
 
 /**
- * 通过 workbook/view 名称解析真实预览图（favorites/recents 只存名称，无 ID）。
- * 步骤：workbooks 列表 → 按名称找 workbook id → views 列表 → 按名称找 view id → previewImage。
- * 模块级缓存，同一视图只解析一次。
+ * 预览图查询选项：blob 视为不可变资源（staleTime Infinity）；
+ * gcTime 10 分钟 —— 无订阅者后自动回收（容量管理替代旧模块级 previewBlobCache Map）。
  */
-export async function resolveViewPreviewBlob(
-  workbookName: string,
-  viewName: string,
-): Promise<Blob | null> {
-  const key = `${workbookName}/${viewName}`
-  if (resolvedPreviewCache.has(key)) return resolvedPreviewCache.get(key)!
-  try {
-    const workbooks = await fetchWorkbooks()
-    const wb = workbooks.find((w) => w.name === workbookName)
-    if (!wb) return null
-    const views = await fetchWorkbookViews(wb.id)
-    const vw = views.find((v) => v.name === viewName)
-    if (!vw) return null
-    const blob = await getPreviewImageBlob('view', vw.id)
-    resolvedPreviewCache.set(key, blob)
-    return blob
-  } catch {
-    resolvedPreviewCache.set(key, null)
-    return null
-  }
+export function previewImageQueryOptions(kind: 'workbook' | 'view', id: string) {
+  return queryOptions<Blob | null>({
+    queryKey: ['tableau', 'preview-image', kind, id],
+    queryFn: () => fetchPreviewImageBlob(kind, id),
+    staleTime: Infinity,
+    gcTime: 10 * 60_000,
+    retry: 2,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 5000),
+  })
+}
+
+/**
+ * 按名称解析视图预览图（favorites/recents 只存名称，无 ID）：
+ * workbooks 列表 → 按名称找 workbook id → views 列表 → 按名称找 view id → previewImage。
+ * 列表数据本身是 Query（共享缓存），本查询只做解析编排（替代旧 resolvedPreviewCache Map）。
+ */
+export function resolvedViewPreviewQueryOptions(workbookName: string, viewName: string) {
+  return queryOptions<Blob | null>({
+    queryKey: ['tableau', 'resolved-preview', workbookName, viewName],
+    queryFn: async () => {
+      const workbooks = await fetchWorkbooks()
+      const wb = workbooks.find((w) => w.name === workbookName)
+      if (!wb) return null
+      const views = await fetchWorkbookViews(wb.id)
+      const vw = views.find((v) => v.name === viewName)
+      if (!vw) return null
+      return fetchPreviewImageBlob('view', vw.id)
+    },
+    staleTime: Infinity,
+    gcTime: 10 * 60_000,
+    retry: 2,
+  })
 }

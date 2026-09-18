@@ -12,7 +12,7 @@ import {
   recentsExternalStore,
   toggleFavorite,
 } from '@/lib/view-store'
-import { resolveViewPreviewBlob } from '@/lib/tableau-api'
+import { resolvedViewPreviewQueryOptions } from '@/lib/tableau-api'
 
 export const Route = createFileRoute('/t/$teamSlug/recents')({
   component: RecentsPage,
@@ -66,7 +66,7 @@ function RecentsPage() {
                 workbook: r.workbookId ?? r.workbook,
                 view: r.viewId ?? r.view,
               }}
-              thumbnailLoader={() => resolveViewPreviewBlob(r.workbook, r.view)}
+              thumbnailQuery={resolvedViewPreviewQueryOptions(r.workbook, r.view)}
               updatedAt={r.accessedAt}
               showFavorite
               isFavorited={isFavorite(r.workbook, r.view)}

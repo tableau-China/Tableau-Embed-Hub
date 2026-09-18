@@ -18,7 +18,7 @@ import { ThumbnailCard } from '@/components/thumbnail-card'
 import {
   fetchWorkbooks,
   fetchWorkbookViews,
-  getPreviewImageBlob,
+  previewImageQueryOptions,
   type TableauWorkbook,
 } from '@/lib/tableau-api'
 import { isFavorite, toggleFavorite } from '@/lib/view-store'
@@ -148,7 +148,7 @@ function WorkbookCard({ workbook }: { workbook: TableauWorkbook }) {
               linkTo="/t/$teamSlug/views"
               linkParams={{ teamSlug }}
               linkSearch={{ workbook: workbook.id, view: d.id }}
-              thumbnailLoader={(id) => getPreviewImageBlob('view', id)}
+              thumbnailQuery={previewImageQueryOptions('view', d.id)}
               showFavorite
               isFavorited={isFavorite(workbook.name, d.name)}
               onToggleFavorite={() => toggleFavorite(workbook.name, d.name)}

@@ -6,7 +6,7 @@ import { Star } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { ThumbnailCard } from '@/components/thumbnail-card'
 import { favoritesExternalStore, removeFavorite } from '@/lib/view-store'
-import { resolveViewPreviewBlob } from '@/lib/tableau-api'
+import { resolvedViewPreviewQueryOptions } from '@/lib/tableau-api'
 
 export const Route = createFileRoute('/t/$teamSlug/favorites')({
   component: FavoritesPage,
@@ -48,7 +48,7 @@ function FavoritesPage() {
                 workbook: f.workbookId ?? f.workbook,
                 view: f.viewId ?? f.view,
               }}
-              thumbnailLoader={() => resolveViewPreviewBlob(f.workbook, f.view)}
+              thumbnailQuery={resolvedViewPreviewQueryOptions(f.workbook, f.view)}
               updatedAt={f.accessedAt}
               showFavorite
               isFavorited

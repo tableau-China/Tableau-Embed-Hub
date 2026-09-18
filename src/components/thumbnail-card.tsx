@@ -40,7 +40,8 @@ import {
 } from '@/components/ui/popover'
 import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
-import { getThumbnailBlob, getThumbnailObjectUrl } from '@/lib/thumbnail-cache'
+import { useQuery, type UndefinedInitialDataOptions } from '@tanstack/react-query'
+import { imageBlobQueryOptions, useObjectUrl } from '@/lib/thumbnail-query'
 
 // ==================== 类型定义 ====================
 
@@ -73,8 +74,8 @@ export interface ThumbnailCardProps {
   name: string
   /** 缩略图 URL（可选；缺省显示占位图标） */
   thumbnailUrl?: string
-  /** 自定义缩略图加载器（如 Tableau previewImage 需带认证头；返回 Blob） */
-  thumbnailLoader?: (id: string) => Promise<Blob | null>
+  /** Tableau 预览图等带认证数据源的查询选项（与 thumbnailUrl 二选一，优先本项） */
+  thumbnailQuery?: UndefinedInitialDataOptions<Blob | null>
   /** 必需：点击卡片跳转路径（可为含 $teamSlug 的路由模式，配合 linkParams 使用） */
   linkTo: string
   /** 跳转搜索参数（如 /views 的 workbook/view） */
@@ -159,30 +160,33 @@ function useInView(): [React.RefCallback<HTMLDivElement>, boolean] {
   return [refCallback, inView]
 }
 
-/** 统一的缩略图 URL 加载 hook（IntersectionObserver 懒加载，仅进入视口才取图） */
+/** 无数据源时的占位查询：key 恒定、enabled 关闭，保证 hook 顺序稳定 */
+const NONE_QUERY: UndefinedInitialDataOptions<Blob | null> = {
+  queryKey: ['thumbnail', 'none'],
+  queryFn: async () => null,
+}
+
+/**
+ * 统一的缩略图 URL 加载 hook（IntersectionObserver 懒加载，仅进入视口才取图）。
+ * 数据源二选一：thumbnailQuery（带认证的 Tableau 预览等）或 thumbnailUrl（通用图片）。
+ * blob 抓取统一走 Query 缓存（去重 / 失败退避 / 容量回收），
+ * ObjectURL 生命周期由 useObjectUrl 管理（随 blob 变化重建、卸载 revoke）。
+ */
 export function useThumbnailUrl(
-  thumbnailUrl: string,
-  id: string,
-  loader?: (id: string) => Promise<Blob | null>,
+  source?: { query: UndefinedInitialDataOptions<Blob | null> } | { url: string },
 ): [React.RefCallback<HTMLDivElement>, string | null] {
   const [refCallback, inView] = useInView()
-  const [url, setUrl] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!inView) return
-    let alive = true
-    const load = loader
-      ? loader(id)
-      : thumbnailUrl
-        ? getThumbnailBlob(thumbnailUrl, id)
-        : Promise.resolve(null)
-    load.then((blob) => {
-      if (alive) setUrl(getThumbnailObjectUrl(blob, id))
-    })
-    return () => {
-      alive = false
-    }
-  }, [id, thumbnailUrl, inView, loader])
+  let options: UndefinedInitialDataOptions<Blob | null>
+  if (source && 'query' in source) options = source.query
+  else if (source && 'url' in source) options = imageBlobQueryOptions(source.url)
+  else options = NONE_QUERY
+
+  const { data } = useQuery({
+    ...options,
+    enabled: inView && source !== undefined,
+  })
+  const url = useObjectUrl(data ?? null)
 
   return [refCallback, url]
 }
@@ -449,7 +453,7 @@ export function ThumbnailCard({
   id,
   name,
   thumbnailUrl = '',
-  thumbnailLoader,
+  thumbnailQuery,
   linkTo,
   linkSearch,
   linkParams,
@@ -481,7 +485,13 @@ export function ThumbnailCard({
 }: ThumbnailCardProps) {
   const { t } = useTranslation()
   const resolvedAspect = aspectRatio || (variant === 'compact' ? '4/3' : '16/9')
-  const [thumbnailRef, thumbnailUrlState] = useThumbnailUrl(thumbnailUrl, id, thumbnailLoader)
+  const [thumbnailRef, thumbnailUrlState] = useThumbnailUrl(
+    thumbnailQuery
+      ? { query: thumbnailQuery }
+      : thumbnailUrl
+        ? { url: thumbnailUrl }
+        : undefined,
+  )
   const isCompact = variant === 'compact'
 
   // 菜单：打开视图 + 收藏（收藏页预设隐藏收藏项）+ 置顶 + 自定义
