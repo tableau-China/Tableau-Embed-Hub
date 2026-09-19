@@ -11,9 +11,8 @@
  *
  * 修改此文件即可全局调整所有缩略图样式。
  */
-import React from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Star,

@@ -1,3 +1,5 @@
+import { useSyncExternalStore } from 'react'
+
 import { parseTeamSlugFromPath } from '@/lib/team-context'
 import { useOrgStore } from '@/stores/org-store'
 
@@ -170,6 +172,19 @@ export const favoritesExternalStore = {
 export const recentsExternalStore = {
   subscribe: recentsStore.subscribe,
   getSnapshot: recentsStore.read,
+}
+
+/**
+ * React 侧订阅收藏列表：收藏写操作（收藏/取消/移除）后使用方自动重渲染。
+ * getSnapshot 返回缓存中的同一引用直到数据真正变更（与外部 store 约定一致，
+ * 不会造成无限重渲染）。所有"渲染期读取 isFavorite"的页面都应经本 hook 订阅，
+ * 否则写库后星标停留在旧状态（v0.7.0 遗留问题的修复）。
+ */
+export function useFavorites(): ViewRef[] {
+  return useSyncExternalStore(
+    favoritesExternalStore.subscribe,
+    favoritesExternalStore.getSnapshot,
+  )
 }
 
 /** 同一视图判定：双方都有 UUID 时按 UUID 比较，否则按名称（兼容旧数据） */

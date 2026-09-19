@@ -18,7 +18,7 @@ import {
   type TableauView,
   type TableauWorkbook,
 } from '@/lib/tableau-api'
-import { addRecent, isFavorite, toggleFavorite } from '@/lib/view-store'
+import { addRecent, isFavorite, toggleFavorite, useFavorites } from '@/lib/view-store'
 
 export const Route = createFileRoute('/t/$teamSlug/views')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -141,6 +141,9 @@ function ViewsPage() {
       replace: true,
     })
   }, [viewDetail, selectedWorkbook, views, view, workbook, navigate, teamSlug])
+
+  // 订阅收藏列表：切换收藏后星标即时更新
+  useFavorites()
 
   const favorited =
     selectedWorkbook && selectedView

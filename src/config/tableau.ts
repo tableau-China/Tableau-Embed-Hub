@@ -14,6 +14,8 @@
  *    - 密钥定期轮换（泄露后立即在 Cloud 后台重置 Connected App secret）
  *    如需真正隐藏密钥，需将 JWT 签发迁移到后端（见 CHANGELOG TODO）。
  */
+import { logger } from '@/lib/logger'
+
 const EMBEDDED_CREDENTIALS = {
   clientId: '3gDMjRTM5QGOihjYtMzNmlTL5YzN00yYiJjMtEGO2M2M3YmY',
   secretId: 'hZWM4ImYmZTMhFDNtETMilTLjRWY00yYxkjMtMDM2QGO4EmM',
@@ -33,7 +35,8 @@ const env = {
 
 const usingEmbedded = !(env.clientId && env.secretId && env.secretValue)
 if (usingEmbedded) {
-  console.warn(
+  // 开发期提示（logger 仅在 DEV 输出，生产构建静默）
+  logger.warn(
     '[tableau] 未检测到 VITE_TABLEAU_* 环境变量，正在使用内置开发凭据（混淆存储，仅供开发演示）。' +
       '正式使用请复制 .env.example 为 .env 并填写自有 Connected App 凭据。',
   )

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
@@ -45,13 +45,19 @@ export function TeamDialog({ team, open, onOpenChange }: TeamDialogProps) {
   const [description, setDescription] = useState('')
   const [logo, setLogo] = useState('building2')
 
-  useEffect(() => {
-    if (!open) return
-    setName(team?.name ?? '')
-    setSlug(team?.slug ?? '')
-    setDescription(team?.description ?? '')
-    setLogo(team?.logo ?? 'building2')
-  }, [open, team])
+  // 打开（或切换编辑目标）时把表单恢复为该团队的值。
+  // 用渲染期派生（React 官方 "adjusting state when props change" 模式）替代 effect 内 setState：
+  // 行为等价（每次打开都重置），但不触发级联渲染，也不再违反 react-hooks/set-state-in-effect。
+  const [syncedFrom, setSyncedFrom] = useState<{ open: boolean; team?: OrgTeam } | null>(null)
+  if (syncedFrom === null || syncedFrom.open !== open || syncedFrom.team !== team) {
+    setSyncedFrom({ open, team })
+    if (open) {
+      setName(team?.name ?? '')
+      setSlug(team?.slug ?? '')
+      setDescription(team?.description ?? '')
+      setLogo(team?.logo ?? 'building2')
+    }
+  }
 
   /** 新建时的 slug 校验结果（编辑态 slug 不可改，无需校验） */
   const slugIssue = editing ? null : teamSlugIssue(slug, teams)

@@ -37,6 +37,13 @@ export class TableauApiError extends Error {
   }
 }
 
+/**
+ * 认证（signin）阶段错误：与业务请求错误区分开。
+ * 认证是共享资源——signin 失败（限流/凭据问题）时，任何业务查询的重试
+ * 都只会放大对 signin 端点的压力（重试风暴），因此业务层对这类错误一律不重试。
+ */
+export class TableauAuthError extends TableauApiError {}
+
 async function safeText(res: Response): Promise<string> {
   try {
     return await res.text()
@@ -66,7 +73,7 @@ async function signIn(): Promise<CachedAuth> {
     },
   )
   if (!res.ok) {
-    throw new TableauApiError(
+    throw new TableauAuthError(
       `Tableau signin failed: ${res.status} ${(await safeText(res)).slice(0, 200)}`,
       res.status,
     )
@@ -77,7 +84,7 @@ async function signIn(): Promise<CachedAuth> {
   const token = data.credentials?.token
   const siteId = data.credentials?.site?.id
   if (!token || !siteId) {
-    throw new TableauApiError('Tableau signin response missing token/siteId', res.status)
+    throw new TableauAuthError('Tableau signin response missing token/siteId', res.status)
   }
   return { token, siteId }
 }
@@ -89,13 +96,26 @@ async function signIn(): Promise<CachedAuth> {
  * - 令牌意外提前失效由 apiRequest 的 401 → invalidate → 重试 闭环兜底，
  *   不再依赖「掐时间判断过期」。
  */
-export function getAccessToken(): Promise<CachedAuth> {
-  return queryClient.fetchQuery({
-    queryKey: authQueryKey,
-    queryFn: signIn,
-    staleTime: TABLEAU_CONFIG.tokenTtlSeconds * 1000 - 60_000,
-    gcTime: Infinity,
-  })
+export async function getAccessToken(): Promise<CachedAuth> {
+  try {
+    return await queryClient.fetchQuery({
+      queryKey: authQueryKey,
+      queryFn: signIn,
+      staleTime: TABLEAU_CONFIG.tokenTtlSeconds * 1000 - 60_000,
+      gcTime: Infinity,
+      // signin 失败不自动重试：失败原因（限流/凭据）不会因立即重试而消失，
+      // 且业务查询的 retry 会经 getAccessToken 再次触发 signin（single-flight 共享一次尝试），
+      // 这里重试只会让「一次失败」变成「N 次对 signin 端点的冲击」。
+      retry: false,
+    })
+  } catch (err) {
+    // signin 失败：移除错误态缓存，让下一次调用（业务层重试 / 用户刷新）能重新发起登录，
+    // 而不是让失败结果停留在缓存里阻塞所有后续请求。
+    if (err instanceof TableauAuthError) {
+      void queryClient.removeQueries({ queryKey: authQueryKey })
+    }
+    throw err
+  }
 }
 
 /** 作废认证缓存：令牌 401 后调用，下一次 getAccessToken 会重新登录 */
@@ -225,6 +245,41 @@ export async function fetchViewDetail(viewId: string): Promise<TableauViewDetail
 /* ==================== 预览图（previewImage）：blob 也是 Query ==================== */
 
 /**
+ * 预览图请求并发上限：Tableau 的 /image 端点是服务端实时渲染，
+ * 无节制并发会让请求排队、延迟相互放大（实测 12 并发平均 2.6s/张、最慢 6.4s），
+ * 高负载下还会触发瞬时失败。这里是旧 thumbnail-cache 同款信号量防护
+ * （迁移到 Query 层时不应丢弃：Query 的同 key 去重解决不了「不同 key 的并发洪峰」）。
+ */
+const PREVIEW_CONCURRENCY = 3
+
+function createLimiter(max: number) {
+  let active = 0
+  const queue: Array<() => void> = []
+  return async function run<T>(task: () => Promise<T>): Promise<T> {
+    if (active >= max) await new Promise<void>((resolve) => queue.push(resolve))
+    active++
+    try {
+      return await task()
+    } finally {
+      active--
+      queue.shift()?.()
+    }
+  }
+}
+
+const limitPreviewRequests = createLimiter(PREVIEW_CONCURRENCY)
+
+/**
+ * 预览图持久缓存（Cache API，24 小时 TTL）：
+ * /image 响应不带任何缓存头（实测 cache-control: null，仅 vary: Origin），
+ * 浏览器 HTTP 缓存失效 → 每次刷新都全量重拉（1~6 秒/张）。
+ * 预览图内容在 24 小时内视为不变，应用层手动缓存，刷新秒开。
+ * Cache API 不可用（隐私模式等）时静默降级为直连。
+ */
+const PREVIEW_CACHE_NAME = 'tableau-previews-v1'
+const PREVIEW_CACHE_TTL_MS = 24 * 60 * 60 * 1000
+
+/**
  * workbook / view 预览图 blob（带 X-Tableau-Auth 认证头，经 /tableau-proxy 同源代理）。
  * 走 blob 而非 <img src>：浏览器 img 无法携带认证头。
  * 端点与老项目 pg-explorer 一致：
@@ -241,14 +296,76 @@ async function fetchPreviewImageBlob(
     kind === 'workbook'
       ? `/sites/${siteId}/workbooks/${id}/previewImage?maxAge=60`
       : `/sites/${siteId}/views/${id}/image?maxAge=60&resolution=high`
-  try {
-    return await apiRequest(path, {}, (res) => res.blob())
-  } catch (err) {
-    // 404 = 该视图无预览图：返回 null（占位图），不重试；
-    // 其余错误抛给 Query 按 retry/retryDelay 退避重试（替代旧失败缓存）。
-    if (err instanceof TableauApiError && err.status === 404) return null
-    throw err
+
+  return limitPreviewRequests(async () => {
+    const cacheKey = `${TABLEAU_CONFIG.serverUrl}/api/${TABLEAU_CONFIG.apiVersion}${path}`
+
+    let cache: Cache | null = null
+    try {
+      cache = await caches.open(PREVIEW_CACHE_NAME)
+    } catch {
+      // Cache API 不可用：降级为直连
+    }
+
+    if (cache) {
+      try {
+        const hit = await cache.match(cacheKey)
+        if (hit) {
+          const cachedAt = Number(hit.headers.get('x-cached-at') ?? '0')
+          if (Date.now() - cachedAt < PREVIEW_CACHE_TTL_MS) return hit.blob()
+          await cache.delete(cacheKey)
+        }
+      } catch {
+        cache = null
+      }
+    }
+
+    try {
+      const blob = await apiRequest(path, {}, (res) => res.blob())
+      if (cache) {
+        try {
+          // 写入不阻塞返回；缓存键带 siteId，天然按站点隔离
+          void cache.put(
+            cacheKey,
+            new Response(blob, {
+              headers: {
+                'Content-Type': blob.type || 'image/png',
+                'X-Cached-At': String(Date.now()),
+              },
+            }),
+          )
+        } catch {
+          // 缓存写入失败不影响本次展示
+        }
+      }
+      return blob
+    } catch (err) {
+      // 404 = 该视图无预览图：返回 null（占位图），不重试也不缓存；
+      // 其余错误抛给 Query 按 retry 策略处理（仅瞬时故障重试 1 次）。
+      if (err instanceof TableauApiError && err.status === 404) return null
+      throw err
+    }
+  })
+}
+
+/**
+ * 预览图重试策略：仅瞬时故障（网络错误 / 5xx / 429）重试 1 次，固定短延迟；
+ * 4xx 属确定性失败（404 已在 queryFn 内转 null），重试只会放大服务端压力。
+ */
+function previewRetry(failureCount: number, error: unknown): boolean {
+  if (failureCount >= 1) return false
+  // 认证错误：signin 是共享资源，业务查询重试只会放大 signin 压力 → 不重试
+  if (error instanceof TableauAuthError) return false
+  // 4xx（除 429）确定性失败 → 不重试；仅瞬时故障（网络 / 5xx / 429）重试 1 次
+  if (
+    error instanceof TableauApiError &&
+    error.status >= 400 &&
+    error.status < 500 &&
+    error.status !== 429
+  ) {
+    return false
   }
+  return true
 }
 
 /**
@@ -261,8 +378,8 @@ export function previewImageQueryOptions(kind: 'workbook' | 'view', id: string) 
     queryFn: () => fetchPreviewImageBlob(kind, id),
     staleTime: Infinity,
     gcTime: 10 * 60_000,
-    retry: 2,
-    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 5000),
+    retry: previewRetry,
+    retryDelay: 1500,
   })
 }
 
@@ -285,6 +402,7 @@ export function resolvedViewPreviewQueryOptions(workbookName: string, viewName: 
     },
     staleTime: Infinity,
     gcTime: 10 * 60_000,
-    retry: 2,
+    retry: previewRetry,
+    retryDelay: 1500,
   })
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Star, Trash2 } from 'lucide-react'
@@ -60,13 +60,19 @@ export function UserFormDialog({ user, open, onOpenChange }: UserFormDialogProps
   const [status, setStatus] = useState<UserStatus>('active')
   const [isSystemAdmin, setIsSystemAdmin] = useState(false)
 
-  useEffect(() => {
-    if (!open) return
-    setName(user?.name ?? '')
-    setEmail(user?.email ?? '')
-    setStatus(user?.status ?? 'active')
-    setIsSystemAdmin(user?.isSystemAdmin ?? false)
-  }, [open, user])
+  // 打开（或切换编辑目标）时把表单恢复为该用户的值。
+  // 用渲染期派生（React 官方 "adjusting state when props change" 模式）替代 effect 内 setState：
+  // 行为等价（每次打开都重置），但不触发级联渲染，也不再违反 react-hooks/set-state-in-effect。
+  const [syncedFrom, setSyncedFrom] = useState<{ open: boolean; user?: OrgUser } | null>(null)
+  if (syncedFrom === null || syncedFrom.open !== open || syncedFrom.user !== user) {
+    setSyncedFrom({ open, user })
+    if (open) {
+      setName(user?.name ?? '')
+      setEmail(user?.email ?? '')
+      setStatus(user?.status ?? 'active')
+      setIsSystemAdmin(user?.isSystemAdmin ?? false)
+    }
+  }
 
   const handleSubmit = () => {
     const trimmedName = name.trim()

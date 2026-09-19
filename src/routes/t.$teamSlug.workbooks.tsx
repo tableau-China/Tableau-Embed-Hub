@@ -21,7 +21,7 @@ import {
   previewImageQueryOptions,
   type TableauWorkbook,
 } from '@/lib/tableau-api'
-import { isFavorite, toggleFavorite } from '@/lib/view-store'
+import { isFavorite, toggleFavorite, useFavorites } from '@/lib/view-store'
 
 export const Route = createFileRoute('/t/$teamSlug/workbooks')({
   component: WorkbooksPage,
@@ -93,6 +93,8 @@ function WorkbookCard({ workbook }: { workbook: TableauWorkbook }) {
   const { t } = useTranslation()
   const { teamSlug } = Route.useParams()
   const [isExpanded, setIsExpanded] = useState(false)
+  // 订阅收藏列表：切换收藏后本组件重渲染，星标即时反映最新状态
+  useFavorites()
 
   // dashboard（视图）列表：立即加载，无需延迟（与 pg-explorer 一致）
   const { data: dashboards, isLoading: loadingDashboards } = useQuery({

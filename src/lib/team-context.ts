@@ -6,7 +6,7 @@ import { useOrgStore, type OrgTeam } from '@/stores/org-store'
  *
  * 路由约定（v0.5.0 起）：
  *   /t/{slug}/...   —— 团队作用域页面（dashboard / favorites / recents / workbooks / views / flows）
- *   /users /teams /settings —— 跨团队管理页，**不带** slug（对标 pg-explorer 的 /admin/*）
+ *   /users /teams /profile /config/smtp —— 跨团队页面，**不带** slug（对标 pg-explorer 的 /admin/*）
  *   /             —— 重定向到当前团队的 /t/{slug}
  *
  * 为什么以 URL 为权威：此前团队身份只存在 store + localStorage 里，
@@ -52,7 +52,7 @@ export function teamScopedPath(slug: string, path = ''): string {
 
 /**
  * 纯函数：根据 pathname + teams 解析当前团队。
- * URL 中的 slug 优先；非团队作用域路径（/users、/teams、/settings 等）回退 activeTeamId。
+ * URL 中的 slug 优先；非团队作用域路径（/users、/teams、/profile、/config/smtp 等）回退 activeTeamId。
  */
 export function resolveCurrentTeam(
   pathname: string,

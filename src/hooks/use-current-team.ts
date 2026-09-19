@@ -7,7 +7,7 @@ import { useOrgStore, type OrgTeam } from '@/stores/org-store'
 /**
  * 当前 URL 对应的团队（React 侧读取入口）。
  *
- * URL 中的 /t/{slug} 优先，跨团队管理页（/users、/teams、/settings）回退 activeTeamId。
+ * URL 中的 /t/{slug} 优先，跨团队页面（/users、/teams、/profile、/config/smtp）回退 activeTeamId。
  * 订阅 pathname + org store，因此切换团队（URL 变）与切换用户（activeTeamId 变）都会重算。
  */
 export function useCurrentTeam(): OrgTeam | null {

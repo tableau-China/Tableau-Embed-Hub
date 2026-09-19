@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { AlertCircle } from 'lucide-react'
 
 import { TABLEAU_CONFIG } from '@/config/tableau'
+import { logger } from '@/lib/logger'
 import { cn } from '@/lib/utils'
 import { createTableauJwt } from '@/lib/tableau-jwt'
 
@@ -36,7 +37,7 @@ export function TableauEmbed({ src, className }: { src?: string; className?: str
         const tkn = await createTableauJwt(['tableau:views:embed', 'tableau:content:read'])
         if (alive) setToken(tkn)
       } catch (err) {
-        console.error('[Tableau] token refresh failed:', err)
+        logger.error('[Tableau] token refresh failed:', err)
       }
     }
     void refresh()

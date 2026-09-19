@@ -68,7 +68,7 @@ export function TeamSwitcher() {
   /**
    * 切换团队：URL 前缀随团队改变（团队作用域数据随之切换）。
    * 若当前已在某个团队的同级页面内，保留该子路径 —— 所有团队共用同一套页面，
-   * 切团队相当于「换个站点看同一个页面」；管理页（/users、/teams、/settings）则回到团队首页。
+   * 切团队相当于「换个站点看同一个页面」；跨团队页面（/users、/teams、/config/smtp 等）则回到团队首页。
    */
   const switchTeam = (teamSlug: string, teamId: number) => {
     setActiveTeam(teamId)

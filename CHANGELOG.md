@@ -47,7 +47,32 @@
 - **校验脚本**：`scripts/check-smtp.mjs`（规则断言 + 6 项 CDP 用例，含「保存后刷新：密码不落盘」）；
   `scripts/check-permissions.mjs`（目录静态自检 + 12 项用例）
 
-### Changed（变更）
+### Changed（变更，第二批：非流程类框架改动一次性补齐）
+
+- **工具链与本线统一**：依赖升级（React 19.3 / Vite 8.3 / ESLint 10.11 / typescript-eslint 8.70 /
+  TanStack Router 1.170.38 / lucide-react 1.47 等），并按官方方案采用「**TS 6 API 并行**」别名结构 ——
+  `typescript` → `npm:@typescript/typescript6@6.0.2`（供 lint 解析 JS API）、
+  `@typescript/native` → `npm:typescript@7.1.0-dev…`（`tsc`/`typecheck` 仍用 TS 7 原生编译器，另有 `tsc6` 入口）。
+  **`pnpm lint` 恢复可用**（本地已 0 error）。
+  ⚠️ CI 里启用 lint 的那一步（`.github/workflows/ci.yml`）**暂未推送**：当前 GitHub Token 缺少
+  `workflow` scope，GitHub 拒绝更新 workflow 文件（`gh auth refresh -h github.com -s workflow` 后即可补推；
+  改动本身很简单：把 ci.yml 里注释掉的 `- run: pnpm lint` 恢复为启用，并保留本线的「内部路径守卫」步骤）
+- **统一日志出口** `src/lib/logger.ts`（新）：仅开发构建输出（`import.meta.env.DEV`），生产静默；
+  全仓库唯一允许调用 `console` 的位置（例外写在 eslint 配置里，而不是散落的 inline disable）；
+  Tableau 配置与嵌入组件的诊断输出改走 logger
+- **收藏状态订阅修复**：`view-store` 新增 `useFavorites()`（`useSyncExternalStore`），
+  Views / Workbooks / Recents 三处订阅 —— 修掉「切换收藏后星标停留在旧状态」
+- **缩略图 ObjectURL 生命周期**（`thumbnail-query`）：`useObjectUrl` 改为在提交后的 effect 中释放上一代 URL，
+  既不误杀在用 URL 也不泄漏；**Tableau 认证错误单列 `TableauAuthError`**（signin 失败不重试，避免重试风暴）
+- **弹窗表单改为渲染期派生**（`team-dialog` / `user-dialogs`）：消除 effect 内 setState 与级联渲染，
+  同时满足 `react-hooks/set-state-in-effect`
+- `useIsMobile` 改用 `useSyncExternalStore`（首屏即为真实值，不再 undefined→false 翻转）
+- 侧边栏宽度 16rem → 11rem；`team-switcher` / `team-context` / `use-current-team` 注释同步为
+  `/profile`、`/config/smtp` 的现状
+- **未纳入本线**：flows / sql-icon-map 的图标字体与代码高亮变量（`index.html` 的 Material Symbols、
+  `index.css` 的 `--code-*`）随该功能留在本地开发线
+
+### Changed（变更，第一批：v0.7.0 主体）
 
 - **页面宽度统一**：页面一律铺满内容区（`<PageContainer>`），窄栏下沉到内容块（表单 768px、
   摘要 768px、长段落 `max-w-prose`）；实测 7 个页面 × 6 档视口卡片宽度一致且无横向滚动
@@ -73,6 +98,9 @@
 - ✅ `pnpm check:smtp`：规则断言 + 6 项页面用例
 - ✅ `pnpm check:team-routes`：16 项
 - ✅ 宽度实测：7 个页面 × 6 档视口（768/900/1024/1280/1440/1600）卡片宽度一致、无横向滚动条
+- ✅ 依赖升级后复验：`pnpm install`（本线锁文件不含 @xyflow/react、html-to-image）→ `vite build` ✅ /
+  `tsc -b` ✅（TS 7 原生编译器）/ `pnpm lint` ✅（0 error，15 条既有 react-refresh 警告）/
+  `check:i18n` ✅ / `check:permissions` ✅ 14 项 / `check:smtp` ✅ / `check:team-routes` ✅ 16/16
 
 ## [0.5.0] - 2026-09-18
 

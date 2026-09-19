@@ -18,6 +18,10 @@ export default defineConfig(
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
+      parserOptions: {
+        // 显式指定，避免 logs/ 等目录下的 package.json 副本造成 tsconfig 根目录歧义
+        tsconfigRootDir: import.meta.dirname,
+      },
     },
     plugins: {
       'react-hooks': reactHooks,
@@ -54,6 +58,13 @@ export default defineConfig(
       ],
       // Prevent duplicate imports from the same module
       'no-duplicate-imports': 'error',
+    },
+  },
+  {
+    // 统一日志出口：全仓库唯一允许直接调用 console 的文件（见 src/lib/logger.ts 说明）
+    files: ['src/lib/logger.ts'],
+    rules: {
+      'no-console': 'off',
     },
   }
 )
