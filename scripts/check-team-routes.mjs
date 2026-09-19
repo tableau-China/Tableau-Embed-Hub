@@ -13,7 +13,7 @@
  *  4. 未知 slug → 「Team not found」兜底页
  *  5. 非成员访问他团队 → 「No access」兜底页
  *  6. 收藏数据按 URL 团队分区（team-1 的收藏不出现在 acme_analytics 下）
- *  7. 跨团队管理页（/users、/teams、/settings）保持无 slug
+ *  7. 跨团队页面（/users、/teams、/profile、/config/smtp）保持无 slug
  *
  * 依赖：已构建的 dist/（pnpm build）+ 本机 Google Chrome。
  * 用法：node scripts/check-team-routes.mjs
@@ -35,10 +35,38 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const children = []
 function cleanup() {
   for (const c of children) {
+    // 先 SIGTERM 让它正常收尾，随后立刻补 SIGKILL：Chrome 偶尔会忽略 SIGTERM / 还在刷 profile，
+    // 一旦它活过脚本退出，调试端口就被残留进程占着，下一轮会连到旧实例（见 assertPortsFree）。
     try {
       c.kill('SIGTERM')
+      c.kill('SIGKILL')
     } catch {
       /* ignore */
+    }
+  }
+}
+
+/**
+ * 端口自检：**预览端口或调试端口被占用时立刻退出并说明原因**。
+ *
+ * 为什么必须有这道闸：调试端口若被上一轮残留的 Chrome 占用，本脚本会连到那个旧实例
+ * （它停在别的页面、别的构建产物上），表现成「十几个用例一起失败」这种极难定位的假故障。
+ * 宁可立刻报错，也不要给出不可信的通过/失败报告。
+ */
+async function assertPortsFree() {
+  for (const port of [PORT, DEBUG_PORT]) {
+    let occupied = false
+    try {
+      await fetch(`http://127.0.0.1:${port}/`, { signal: AbortSignal.timeout(1500) })
+      occupied = true
+    } catch {
+      /* 连不上 = 空闲 */
+    }
+    if (occupied) {
+      throw new Error(
+        `端口 ${port} 已被占用，本脚本不会连接陌生实例。` +
+          `请先执行 \`pkill -f "remote-debugging-port=${port}"\` 后重跑。`,
+      )
     }
   }
 }
@@ -191,10 +219,22 @@ const CASES = [
     contains: ['Teams'],
   },
   {
-    name: '跨团队管理页不带 slug（/settings）',
-    path: '/settings',
-    expectPath: '/settings',
-    contains: ['Settings'],
+    // v0.7.0：原 /settings 实为「个人资料」，改名 /profile，入口在左下角用户菜单
+    name: '跨团队页面不带 slug（/profile）',
+    path: '/profile',
+    expectPath: '/profile',
+    contains: ['Profile'],
+  },
+  {
+    name: '跨团队页面嵌套路径不带 slug（/config/smtp）',
+    path: '/config/smtp',
+    expectPath: '/config/smtp',
+    contains: ['SMTP server'],
+  },
+  {
+    name: '/config 重定向到 config/smtp',
+    path: '/config',
+    expectPath: '/config/smtp',
   },
   {
     name: '侧边栏链接带当前团队 slug',
@@ -341,6 +381,8 @@ async function runCase(cdp, c) {
 }
 
 async function main() {
+  await assertPortsFree()
+
   const vite = spawn(
     'node_modules/.bin/vite',
     // 显式 --host 127.0.0.1：默认只监听 IPv6 的 ::1，会让 IPv4 探活失败
@@ -387,6 +429,15 @@ async function main() {
   }
 
   cdp.close()
+  // 先结束浏览器再删临时 profile：Chrome 仍在写盘时 rmSync 会抛 ENOTEMPTY，
+  // 而这属于清理步骤 —— 绝不能因此把已经跑出来的用例结果一起丢掉。
+  cleanup()
+  await delay(500)
+  try {
+    rmSync(userDataDir, { recursive: true, force: true })
+  } catch {
+    /* 临时目录清理失败不影响校验结论（下次运行会新建） */
+  }
 
   let failed = 0
   for (const r of results) {
@@ -400,12 +451,6 @@ async function main() {
   }
   console.log(`\n[team-routes] ${results.length - failed}/${results.length} 通过`)
 
-  try {
-    rmSync(userDataDir, { recursive: true, force: true })
-  } catch {
-    /* ignore */
-  }
-  cleanup()
   process.exit(failed === 0 ? 0 : 1)
 }
 

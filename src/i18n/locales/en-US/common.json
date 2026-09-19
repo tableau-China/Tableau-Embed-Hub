@@ -11,6 +11,11 @@
     "workbooks": "Workbooks",
     "views": "Views",
     "teams": "Teams",
+    "permissions": "Permissions",
+    "profile": "Profile",
+    "help": "Help",
+    "config": "Config",
+    "smtp": "SMTP",
     "switchTeam": "Switch team",
     "createTeam": "Create team",
     "manageTeams": "Manage teams",
@@ -34,6 +39,7 @@
     "create": "Create",
     "add": "Add",
     "save": "Save changes",
+    "discard": "Discard changes",
     "close": "Close"
   },
   "dashboard": {
@@ -115,21 +121,206 @@
     "inProgress": "In progress",
     "done": "Done"
   },
-  "settings": {
-    "title": "Settings",
-    "subtitle": "Manage your preferences",
-    "profile": "Profile",
-    "general": "General",
+  "profile": {
+    "title": "Profile",
+    "subtitle": "Manage your own account details",
     "displayName": "Display name",
     "displayNamePlaceholder": "Jane Doe",
     "email": "Email",
     "emailPlaceholder": "jane@example.com",
+    "emailHint": "Used for sign-in and email notifications. It has to be unique.",
+    "avatarHint": "Initials are derived from the display name and shown in the sidebar",
+    "unsaved": "Unsaved changes",
+    "noChanges": "No changes yet",
+    "saved": "Profile updated",
+    "fixErrors": "Fix the highlighted fields first",
+    "accountTitle": "Account",
+    "accountSubtitle": "Read-only summary of the identity you are signed in as",
+    "role": "Global role",
     "language": "Language",
-    "english": "English",
-    "notifications": "Email notifications",
-    "notificationsHint": "Receive email updates about your account activity",
-    "save": "Save changes",
-    "saved": "Settings saved"
+    "languageHint": "Switched from the header",
+    "teams": "Teams",
+    "teamsHint": "You sit above teams — the role you hold can differ from team to team.",
+    "manageUsers": "Manage users"
+  },
+  "config": {
+    "subtitle": "System-wide settings for this deployment"
+  },
+  "help": {
+    "subtitle": "What this template does, who built it and which version you are running",
+    "aboutSubtitle": "A from-scratch admin template, not a template fork",
+    "aboutBody": "shadcn-admin-cn is an admin dashboard template built from scratch on shadcn/ui + Tailwind CSS v4 + Radix UI + TanStack Router. It has no backend and no vendor fork: what you see is the whole source. It ships the scaffolding a multi-team dashboard needs — team-scoped URLs, page-level permissions, system configuration — plus a few real data pages instead of placeholder screens.",
+    "developer": "Developer",
+    "website": "Website",
+    "version": "Version",
+    "license": "License",
+    "featuresTitle": "Core features",
+    "featuresSubtitle": "What is actually implemented in this version — not a roadmap",
+    "feature": {
+      "teams": {
+        "title": "Multi-team workspace",
+        "body": "Users sit above teams and can hold a different role in each. Every workspace URL carries its team slug (/t/{slug}/…), so a shared link keeps its context and two tabs can sit in two teams."
+      },
+      "permissions": {
+        "title": "Page-level permissions",
+        "body": "One route catalog drives the sidebar, the route guard and the roles × pages matrix on /permissions. Pages added later stay admin-only until granted (fail-closed)."
+      },
+      "tableau": {
+        "title": "Tableau embedding",
+        "body": "Workbooks, views, favourites and recents, embedded with a Connected App JWT signed in the browser."
+      },
+      "flows": {
+        "title": "Processing flow atlas",
+        "body": "FOC / AMRO / clean-layer pipelines drawn as graphs, with per-node field lineage, single-row SQL, the full CTE SQL and the generated PySpark source."
+      },
+      "config": {
+        "title": "System configuration",
+        "body": "The Config section holds deployment-wide settings, starting with SMTP: provider presets, live preflight checks and a password that is never written to disk."
+      },
+      "profile": {
+        "title": "Your own profile",
+        "body": "Reached from the user menu at the bottom left — display name and email bound to the signed-in account, with role and teams shown read-only."
+      },
+      "i18n": {
+        "title": "Internationalisation and theming",
+        "body": "i18next dictionaries (en-US today, more locales later) plus light / dark / system themes, both switchable from the header."
+      },
+      "quality": {
+        "title": "Behaviour locked by scripts",
+        "body": "Type checking plus Chrome-driven check suites (routes, permissions, SMTP, flow layout, i18n parity): the behaviours a type system cannot prove are asserted in a real browser."
+      }
+    },
+    "stackTitle": "Tech stack",
+    "stackSubtitle": "Major versions — exact versions are pinned in package.json",
+    "docsTitle": "Where to look next",
+    "docsSubtitle": "The three files that answer most follow-up questions",
+    "docs": {
+      "permissions": {
+        "path": "docs/route-permissions.md",
+        "body": "Permission model, evaluation rules, and the standard flow for adding a page or a button-level permission."
+      },
+      "flows": {
+        "path": "docs/flow-page-conventions.md",
+        "body": "Conventions for flow pages: routing, layout and the checks a new graph page has to pass."
+      },
+      "checks": {
+        "path": "scripts/check-*.mjs",
+        "body": "Each check suite documents, in code, the behaviour it pins down — start at the file header."
+      }
+    },
+    "securityTitle": "Before you ship this",
+    "securityNote": "This template is front-end only. Tableau credentials and the SMTP password therefore live in the browser, and the route guards control visibility rather than authorisation. Real access control belongs on a server: verify permissions per request, keep secrets server-side, and validate the sending domain (SPF / DKIM) before email goes live."
+  },
+  "smtp": {
+    "serverTitle": "SMTP server",
+    "serverSubtitle": "Connection this system uses to send email: notifications, invitations, password resets",
+    "status": {
+      "empty": "Not configured",
+      "incomplete": "Needs attention",
+      "ready": "Ready to save"
+    },
+    "preset": "Provider preset",
+    "presetHint": "Pick a provider to fill in host, port and encryption. Credentials are yours to enter.",
+    "presetApplied": "Filled in {{host}} — now check the credentials below",
+    "host": "SMTP host",
+    "hostHint": "Host name only — no scheme, no path",
+    "port": "Port",
+    "portHint": "587 / 465 / 25",
+    "encryption": "Encryption",
+    "encryptionHint": "How the connection is protected",
+    "encryptionMode": {
+      "none": "None (plain)",
+      "starttls": "STARTTLS",
+      "ssl": "SSL/TLS"
+    },
+    "username": "Username",
+    "usernameHint": "Usually the mailbox address; some providers want the bare account name",
+    "password": "Password / app password",
+    "passwordHint": "Held in memory only — see the note below",
+    "passwordPlaceholderNew": "SMTP password or authorization code",
+    "passwordPlaceholderKeep": "Leave empty to keep the saved password",
+    "passwordStored": "Password in memory",
+    "clearPassword": "Clear password",
+    "passwordCleared": "Password cleared",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "fromEmail": "From address",
+    "fromEmailHint": "Shown as the sender; most providers require it to match the account",
+    "fromName": "From name",
+    "fromNamePlaceholder": "shadcn-admin notifications",
+    "fromNameHint": "Optional display name shown next to the address",
+    "unsaved": "Unsaved changes",
+    "noChanges": "No unsaved changes",
+    "errorCount_one": "{{count}} blocking error",
+    "errorCount_other": "{{count}} blocking errors",
+    "lastSaved": "Last saved {{time}}",
+    "saveBlocked_one": "{{count}} blocking error — fix it before saving",
+    "saveBlocked_other": "{{count}} blocking errors — fix them before saving",
+    "saved": "SMTP configuration saved",
+    "savedWithWarnings_one": "Saved — {{count}} warning to review",
+    "savedWithWarnings_other": "Saved — {{count}} warnings to review",
+    "checkTitle": "Configuration check",
+    "checkSubtitle": "Live check of the settings above: errors block saving, warnings do not",
+    "checkLabel": {
+      "host": "host",
+      "port": "port",
+      "encryption": "encryption",
+      "username": "username",
+      "password": "password",
+      "fromEmail": "from",
+      "provider": "provider"
+    },
+    "check": {
+      "hostRequired": "Host is required",
+      "hostHasScheme": "Enter the host name only — drop the scheme (http://) and any path",
+      "hostChars": "Host may only contain letters, digits, dots, hyphens and underscores",
+      "hostIntranet": "“{{host}}” has no domain suffix — fine for an intranet relay, and it must still resolve in DNS",
+      "hostOk": "Host looks usable",
+      "portRange": "Port must be an integer between 1 and 65535",
+      "portWantsSsl": "Port {{port}} is the implicit-TLS port: switch encryption to {{mode}}",
+      "portWantsStarttls": "Port {{port}} normally pairs with STARTTLS, not SSL/TLS — connecting straight to TLS rarely works here",
+      "port25Blocked": "Port 25 is commonly blocked outbound by ISPs and cloud providers — use 587 with STARTTLS",
+      "portOk": "Port is in range",
+      "encryptionNone": "Traffic is not encrypted — only acceptable on a trusted intranet relay",
+      "encryptionOk": "Connection is protected with {{mode}}",
+      "usernameMissing": "No username: most providers reject unauthenticated mail. Leave it empty only for a trusted relay.",
+      "usernameWhitespace": "Username contains whitespace",
+      "usernameOk": "Username set",
+      "passwordMissing": "No password or authorization code yet — sending will fail until you enter one",
+      "passwordWithoutUsername": "A password is held, but there is no username to authenticate with",
+      "passwordOk": "Credential present for this session",
+      "passwordNotNeeded": "No credential needed for an anonymous relay",
+      "fromRequired": "From address is required",
+      "fromInvalid": "From address is not a valid email address",
+      "fromOk": "From address looks valid",
+      "providerCustom": "Custom host — nothing to compare against a provider reference",
+      "providerMismatch": "{{provider}} normally uses port {{port}} with {{mode}} — check the values above",
+      "providerOk": "Matches the {{provider}} reference values"
+    },
+    "localCheckNoteTitle": "This check runs in the browser",
+    "localCheckNote": "The template ships without a backend and a browser cannot open an SMTP socket, so the checks above cover the configuration itself: format, port/encryption consistency and provider reference values. The real handshake (EHLO → STARTTLS → AUTH) has to run server-side — wire the button to your API once it exists:",
+    "serverSideSnippet": "POST /api/config/smtp/test -> nodemailer.createTransport(...).verify()",
+    "secretNoteTitle": "Where the password lives",
+    "secretNote": "The password is kept in memory for this session only and is never written to localStorage: a browser-side “encrypted” secret would ship its own key inside the bundle, so anyone who can read the bundle can decrypt it. Store it on the server instead (encrypted, never returned by the API) as soon as the backend lands.",
+    "referenceTitle": "Provider reference",
+    "referenceSubtitle": "Common providers — always confirm against the provider's current documentation",
+    "referenceProvider": "Provider",
+    "referenceCredential": "Credential to use",
+    "presetCredential": {
+      "qq": "Turn on SMTP in QQ Mail and use the authorization code, not the login password",
+      "163": "Turn on SMTP in 163 Mail and use the authorization code, not the login password",
+      "gmail": "Needs 2-step verification: use a 16-character app password",
+      "aliyunQiye": "Enterprise mailbox account and its password",
+      "tencentExmail": "Enterprise mailbox account and password; a client password when the policy requires it",
+      "outlook": "Mailbox account with an app password — basic auth is off on most tenants"
+    },
+    "resetTitle": "Reset configuration",
+    "resetHint": "Clears every SMTP field and the in-memory password, and starts over from the defaults. Cannot be undone.",
+    "resetAction": "Reset SMTP configuration",
+    "resetDialogTitle": "Reset the SMTP configuration?",
+    "resetDialogMessage": "Host, port, encryption, credentials and sender revert to the shipped defaults, and the in-memory password is dropped. This cannot be undone.",
+    "resetConfirm": "Reset configuration",
+    "resetDone": "SMTP configuration reset"
   },
   "teams": {
     "title": "Teams",
@@ -156,13 +347,7 @@
     "namePlaceholder": "e.g. Acme Data Platform",
     "nameRequired": "Team name is required",
     "nameTaken": "A team with this name already exists",
-    "slugLabel": "Team slug",
-    "slugPlaceholder": "e.g. dev_api",
-    "slugHint": "English letters, digits and underscores only. It is the team's stable identifier — choose carefully.",
-    "slugLocked": "Fixed at creation — the team's stable identifier, cannot be edited.",
-    "slugRequired": "Team slug is required",
-    "slugInvalid": "Only English letters, digits and underscores are allowed",
-    "slugTaken": "This slug is already in use",
+    "slugHint": "URL slug (auto): {{slug}}",
     "dialogHint": "A team is a workspace. Users are invited into teams as members with a role (team admin / analyst / viewer).",
     "logo": "Logo",
     "membersTitle": "Members — {{team}}",
@@ -175,13 +360,13 @@
     "removeMember": "Remove member",
     "setDefaultTeam": "Set as default team",
     "defaultTeam": "Default team",
+    "defaultLabel": "Default",
     "selectUser": "Select user…",
     "selectUserRequired": "Select a user to add",
     "selectTeam": "Select team…",
     "selectTeamRequired": "Select a team to add",
     "manageMembers": "Members",
     "readOnlyHint": "Only system administrators can create, edit or delete teams.",
-    "defaultLabel": "Default",
     "addMemberHint": "Add a member"
   },
   "favorites": {
@@ -237,6 +422,53 @@
     "backHome": "Go to dashboard",
     "manageTeams": "Manage teams",
     "switchToMyTeam": "Open my team"
+  },
+  "routeAccess": {
+    "title": "You don't have access to this page",
+    "message": "\"{{page}}\" is not enabled for your role. Ask a system administrator to grant it on the Permissions page.",
+    "backToTeam": "Go to team home",
+    "backHome": "Go to dashboard",
+    "manageTeams": "Manage teams"
+  },
+  "permissions": {
+    "title": "Page permissions",
+    "subtitle": "Choose which pages each role can open",
+    "matrixTitle": "Roles × pages",
+    "matrixSubtitle": "Check a box to grant that role access to the page. Rules below decide which role applies.",
+    "page": "Page",
+    "searchPlaceholder": "Search page, route or key…",
+    "empty": "No page matches your search.",
+    "scopeGlobal": "Global identity",
+    "scopeTeam": "Role in current team",
+    "notApplicable": "Not applicable: this page is not evaluated for this role",
+    "currentActor": "Signed in as {{name}} — {{role}}",
+    "actorTeamRole": "{{role}} in {{team}}",
+    "noteTeam": "Team pages are checked against your role in the current team — the same person can differ per team.",
+    "noteGlobal": "Management pages are checked against your global identity (administrator or member).",
+    "noteNewPage": "New pages default to system-administrator-only until granted here (fail-closed); use \"Apply defaults\" to grant everything the catalog suggests.",
+    "selectAll": "All",
+    "clear": "Clear",
+    "grantedCount": "{{granted}} / {{total}} pages",
+    "lockedRole": "Always every permission (not editable)",
+    "required": "Base page",
+    "inherited": "Granted by {{pattern}}",
+    "toggleHint": "Toggle access for this role",
+    "wildcardHint": "Also covers pages added later under the same branch",
+    "removeWildcard": "Remove broad grant {{pattern}}",
+    "ungranted": "No role",
+    "ungrantedHint": "No role can open this page yet — use \"Fill in defaults\" or grant it here.",
+    "adminOnly": "Admin only",
+    "adminOnlyHint": "By design: no role is granted this page, so only system administrators can open it.",
+    "autoSaved": "Ticking a box takes effect and is saved instantly — there is no Save button on this page.",
+    "fillDefaults": "Fill in defaults · {{missing}}",
+    "fillDefaultsHint": "Adds the pages the catalog suggests for each role. Nothing you granted by hand is removed — this is not a reset.",
+    "fillDefaultsDone": "Default grants added",
+    "resetAction": "Reset everything to defaults",
+    "resetTitle": "Reset all page permissions?",
+    "resetMessage": "Every role goes back to the shipped defaults. Hand-made changes are discarded, including extra grants and broad grants such as page.flows.*. This cannot be undone.",
+    "resetConfirm": "Reset everything",
+    "resetDone": "Permissions reset to defaults",
+    "actionsReserved": "Button-level permissions are not enabled yet — the model already reserves the action namespace ({{registered}} registered)."
   },
   "notFound": {
     "title": "Page not found",

@@ -1,15 +1,36 @@
 # shadcn-admin-cn 项目进度（PROGRESS）
 
-> 更新于 2026-09-18 ｜ 项目根目录：`/Users/xilejun/WorkBuddy/ds_Harness/shadcn_admin_cn`
+> 更新于 2026-09-19 ｜ 项目根目录：`/Users/xilejun/WorkBuddy/ds_Harness/shadcn_admin_cn`
 
 ## 项目概况
 
-- **目标**：从零构建管理后台模板（React 19 + TypeScript 7 + Vite 8 + Tailwind CSS v4 + shadcn/ui(Radix) + TanStack Router），包含 shadcn-admin 的全部基础功能，**不含** Tableau / AI 功能，v0.4.0 起含**多团队 + 全局用户**（参照 pg-explorer，无内部流程功能），v0.5.0 起**团队身份进入 URL**（`/t/{slug}/...`，对齐 pg-explorer 的 `/t/{slug}` + `/admin/*` 划分）；i18n 当前仅 **en-US**，中文/日文后期扩展。
+- **目标**：从零构建管理后台模板（React 19 + TypeScript 7 + Vite 8 + Tailwind CSS v4 + shadcn/ui(Radix) + TanStack Router），包含 shadcn-admin 的全部基础功能，**不含** Tableau / AI 功能，v0.4.0 起含**多团队 + 全局用户**（参照 pg-explorer，无内部流程功能），v0.5.0 起**团队身份进入 URL**（`/t/{slug}/...`，对齐 pg-explorer 的 `/t/{slug}` + `/admin/*` 划分），v0.6.0 起**页面级权限**（角色 × 路由，权限页勾选；按钮级权限仅预留命名空间），v0.7.0 起**个人资料归位**（`/settings` → `/profile`，入口在左下角用户菜单）+ **Config 分组与 SMTP 配置页** + **帮助页** + **前端通用件**；i18n 当前仅 **en-US**，中文/日文后期扩展。
 - **关键决策**：跳过 shadcn-admin 模板（无 Sat Naing 署名义务）、TypeScript 7.1.0-dev（next 开发版，验证未来升级，正式版发布后直接升级）、Vite 8.2.1 最新稳定、i18n 当前仅 en-US（zh-CN / zh-TW / ja-JP 后期扩展）。
 - **注意**：用户原指定路径 `/Users/xilejun/ds_Harness/shadcn_admin_cn` 不存在，实际目录在 `/Users/xilejun/WorkBuddy/ds_Harness/shadcn_admin_cn`。
-- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.5.0**）。
+- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.7.0**）。
 
 ---
+
+## ✅ v0.7.0（2026-09-19）— 页面权限 + 个人资料 / Config-SMTP / 帮助页 + 前端通用件
+
+框架线一次落三个版本的内容（v0.6.0 的页面权限此前只在本地开发线完成，本版一并入库）：
+
+- ✅ **页面级权限（v0.6.0）**：`ROUTE_CATALOG` 作为侧边栏 / 路由守卫 / 权限页的唯一数据源（新增页面只登记一行）；
+  5 个角色 × 11 条路由的勾选矩阵 `/permissions`（勾选即时生效、无保存按钮；底座页面与系统管理员列锁定；
+  新页面 fail-closed，可用「补齐默认授权」一键补齐）
+- ✅ **个人资料 `/profile`（v0.7.0）**：由 `/settings` 改名，入口移到左下角用户菜单（`navHidden` 但仍受权限约束）；
+  表单绑定 org-store 当前登录用户，保存后侧边栏头像/缩写同步
+- ✅ **Config 分组 + SMTP 配置页 `/config/smtp`**：服务商预设一键回填、三态加密方式、7 项实时预检、
+  密码留空即保持、Reset 二次确认；`src/lib/smtp.ts` 为纯函数领域层，`stores/config-store.ts` 持久化且**密码不落盘**
+- ✅ **帮助页 `/help`**：核心功能 8 条 + 开发者与版本（`src/config/app.ts` 为元信息唯一来源）+ 技术栈 +
+  文档入口 + 上线前安全提醒；排在 Config 分组内 SMTP 之后，默认授权给所有成员
+- ✅ **前端通用件**：`PageContainer` / `FormGrid` + `FormField` / `NoteCallout` / `DescriptionList` / `useFormTouch`；
+  约定与宽度规则写入 `docs/ui-conventions.md`
+- ✅ **版面与 shell 修复**：页面一律铺满内容区（窄栏下沉到内容块）；`SidebarInset`/`main` 补 `min-w-0`，
+  修掉「宽表格顶宽整页」导致的横向滚动条
+- ✅ **校验脚本**：新增 `scripts/check-smtp.mjs`；`check-permissions.mjs` 静态自检 + 12 项 CDP 用例；
+  `check-team-routes.mjs` 16 项；三个脚本都会在调试端口被占用时快速失败（避免连到残留 Chrome 产生假失败）
+- ✅ 版本四处同步 0.7.0（package.json / `src/config/app.ts` / PROGRESS.md / CHANGELOG.md）
 
 ## ✅ 已完成（Done）
 

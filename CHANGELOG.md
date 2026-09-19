@@ -6,6 +6,7 @@
 
 | 版本 | package.json | 侧边栏显示 | PROGRESS.md | CHANGELOG 条目 | 日期 |
 | --- | --- | --- | --- | --- | --- |
+| 0.7.0 | ✅ `0.7.0` | ✅ `v0.7.0`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#070---2026-09-19) | 2026-09-19 |
 | 0.5.0 | ✅ `0.5.0` | ✅ `v0.5.0`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#050---2026-09-18) | 2026-09-18 |
 | 0.4.2 | ✅ `0.4.2` | ✅ `v0.4.2`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#042---2026-09-18) | 2026-09-18 |
 | 0.4.1 | ✅ `0.4.1` | ✅ `v0.4.1`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#041---2026-09-04) | 2026-09-04 |
@@ -15,6 +16,63 @@
 | 0.1.0 | ✅ `0.1.0` | ✅ `v0.1.0` | ✅ 已同步 | ✅ [本节](#010---2026-08-16) | 2026-08-16 |
 
 > 约定：新版本发布时，先升 `package.json` 的 `version`，再更新本表与下方条目。
+
+## [0.7.0] - 2026-09-19
+
+**页面权限 + 个人资料归位 + Config/SMTP + 帮助页 + 前端通用件。** 本版把此前只在本地开发线完成的
+**v0.6.0 页面权限**一并入库，并落地四个新页面与一套通用件；全站页面宽度统一、横向滚动条缺陷修复。
+
+### Added（新增）
+
+- **页面权限（v0.6.0 内容）**：
+  - `src/config/permissions.ts` —— `ROUTE_CATALOG` 11 条路由（侧边栏 / 路由守卫 / 权限页**三处同源**，
+    新增页面只登记一行）+ 5 个角色（全局 `system-admin`/`member` + 团队岗位三名）+ 由 `defaultRoles`
+    派生的 `DEFAULT_GRANTS` + `normalizeGrants`/`withDefaultRoles`；`RouteEntry.navHidden`（入口不在侧边栏
+    但仍受权限约束）、`LEGACY_PERMISSION_ALIASES`（页面改名时迁移持久化矩阵里的旧键）
+  - `src/lib/permissions.ts`（通配匹配、作用域求值、pathname → 目录条目）、`src/stores/permission-store.ts`
+    （三条硬规则写在 store 里）、`src/hooks/use-permissions.ts`、`src/components/route-guard.tsx`
+    （`GlobalRouteGate` 挂在 `__root.tsx`，新增页面无需各写守卫）
+  - 权限页 `/permissions`：角色 × 页面勾选矩阵（勾选即时生效、**无保存按钮**；整表操作只有「补齐默认授权」
+    与「重置全部授权」，且刻意做得不像一对「取消/保存」）
+- **个人资料 `/profile`**：`/settings` → `/profile`，入口移到左下角用户菜单；表单绑定当前登录用户，
+  校验与 `/users` 用户弹窗同源；去掉旧页的占位字段与假控件
+- **系统配置 `/config/smtp`**（Config 分组，fail-closed 默认仅系统管理员）：服务商预设一键回填、
+  三态加密方式（none / STARTTLS / SSL）、7 项**实时预检**、字段级 inline 错误、密码留空即保持、
+  `Discard`/`Reset`（二次确认）、服务商参考表；`src/lib/smtp.ts` 纯函数领域层 + `src/stores/config-store.ts`
+  （**密码只存内存、永不落盘**，接后端的接口形状写在文件头）
+- **帮助页 `/help`**：核心功能 8 条 + 开发者与版本（`src/config/app.ts` 为元信息唯一来源）+ 技术栈徽章 +
+  文档入口 + 上线前安全提醒；侧边栏 Config 分组内**排在 SMTP 之后**，默认授权给所有成员
+- **前端通用件**：`PageContainer`、`FormGrid`/`FormField`、`NoteCallout`、`DescriptionList`、
+  `useFormTouch`；约定写入 `docs/ui-conventions.md`（页面/表单骨架、宽度约定、宽表格为何顶宽整页、新增页面清单）
+- **校验脚本**：`scripts/check-smtp.mjs`（规则断言 + 6 项 CDP 用例，含「保存后刷新：密码不落盘」）；
+  `scripts/check-permissions.mjs`（目录静态自检 + 12 项用例）
+
+### Changed（变更）
+
+- **页面宽度统一**：页面一律铺满内容区（`<PageContainer>`），窄栏下沉到内容块（表单 768px、
+  摘要 768px、长段落 `max-w-prose`）；实测 7 个页面 × 6 档视口卡片宽度一致且无横向滚动
+- **shell 级修复**：`SidebarInset` 与 `<main>` 补 `min-w-0` —— 它们是 flex 子项，默认 `min-width: auto`
+  会让宽表格（`TableHead`/`TableCell` 默认 `whitespace-nowrap`）把整页顶得比视口还宽；现在过宽内容
+  改为在卡片内部滚动
+- **主操作禁用语义统一**：不再因为「存在校验错误」而置灰保存按钮（点不动也看不到哪里错），改为
+  有改动即可点、点击后统一揭示所有错误；仅在无改动时禁用
+- `src/components/app-sidebar.tsx` 改为目录派生 + 权限过滤；`Header` 段映射、`_root` 守卫、i18n 同步
+
+### Notes（边界）
+
+- **前端权限不是安全边界**：本版拒绝的是「渲染 + 直达 URL」，改内存即可绕过；接后端后必须由接口再校验
+- **SMTP 密码只在内存**：纯前端下「加密后存 localStorage」的密钥必然随 bundle 发出，属安全剧场；
+  接后端后改为服务端加密存储、接口只回 `hasPassword`
+- **SMTP 预检 ≠ 真实连通性**：浏览器开不了 SMTP 套接字，EHLO → STARTTLS → AUTH 的真实握手必须服务端执行
+
+### 验证
+
+- ✅ `pnpm build`（tsc -b + vite build）；`pnpm typecheck`
+- ✅ `pnpm check:i18n`（411 keys，en-US 单语言对齐）
+- ✅ `pnpm check:permissions`：静态自检 + 12 项 CDP 用例
+- ✅ `pnpm check:smtp`：规则断言 + 6 项页面用例
+- ✅ `pnpm check:team-routes`：16 项
+- ✅ 宽度实测：7 个页面 × 6 档视口（768/900/1024/1280/1440/1600）卡片宽度一致、无横向滚动条
 
 ## [0.5.0] - 2026-09-18
 

@@ -11,13 +11,18 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SplatRouteImport } from './routes/$'
+import { Route as ConfigRouteImport } from './routes/config'
 import { Route as FavoritesRouteImport } from './routes/favorites'
+import { Route as HelpRouteImport } from './routes/help'
+import { Route as PermissionsRouteImport } from './routes/permissions'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as RecentsRouteImport } from './routes/recents'
-import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as TeamsRouteImport } from './routes/teams'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as ViewsRouteImport } from './routes/views'
 import { Route as WorkbooksRouteImport } from './routes/workbooks'
+import { Route as ConfigIndexRouteImport } from './routes/config.index'
+import { Route as ConfigSmtpRouteImport } from './routes/config.smtp'
 import { Route as TTeamSlugRouteImport } from './routes/t.$teamSlug'
 import { Route as TTeamSlugIndexRouteImport } from './routes/t.$teamSlug.index'
 import { Route as TTeamSlugFavoritesRouteImport } from './routes/t.$teamSlug.favorites'
@@ -35,19 +40,34 @@ const SplatRoute = SplatRouteImport.update({
   path: '/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConfigRoute = ConfigRouteImport.update({
+  id: '/config',
+  path: '/config',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FavoritesRoute = FavoritesRouteImport.update({
   id: '/favorites',
   path: '/favorites',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HelpRoute = HelpRouteImport.update({
+  id: '/help',
+  path: '/help',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PermissionsRoute = PermissionsRouteImport.update({
+  id: '/permissions',
+  path: '/permissions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RecentsRoute = RecentsRouteImport.update({
   id: '/recents',
   path: '/recents',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TeamsRoute = TeamsRouteImport.update({
@@ -69,6 +89,16 @@ const WorkbooksRoute = WorkbooksRouteImport.update({
   id: '/workbooks',
   path: '/workbooks',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ConfigIndexRoute = ConfigIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ConfigRoute,
+} as any)
+const ConfigSmtpRoute = ConfigSmtpRouteImport.update({
+  id: '/smtp',
+  path: '/smtp',
+  getParentRoute: () => ConfigRoute,
 } as any)
 const TTeamSlugRoute = TTeamSlugRouteImport.update({
   id: '/t/$teamSlug',
@@ -104,14 +134,19 @@ const TTeamSlugWorkbooksRoute = TTeamSlugWorkbooksRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/config': typeof ConfigRouteWithChildren
   '/favorites': typeof FavoritesRoute
+  '/help': typeof HelpRoute
+  '/permissions': typeof PermissionsRoute
+  '/profile': typeof ProfileRoute
   '/recents': typeof RecentsRoute
-  '/settings': typeof SettingsRoute
   '/teams': typeof TeamsRoute
   '/users': typeof UsersRoute
   '/views': typeof ViewsRoute
   '/workbooks': typeof WorkbooksRoute
+  '/config/smtp': typeof ConfigSmtpRoute
   '/t/$teamSlug': typeof TTeamSlugRouteWithChildren
+  '/config/': typeof ConfigIndexRoute
   '/t/$teamSlug/favorites': typeof TTeamSlugFavoritesRoute
   '/t/$teamSlug/recents': typeof TTeamSlugRecentsRoute
   '/t/$teamSlug/views': typeof TTeamSlugViewsRoute
@@ -122,12 +157,16 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/favorites': typeof FavoritesRoute
+  '/help': typeof HelpRoute
+  '/permissions': typeof PermissionsRoute
+  '/profile': typeof ProfileRoute
   '/recents': typeof RecentsRoute
-  '/settings': typeof SettingsRoute
   '/teams': typeof TeamsRoute
   '/users': typeof UsersRoute
   '/views': typeof ViewsRoute
   '/workbooks': typeof WorkbooksRoute
+  '/config/smtp': typeof ConfigSmtpRoute
+  '/config': typeof ConfigIndexRoute
   '/t/$teamSlug/favorites': typeof TTeamSlugFavoritesRoute
   '/t/$teamSlug/recents': typeof TTeamSlugRecentsRoute
   '/t/$teamSlug/views': typeof TTeamSlugViewsRoute
@@ -138,14 +177,19 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/config': typeof ConfigRouteWithChildren
   '/favorites': typeof FavoritesRoute
+  '/help': typeof HelpRoute
+  '/permissions': typeof PermissionsRoute
+  '/profile': typeof ProfileRoute
   '/recents': typeof RecentsRoute
-  '/settings': typeof SettingsRoute
   '/teams': typeof TeamsRoute
   '/users': typeof UsersRoute
   '/views': typeof ViewsRoute
   '/workbooks': typeof WorkbooksRoute
+  '/config/smtp': typeof ConfigSmtpRoute
   '/t/$teamSlug': typeof TTeamSlugRouteWithChildren
+  '/config/': typeof ConfigIndexRoute
   '/t/$teamSlug/favorites': typeof TTeamSlugFavoritesRoute
   '/t/$teamSlug/recents': typeof TTeamSlugRecentsRoute
   '/t/$teamSlug/views': typeof TTeamSlugViewsRoute
@@ -157,14 +201,19 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/$'
+    | '/config'
     | '/favorites'
+    | '/help'
+    | '/permissions'
+    | '/profile'
     | '/recents'
-    | '/settings'
     | '/teams'
     | '/users'
     | '/views'
     | '/workbooks'
+    | '/config/smtp'
     | '/t/$teamSlug'
+    | '/config/'
     | '/t/$teamSlug/favorites'
     | '/t/$teamSlug/recents'
     | '/t/$teamSlug/views'
@@ -175,12 +224,16 @@ export interface FileRouteTypes {
     | '/'
     | '/$'
     | '/favorites'
+    | '/help'
+    | '/permissions'
+    | '/profile'
     | '/recents'
-    | '/settings'
     | '/teams'
     | '/users'
     | '/views'
     | '/workbooks'
+    | '/config/smtp'
+    | '/config'
     | '/t/$teamSlug/favorites'
     | '/t/$teamSlug/recents'
     | '/t/$teamSlug/views'
@@ -190,14 +243,19 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/$'
+    | '/config'
     | '/favorites'
+    | '/help'
+    | '/permissions'
+    | '/profile'
     | '/recents'
-    | '/settings'
     | '/teams'
     | '/users'
     | '/views'
     | '/workbooks'
+    | '/config/smtp'
     | '/t/$teamSlug'
+    | '/config/'
     | '/t/$teamSlug/favorites'
     | '/t/$teamSlug/recents'
     | '/t/$teamSlug/views'
@@ -208,9 +266,12 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SplatRoute: typeof SplatRoute
+  ConfigRoute: typeof ConfigRouteWithChildren
   FavoritesRoute: typeof FavoritesRoute
+  HelpRoute: typeof HelpRoute
+  PermissionsRoute: typeof PermissionsRoute
+  ProfileRoute: typeof ProfileRoute
   RecentsRoute: typeof RecentsRoute
-  SettingsRoute: typeof SettingsRoute
   TeamsRoute: typeof TeamsRoute
   UsersRoute: typeof UsersRoute
   ViewsRoute: typeof ViewsRoute
@@ -234,6 +295,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/config': {
+      id: '/config'
+      path: '/config'
+      fullPath: '/config'
+      preLoaderRoute: typeof ConfigRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/favorites': {
       id: '/favorites'
       path: '/favorites'
@@ -241,18 +309,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FavoritesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/help': {
+      id: '/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof HelpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/permissions': {
+      id: '/permissions'
+      path: '/permissions'
+      fullPath: '/permissions'
+      preLoaderRoute: typeof PermissionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/recents': {
       id: '/recents'
       path: '/recents'
       fullPath: '/recents'
       preLoaderRoute: typeof RecentsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/teams': {
@@ -282,6 +364,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/workbooks'
       preLoaderRoute: typeof WorkbooksRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/config/': {
+      id: '/config/'
+      path: '/'
+      fullPath: '/config/'
+      preLoaderRoute: typeof ConfigIndexRouteImport
+      parentRoute: typeof ConfigRoute
+    }
+    '/config/smtp': {
+      id: '/config/smtp'
+      path: '/smtp'
+      fullPath: '/config/smtp'
+      preLoaderRoute: typeof ConfigSmtpRouteImport
+      parentRoute: typeof ConfigRoute
     }
     '/t/$teamSlug': {
       id: '/t/$teamSlug'
@@ -328,6 +424,19 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface ConfigRouteChildren {
+  ConfigSmtpRoute: typeof ConfigSmtpRoute
+  ConfigIndexRoute: typeof ConfigIndexRoute
+}
+
+const ConfigRouteChildren: ConfigRouteChildren = {
+  ConfigSmtpRoute: ConfigSmtpRoute,
+  ConfigIndexRoute: ConfigIndexRoute,
+}
+
+const ConfigRouteWithChildren =
+  ConfigRoute._addFileChildren(ConfigRouteChildren)
+
 interface TTeamSlugRouteChildren {
   TTeamSlugFavoritesRoute: typeof TTeamSlugFavoritesRoute
   TTeamSlugRecentsRoute: typeof TTeamSlugRecentsRoute
@@ -351,9 +460,12 @@ const TTeamSlugRouteWithChildren = TTeamSlugRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SplatRoute: SplatRoute,
+  ConfigRoute: ConfigRouteWithChildren,
   FavoritesRoute: FavoritesRoute,
+  HelpRoute: HelpRoute,
+  PermissionsRoute: PermissionsRoute,
+  ProfileRoute: ProfileRoute,
   RecentsRoute: RecentsRoute,
-  SettingsRoute: SettingsRoute,
   TeamsRoute: TeamsRoute,
   UsersRoute: UsersRoute,
   ViewsRoute: ViewsRoute,

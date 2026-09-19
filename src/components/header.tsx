@@ -12,7 +12,10 @@ const SEGMENT_TITLE_KEYS: Record<string, string> = {
   '': 'nav.dashboard',
   users: 'nav.users',
   teams: 'nav.teams',
-  settings: 'nav.settings',
+  profile: 'nav.profile',
+  help: 'nav.help',
+  config: 'nav.config',
+  permissions: 'nav.permissions',
   favorites: 'nav.favorites',
   recents: 'nav.recents',
   workbooks: 'nav.workbooks',
@@ -24,19 +27,21 @@ const SEGMENT_SUBTITLE_KEYS: Record<string, string> = {
   '': 'dashboard.subtitle',
   users: 'users.subtitle',
   teams: 'teams.subtitle',
-  settings: 'settings.subtitle',
+  profile: 'profile.subtitle',
+  help: 'help.subtitle',
+  config: 'config.subtitle',
+  permissions: 'permissions.subtitle',
   favorites: 'favorites.subtitle',
   recents: 'recents.subtitle',
   workbooks: 'workbooks.subtitle',
   views: 'views.subtitle',
-  flows: 'flows.subtitle',
 }
 
 export function Header() {
   const { t } = useTranslation()
   const { pathname } = useRouterState().location
   // 团队作用域路径形如 /t/{slug}/workbooks：跳过 't' 与 slug 两段后再取一级路由段；
-  // 管理页（/users、/teams、/settings 无 slug）取第一段。
+  // 跨团队页面（/users、/teams、/permissions、/profile、/config/smtp 无 slug）取第一段。
   const segments = pathname.split('/').filter(Boolean)
   const segment =
     segments[0] === TEAM_PATH_SEGMENT ? segments[2] ?? '' : segments[0] ?? ''

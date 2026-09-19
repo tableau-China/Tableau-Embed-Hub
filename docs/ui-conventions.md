@@ -1,0 +1,105 @@
+# 页面与组件约定（UI Conventions）
+
+> v0.7.0 起。适用对象：**在这个模板上新增页面 / 新增表单的人**。
+> 相关文件：`src/components/page-container.tsx`、`src/components/form-field.tsx`、`src/components/note-callout.tsx`、
+> `src/components/description-list.tsx`、`src/components/action-bar.tsx`、`src/hooks/use-form-touch.ts`、`src/routes/__root.tsx`。
+
+目标只有一个：**新增页面时不必重新发明版面与表单接线**。复制下面两个骨架，改内容即可。
+
+## 1. 页面骨架
+
+```tsx
+import { PageContainer } from '@/components/page-container'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+
+export function ExamplePage() {
+  const { t } = useTranslation()
+  return (
+    <PageContainer>
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('example.title')}</CardTitle>
+          <CardDescription>{t('example.subtitle')}</CardDescription>
+        </CardHeader>
+        <CardContent>{/* … */}</CardContent>
+      </Card>
+    </PageContainer>
+  )
+}
+```
+
+## 2. 宽度约定（最容易做错的一条）
+
+| 层级 | 约定 | 理由 |
+| --- | --- | --- |
+| 页面（`<PageContainer>`） | **铺满内容区**，不写 `max-w-*` | 全站页面宽度一致（/users、/teams、/help… 的卡片左右边缘对齐） |
+| 表单（`<FormGrid>`） | 默认 `max-w-3xl`（768px） | 输入框铺满整屏会宽到 600px+，难扫读；字段本身不需要那么宽 |
+| 键值摘要（`<DescriptionList>`） | 默认 `max-w-3xl` | 同上（值是短文本） |
+| 长段落 | `max-w-prose` | 每行 60–75 字符是舒适阅读区间 |
+| 表格 / 列表 / 卡片 | 铺满，**不要**加 `whitespace-nowrap` 到长文案列 | 见下条 |
+
+### 宽表格为什么会让整页出现横向滚动条
+
+`src/components/ui/table.tsx` 的 `TableHead` / `TableCell` **默认 `whitespace-nowrap`**：一个长文案列
+会让表格的「最小内容宽度」变得很大，而 `SidebarInset` / `<main>` 作为 flex 子项默认 `min-width: auto`
+（= 内容最小宽度），于是整页被顶宽、底部冒出横向滚动条，各页面宽度也跟着不一致。
+
+两道防线（都已就位，新增页面不用管）：
+
+1. `src/routes/__root.tsx` 给 `SidebarInset` 与 `<main>` 加了 `min-w-0` → 过宽的内容被限制在**卡片内部**滚动；
+2. 表格里的长文案列显式加 `whitespace-normal`（+ 列宽 `w-*` + 外层 `min-w-0`），让它换行而不是撑宽。
+
+## 3. 表单骨架
+
+```tsx
+import { FormField, FormGrid, type FieldIssue } from '@/components/form-field'
+import { useFormTouch } from '@/hooks/use-form-touch'
+
+const form = useFormTouch<'host' | 'port'>()
+
+const hostIssue: FieldIssue | null =
+  host === '' ? { level: 'error', message: t('x.hostRequired') } : null
+
+const handleSave = () => {
+  form.submit()                       // ① 让所有字段开始显示校验结果
+  if (hostIssue) { toast.error(t('x.fixErrors')); return }
+  save(); form.reset()                // ② 成功后复位
+}
+
+<FormGrid columns={2}>
+  <FormField id="host" label={t('x.host')} hint={t('x.hostHint')} issue={form.shows('host') ? hostIssue : null}>
+    {/* id / aria-invalid / aria-describedby 由 FormField 注入，不用写第二遍 */}
+    <Input value={host} onChange={...} onBlur={() => form.touch('host')} />
+  </FormField>
+</FormGrid>
+```
+
+三条固定规则：
+
+- **`useFormTouch`**：字段失焦才显示该字段的校验结果；点主操作后全部显示。因此**主操作按钮不要因为
+  「有校验错误」而置灰**（置灰会让用户点不动、也看不到哪里错了），只在「没有改动」时禁用；
+- **复合控件**（Radix `Select`、`InputGroup`）自己不落 DOM，传 `injectProps={false}`，把 `id` / `aria-*`
+  显式写到真正的 DOM 节点（`SelectTrigger` / `InputGroupInput`）上；
+- 校验结果的呈现分两处：`issue.level = 'error'` 红字拦保存，`'warning'` 琥珀字放行但提醒。
+
+## 4. 其他通用件
+
+| 组件 | 用途 |
+| --- | --- |
+| `ActionBar` / `ActionButtons` | 页面与弹窗底部的操作按钮（主操作恒在最右，窄屏自动堆叠） |
+| `NoteCallout` | 说明 / 注意事项块（`tone="info"`｜`"warning"`），长段落内层加 `max-w-prose` |
+| `DescriptionList` | 「标签 + 值」摘要（关于页的开发者/版本、详情面板元信息…） |
+| `Badge` | 状态、角色、服务商等短标记；技术栈这类列表用徽章流比表格更省空间 |
+| `GuardCard`（route-guard） | 无权 / 未找到等兜底页的统一外壳 |
+
+## 5. 新增页面的完整清单
+
+1. 建路由文件 `src/routes/<name>.tsx`（页面主体放 `src/features/<feature>/`）；
+2. 在 `src/config/permissions.ts` 的 `ROUTE_CATALOG` 登记一行（`key` / `to` / `scope` / `group` /
+   `labelKey` / `defaultRoles`；入口不在侧边栏时加 `navHidden: true`）；
+3. `src/components/app-sidebar.tsx` 的 `ICONS` 补图标（漏配 tsc 直接报错）；
+4. `src/components/header.tsx` 的段映射补标题/副标题；
+5. `src/i18n/locales/en-US/common.json` 补文案（`pnpm check:i18n` 把关）；
+6. 页面用 `<PageContainer>` + `<Card>` 组织，表单用 `<FormGrid>` / `<FormField>`。
+
+→ 侧边栏入口、URL 直达拦截、权限页勾选行三处**同时生效**（详见 [route-permissions.md](./route-permissions.md)）。

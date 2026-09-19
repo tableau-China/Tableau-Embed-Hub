@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { ChevronsUpDown, RefreshCcw } from 'lucide-react'
-import { useNavigate } from '@tanstack/react-router'
+import { ChevronsUpDown, RefreshCcw, UserRound } from 'lucide-react'
+import { Link, useNavigate } from '@tanstack/react-router'
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
@@ -18,12 +18,14 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
 import { useCurrentTeam } from '@/hooks/use-current-team'
+import { useCan } from '@/hooks/use-permissions'
 import { userDefaultTeam } from '@/lib/team-context'
 import { userMemberships, useOrgStore } from '@/stores/org-store'
 
 /**
  * 侧边栏底部用户菜单（用户在 Team 之上）：
  * - 展示当前登录用户与其全局身份（系统管理员 / 成员）
+ * - **个人资料入口**：/profile（v0.7.0 起从 /settings 改名而来；该页 navHidden，不占侧边栏）
  * - 演示环境内置「以其他用户身份查看」：切换后其所属团队随之成为可切换范围
  */
 export function UserMenu() {
@@ -36,6 +38,8 @@ export function UserMenu() {
   const setCurrentUser = useOrgStore((s) => s.setCurrentUser)
   // 当前 URL 指向的团队（切换身份后据此判断是否需要换团队）
   const urlTeam = useCurrentTeam()
+  // 个人资料页的准入：入口在这里而不在侧边栏，但仍按同一套权限判定（无权则不显示入口）
+  const can = useCan()
 
   const currentUser = users.find((u) => u.id === currentUserId) ?? null
   if (!currentUser) return null
@@ -114,6 +118,18 @@ export function UserMenu() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            {/* 个人资料：入口在用户菜单里（该页 navHidden，不占侧边栏） */}
+            {can('page.profile') && (
+              <>
+                <DropdownMenuItem asChild>
+                  <Link to="/profile" className="gap-2 p-2" data-user-menu="profile">
+                    <UserRound className="size-4" />
+                    <span className="flex-1 truncate">{t('nav.profile')}</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
             {others.length > 0 && (
               <>
                 <DropdownMenuLabel className="flex items-center gap-1.5 text-xs text-muted-foreground">

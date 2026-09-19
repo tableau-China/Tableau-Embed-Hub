@@ -1,15 +1,19 @@
+import { Link, useLocation } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import {
   BookOpen,
   Building2,
+  CircleHelp,
   Clock,
   LayoutDashboard,
+  Mail,
   MonitorPlay,
-  Settings,
+  ShieldCheck,
   Star,
+  UserRound,
   Users,
+  type LucideIcon,
 } from 'lucide-react'
-import { Link, useLocation } from '@tanstack/react-router'
-import { useTranslation } from 'react-i18next'
 
 import {
   Sidebar,
@@ -27,36 +31,77 @@ import {
 import { TeamSwitcher } from '@/components/org/team-switcher'
 import { UserMenu } from '@/components/org/user-menu'
 import { APP_VERSION } from '@/config/app'
+import { ROUTE_CATALOG, ROUTE_ENTRIES, type NavGroup, type RouteKey } from '@/config/permissions'
 import { useTeamSlug } from '@/hooks/use-current-team'
+import { useCan } from '@/hooks/use-permissions'
 import { teamScopedPath } from '@/lib/team-context'
 
 /**
- * 侧边栏导航分为两层（v0.5.0 起团队身份进入 URL）：
+ * 侧边栏导航（v0.6.0 起由权限目录驱动）：
  *
- * - **团队作用域**（GENERAL_ITEMS）：URL 形如 `/t/{slug}/workbooks`，
- *   `to` 写路由模式，渲染时用当前团队 slug 填充 params；
- * - **跨团队管理页**（SETTINGS_ITEMS）：URL 不带 slug（对齐 pg-explorer 的 /admin/*），
- *   团队管理、用户管理、系统设置本就跨越单个团队。
+ * 条目**不再硬编码在本文件**，而是从 `src/config/permissions.ts` 的 ROUTE_CATALOG 派生 ——
+ * 新增页面只登记一行，侧边栏入口 / 路由守卫 / 权限页勾选行三处同时生效。
+ *
+ * 两层结构不变（v0.5.0 起团队身份进入 URL）：
+ * - **团队作用域**（scope: 'team'）：URL 形如 `/t/{slug}/workbooks`，`to` 写路由模式，
+ *   渲染时用当前团队 slug 填充 params；
+ * - **跨团队页**（scope: 'global'）：URL 不带 slug（对齐 pg-explorer 的 /admin/*）。
+ *
+ * 权限：按 `useCan()` 过滤（当前角色无权访问的条目不渲染）；
+ * 例外 —— 用户尚无任何团队时，团队条目**全部**渲染为禁用项（提示先加入团队），
+ * 否则新用户会看到一个空侧边栏、不知道发生了什么。
  */
+
+type CatalogEntry = (typeof ROUTE_CATALOG)[number]
+type TeamEntry = Extract<CatalogEntry, { scope: 'team' }>
+type GlobalEntry = Extract<CatalogEntry, { scope: 'global' }>
+
+/** 分组渲染顺序：与权限页的分组顺序一致 */
+const NAV_GROUPS: { group: NavGroup; scope: 'team' | 'global'; labelKey: string }[] = [
+  { group: 'general', scope: 'team', labelKey: 'nav.general' },
+  { group: 'settings', scope: 'global', labelKey: 'nav.settings' },
+  { group: 'config', scope: 'global', labelKey: 'nav.config' },
+]
+
+/**
+ * `navHidden` 的条目（如 Profile：入口在左下角用户菜单）不进侧边栏，但仍在权限体系内。
+ * 读可选字段要走 `ROUTE_ENTRIES`（接口视图）—— `as const` 的字面量联合里，
+ * 未声明 `navHidden` 的条目没有该字段，直接读会 tsc 报错。
+ */
+const NAV_VISIBLE_KEYS = new Set(
+  ROUTE_ENTRIES.filter((e) => !e.navHidden).map((e) => e.key),
+)
+
+/** 按作用域切分目录（类型谓词让 Link 的 to/params 保持字面量联合，params 仍受类型检查） */
+const TEAM_NAV = ROUTE_CATALOG.filter(
+  (e): e is TeamEntry => e.scope === 'team' && NAV_VISIBLE_KEYS.has(e.key),
+)
+const GLOBAL_NAV = ROUTE_CATALOG.filter(
+  (e): e is GlobalEntry => e.scope === 'global' && NAV_VISIBLE_KEYS.has(e.key),
+)
+
+/**
+ * 路由权限键 → 图标。`Record<RouteKey, …>` 让 TS 强制每个新页面在此表态：
+ * 在 ROUTE_CATALOG 里加了页面却忘配图标，tsc 直接报错（好过运行时出现空白图标）。
+ */
+const ICONS: Record<RouteKey, LucideIcon> = {
+  'page.dashboard': LayoutDashboard,
+  'page.favorites': Star,
+  'page.recents': Clock,
+  'page.workbooks': BookOpen,
+  'page.views': MonitorPlay,
+  'page.users': Users,
+  'page.teams': Building2,
+  'page.profile': UserRound,
+  'page.help': CircleHelp,
+  'page.config.smtp': Mail,
+  'page.permissions': ShieldCheck,
+}
 
 /** 团队作用域路由模式前缀（导航条目据此推导站内相对路径） */
 const TEAM_SCOPE_PATTERN = '/t/$teamSlug'
 
-const GENERAL_ITEMS = [
-  { to: '/t/$teamSlug', labelKey: 'nav.dashboard', icon: LayoutDashboard },
-  { to: '/t/$teamSlug/favorites', labelKey: 'nav.favorites', icon: Star },
-  { to: '/t/$teamSlug/recents', labelKey: 'nav.recents', icon: Clock },
-  { to: '/t/$teamSlug/workbooks', labelKey: 'nav.workbooks', icon: BookOpen },
-  { to: '/t/$teamSlug/views', labelKey: 'nav.views', icon: MonitorPlay },
-] as const
-
-const SETTINGS_ITEMS = [
-  { to: '/users', labelKey: 'nav.users', icon: Users },
-  { to: '/teams', labelKey: 'nav.teams', icon: Building2 },
-  { to: '/settings', labelKey: 'nav.settings', icon: Settings },
-] as const
-
-/** 把 `/t/$teamSlug/flows/foc` 还原成站内相对路径 `/flows/foc`（首页为 ''） */
+/** 把 `/t/$teamSlug/workbooks` 还原成站内相对路径 `/workbooks`（团队首页为 ''） */
 function teamRelative(pattern: string): string {
   return pattern.slice(TEAM_SCOPE_PATTERN.length)
 }
@@ -65,20 +110,14 @@ function teamRelative(pattern: string): string {
  * 团队作用域导航：slug 缺失（用户尚无任何团队）时渲染为禁用项，
  * 避免拼出 `/t//workbooks` 这类无效链接。
  */
-function TeamNavList({
-  items,
-  teamSlug,
-}: {
-  items: typeof GENERAL_ITEMS
-  teamSlug: string | null
-}) {
+function TeamNavList({ items, teamSlug }: { items: TeamEntry[]; teamSlug: string | null }) {
   const { t } = useTranslation()
   const { pathname } = useLocation()
 
   return (
     <SidebarMenu>
       {items.map((item) => {
-        const Icon = item.icon
+        const Icon = ICONS[item.key]
         const relative = teamRelative(item.to)
         const resolved = teamSlug ? teamScopedPath(teamSlug, relative) : null
         const isActive =
@@ -87,7 +126,7 @@ function TeamNavList({
 
         if (!teamSlug) {
           return (
-            <SidebarMenuItem key={item.to}>
+            <SidebarMenuItem key={item.key}>
               <SidebarMenuButton disabled tooltip={t('nav.noTeamAvailable')}>
                 <Icon />
                 <span>{t(item.labelKey)}</span>
@@ -97,7 +136,7 @@ function TeamNavList({
         }
 
         return (
-          <SidebarMenuItem key={item.to}>
+          <SidebarMenuItem key={item.key}>
             <SidebarMenuButton asChild isActive={isActive} tooltip={t(item.labelKey)}>
               <Link to={item.to} params={{ teamSlug }}>
                 <Icon />
@@ -112,17 +151,17 @@ function TeamNavList({
 }
 
 /** 跨团队管理页导航（无 slug） */
-function NavList({ items }: { items: typeof SETTINGS_ITEMS }) {
+function GlobalNavList({ items }: { items: GlobalEntry[] }) {
   const { t } = useTranslation()
   const { pathname } = useLocation()
 
   return (
     <SidebarMenu>
       {items.map((item) => {
-        const Icon = item.icon
+        const Icon = ICONS[item.key]
         const isActive = pathname.startsWith(item.to)
         return (
-          <SidebarMenuItem key={item.to}>
+          <SidebarMenuItem key={item.key}>
             <SidebarMenuButton asChild isActive={isActive} tooltip={t(item.labelKey)}>
               <Link to={item.to}>
                 <Icon />
@@ -140,6 +179,8 @@ export function AppSidebar() {
   const { t } = useTranslation()
   // 当前团队 slug 来自 URL（/t/{slug}/...）；管理页回退 activeTeamId
   const teamSlug = useTeamSlug()
+  // 当前身份（全局身份 + 当前团队岗位）在各页面上的准入判定
+  const can = useCan()
 
   return (
     <Sidebar collapsible="icon">
@@ -151,18 +192,33 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>{t('nav.general')}</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <TeamNavList items={GENERAL_ITEMS} teamSlug={teamSlug} />
-          </SidebarGroupContent>
-        </SidebarGroup>
-        <SidebarGroup>
-          <SidebarGroupLabel>{t('nav.settings')}</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <NavList items={SETTINGS_ITEMS} />
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {NAV_GROUPS.map((nav) => {
+          if (nav.scope === 'team') {
+            const items = TEAM_NAV.filter((e) => e.group === nav.group)
+            // 无当前团队时团队条目不做权限过滤（统一渲染为禁用项），避免新手看到空菜单
+            const visible = teamSlug === null ? items : items.filter((e) => can(e.key))
+            if (visible.length === 0) return null
+            return (
+              <SidebarGroup key={nav.group}>
+                <SidebarGroupLabel>{t(nav.labelKey)}</SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <TeamNavList items={visible} teamSlug={teamSlug} />
+                </SidebarGroupContent>
+              </SidebarGroup>
+            )
+          }
+
+          const visible = GLOBAL_NAV.filter((e) => e.group === nav.group && can(e.key))
+          if (visible.length === 0) return null
+          return (
+            <SidebarGroup key={nav.group}>
+              <SidebarGroupLabel>{t(nav.labelKey)}</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <GlobalNavList items={visible} />
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )
+        })}
       </SidebarContent>
       <SidebarFooter>
         {/* 底部：当前用户（用户位于 Team 之上，可切换身份） */}
