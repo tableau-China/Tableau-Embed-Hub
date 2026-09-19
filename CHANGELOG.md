@@ -6,6 +6,7 @@
 
 | 版本 | package.json | 侧边栏显示 | PROGRESS.md | CHANGELOG 条目 | 日期 |
 | --- | --- | --- | --- | --- | --- |
+| 0.7.1 | ✅ `0.7.1` | ✅ `v0.7.1`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#071---2026-09-19) | 2026-09-19 |
 | 0.7.0 | ✅ `0.7.0` | ✅ `v0.7.0`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#070---2026-09-19) | 2026-09-19 |
 | 0.5.0 | ✅ `0.5.0` | ✅ `v0.5.0`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#050---2026-09-18) | 2026-09-18 |
 | 0.4.2 | ✅ `0.4.2` | ✅ `v0.4.2`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#042---2026-09-18) | 2026-09-18 |
@@ -16,6 +17,25 @@
 | 0.1.0 | ✅ `0.1.0` | ✅ `v0.1.0` | ✅ 已同步 | ✅ [本节](#010---2026-08-16) | 2026-08-16 |
 
 > 约定：新版本发布时，先升 `package.json` 的 `version`，再更新本表与下方条目。
+
+## [0.7.1] - 2026-09-19
+
+**文档订正（无功能改动）。** `PROGRESS.md` 的目标描述与实际不符：原文写「**不含** Tableau / AI 功能」，
+但本线含 favorites / recents / workbooks / views 四个 Tableau 页面（浏览器内签发 Connected App JWT
+嵌入真实视图，凭据见 README「凭据配置」）。
+
+### Fixed（订正）
+
+- **`PROGRESS.md` 目标描述**：改为「**含 Tableau 页面**（favorites / recents / workbooks / views）；
+  **不含 AI 功能**」，并补一句「**不含**内部流程页（flows / amro / clean-layer / sql-icon-map）——
+  那些只存在于本地开发线」，避免后来者误以为本线有流程页或没有 Tableau。
+- 版本四处同步 0.7.1（package.json / `src/config/app.ts` / PROGRESS.md / CHANGELOG.md）。
+
+### 说明
+
+- 本版**只改文档与版本号**：`vite build` / `tsc -b` / `pnpm lint` / `check:i18n` 与三套 CDP 校验
+  （`check:permissions` 14 项、`check:smtp`、`check:team-routes` 16 项）均无行为改动，结果与 0.7.0 一致。
+- 本地开发线（custom）的同版本条目里还有一项 `GIT_SYNC.md` 远端仓库名订正 —— 该文件只存在于开发线，不在本线。
 
 ## [0.7.0] - 2026-09-19
 
