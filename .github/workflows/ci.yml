@@ -27,10 +27,10 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm check:i18n
-      # pnpm lint 暂缓：typescript-eslint 尚不支持 TypeScript 7
-      # （硬性拒绝 "typescript-eslint does not support TS 7.0"）
-      # 上游跟踪：https://github.com/typescript-eslint/typescript-eslint/issues/10940
-      # 恢复方法：升级 typescript-eslint 至支持 TS 7 的版本后，取消下面这行注释
-      # - run: pnpm lint
+      # pnpm lint 已恢复（2026-09-19）。typescript-eslint 仍不支持 TS 7 的编译器 API
+      # （上游 #10940），因此按官方方案「TS 6 API 并行」配置（见 package.json 的 alias 结构）：
+      #   "typescript": "npm:@typescript/typescript6@6.0.2"     ← lint 解析到的 JS API
+      #   "@typescript/native": "npm:typescript@7.1.0-dev…"     ← tsc/typecheck 仍用原生 TS 7
+      - run: pnpm lint
       - run: pnpm build
 
