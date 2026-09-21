@@ -14,14 +14,30 @@ import { persist } from 'zustand/middleware'
 
 /* ============================== 类型 ============================== */
 
-/** 用户状态（对齐 pg-explorer 0=active 1=invited 2=inactive 的前端字符串形态） */
-export type UserStatus = 'active' | 'invited' | 'inactive'
+/**
+ * 用户状态。**只有两个值** —— 与真实后端的账号表严格一致（`status` 列取 `active` / `disabled`）。
+ *
+ * 这里刻意不再保留 `invited` / `inactive`：
+ *   - `invited` 要有「发邀请 → 对方接受 → 激活」的流程支撑，模板没有；真实系统里那通常是
+ *     `active` + 一张独立的邀请令牌表，而不是账号状态本身。留一个没人处理的选项，
+ *     结果是界面能选、代码里没有任何分支认它；
+ *   - `inactive` 与 `disabled` 同义，两个词并存必然有人用错。
+ *
+ * 换后端时这个类型不用改：接口返回 `status: 'active' | 'disabled'`，直接对上。
+ */
+export type UserStatus = 'active' | 'disabled'
 
 /** 团队岗位（对齐 pg-explorer TeamMember.role：2=TEAM_ADMIN 3=ANALYST 4=VIEWER） */
 export type TeamRole = 'team-admin' | 'analyst' | 'viewer'
 
 export interface OrgUser {
   id: number
+  /**
+   * 登录名（唯一，大小写不敏感）—— 账号的**主键口径**：登录、日志、按录入人隔离的业务归属
+   * 都认它。与 `name`（展示名，可中文、可重名）刻意分开：展示名随便改，
+   * 登录名一改，已发出的会话与历史业务数据的归属就全漂了。
+   */
+  username: string
   name: string
   email: string
   /** 头像缩略字（如 AC）；新建用户时按姓名自动生成 */
@@ -30,6 +46,15 @@ export interface OrgUser {
   isSystemAdmin: boolean
   status: UserStatus
   createdAt: string
+  /**
+   * 最近一次重置口令的时间。
+   *
+   * **口令本身永远不进前端状态** —— 哪怕是演示态的 localStorage：把明文口令写进浏览器存储
+   * 是最容易被抄进真实项目的一段坏示范。这里只留一个时间戳；真实实现把
+   * `setUserPassword()` 换成 `PUT /api/users/{id}/password` 即可（数据形状不变，
+   * 与 `config-store.ts` 的做法一致）。
+   */
+  passwordUpdatedAt?: string
 }
 
 export interface OrgTeam {
@@ -64,7 +89,7 @@ export interface TeamMember {
 
 export const TEAM_ROLES: TeamRole[] = ['team-admin', 'analyst', 'viewer']
 
-export const USER_STATUSES: UserStatus[] = ['active', 'invited', 'inactive']
+export const USER_STATUSES: UserStatus[] = ['active', 'disabled']
 
 /** 团队岗位 → i18n label key（用户列与团队页通用） */
 export const TEAM_ROLE_LABEL_KEYS: Record<TeamRole, string> = {
@@ -76,8 +101,7 @@ export const TEAM_ROLE_LABEL_KEYS: Record<TeamRole, string> = {
 /** 用户状态 → i18n label key */
 export const USER_STATUS_LABEL_KEYS: Record<UserStatus, string> = {
   active: 'users.active',
-  invited: 'users.invited',
-  inactive: 'users.inactive',
+  disabled: 'users.disabled',
 }
 
 /** 允许的 TeamLogo 图标 key（与 team-logo.tsx 的映射保持一致） */
@@ -110,6 +134,31 @@ export function initialsOf(name: string): string {
     .map((w) => w[0]!)
     .join('')
     .toUpperCase()
+}
+
+/**
+ * 登录名规范：进 URL / 日志 / 配置，限制为 ASCII 安全字符。
+ *
+ * 与后端 `UserRepository.USERNAME_PATTERN` 保持同一口径 —— 前端先拦一道只是少一次往返，
+ * **真正的校验在服务端**（接口不信任前端传来的值）。
+ */
+export const USERNAME_PATTERN = /^[A-Za-z0-9_.@-]{2,64}$/
+
+export type UsernameIssue = 'empty' | 'charset' | 'taken'
+
+/** 校验登录名：为空 / 含非法字符 / 与既有账号重复（大小写不敏感）。`null` = 可用 */
+export function usernameIssue(
+  username: string,
+  users: readonly Pick<OrgUser, 'id' | 'username'>[],
+  excludeUserId?: number,
+): UsernameIssue | null {
+  const value = username.trim()
+  if (value === '') return 'empty'
+  if (!USERNAME_PATTERN.test(value)) return 'charset'
+  const taken = users.some(
+    (u) => u.id !== excludeUserId && u.username.toLowerCase() === value.toLowerCase(),
+  )
+  return taken ? 'taken' : null
 }
 
 /**
@@ -217,6 +266,7 @@ const SEED_USERS: OrgUser[] = [
   {
     id: 1,
     name: 'Admin',
+    username: 'admin',
     email: 'admin@example.com',
     initials: 'AD',
     isSystemAdmin: true,
@@ -226,6 +276,7 @@ const SEED_USERS: OrgUser[] = [
   {
     id: 2,
     name: 'Alice Chen',
+    username: 'alice.chen',
     email: 'alice@example.com',
     initials: 'AC',
     isSystemAdmin: false,
@@ -235,6 +286,7 @@ const SEED_USERS: OrgUser[] = [
   {
     id: 3,
     name: 'Bob Martin',
+    username: 'bob.martin',
     email: 'bob@example.com',
     initials: 'BM',
     isSystemAdmin: false,
@@ -244,15 +296,17 @@ const SEED_USERS: OrgUser[] = [
   {
     id: 4,
     name: 'Carol White',
+    username: 'carol.white',
     email: 'carol@example.com',
     initials: 'CW',
     isSystemAdmin: false,
-    status: 'inactive',
+    status: 'disabled',
     createdAt: '2026-08-04T00:00:00.000Z',
   },
   {
     id: 5,
     name: 'Dave Kim',
+    username: 'dave.kim',
     email: 'dave@example.com',
     initials: 'DK',
     isSystemAdmin: false,
@@ -262,10 +316,11 @@ const SEED_USERS: OrgUser[] = [
   {
     id: 6,
     name: 'Eve Torres',
+    username: 'eve.torres',
     email: 'eve@example.com',
     initials: 'ET',
     isSystemAdmin: false,
-    status: 'inactive',
+    status: 'disabled',
     createdAt: '2026-08-06T00:00:00.000Z',
   },
 ]
@@ -301,9 +356,23 @@ interface OrgState {
   setCurrentUser: (userId: number) => void
   setActiveTeam: (teamId: number) => void
 
-  addUser: (data: { name: string; email: string; isSystemAdmin: boolean; status: UserStatus }) => OrgUser
+  addUser: (data: {
+    /** 登录名（唯一，大小写不敏感）；重复时抛错 */
+    username: string
+    name: string
+    email: string
+    isSystemAdmin: boolean
+    status: UserStatus
+  }) => OrgUser
   updateUser: (id: number, patch: Partial<Pick<OrgUser, 'name' | 'email' | 'initials' | 'isSystemAdmin' | 'status'>>) => void
   deleteUser: (id: number) => void
+  /**
+   * 重置口令（管理员操作，不需要旧口令）。
+   *
+   * 演示态**只记录时间戳**，不保存口令 —— 见 `OrgUser.passwordUpdatedAt` 的说明。
+   * 接后端时把这个动作内部换成 `PUT /api/users/{id}/password` 即可，调用方无需改动。
+   */
+  setUserPassword: (id: number) => void
 
   /**
    * 新建团队。`slug` 由调用方（新建表单）提供并已通过 `teamSlugIssue` 校验：
@@ -360,8 +429,19 @@ export const useOrgStore = create<OrgState>()(
       },
 
       addUser: (data) => {
+        const username = data.username.trim()
+        // 登录名唯一性在 store 里再兜一层（大小写不敏感）。真实系统靠数据库的 UNIQUE 约束，
+        // 演示态没有数据库 —— 不兜的话会静默产生两个"同一个人"。
+        const problem = usernameIssue(username, get().users)
+        if (problem === 'empty' || problem === 'charset') {
+          throw new Error(`Invalid username: ${username}`)
+        }
+        if (problem === 'taken') {
+          throw new Error(`Username already taken: ${username}`)
+        }
         const user: OrgUser = {
           id: nextId(get().users),
+          username,
           name: data.name.trim(),
           email: data.email.trim(),
           initials: initialsOf(data.name),
@@ -408,6 +488,16 @@ export const useOrgStore = create<OrgState>()(
                 : resolveActiveTeamId(remaining, s.currentUserId!, null),
           }
         })
+      },
+
+      setUserPassword: (id) => {
+        // 刻意不接收、也不保存口令：口令只应写后端。这里做的只是把「刚刚重置过」这件事
+        // 记下来（真实系统里这个时间戳同样有用 —— 用来判断「改密后旧会话是否该失效」）。
+        set((s) => ({
+          users: s.users.map((u) =>
+            u.id === id ? { ...u, passwordUpdatedAt: new Date().toISOString() } : u,
+          ),
+        }))
       },
 
       createTeam: (data) => {
@@ -540,7 +630,38 @@ export const useOrgStore = create<OrgState>()(
     }),
     {
       name: 'shadcn-admin-cn:org',
-      version: 1,
+      version: 2,
+      migrate: (persisted, version) => {
+        // v1 -> v2：账号新增必填的 `username`，状态收敛为 active / disabled。
+        //
+        // 老数据是 localStorage 里已经存着的账号，没有登录名 —— 不补就会在列表与表单里
+        // 渲染出 `undefined`（比"名字不好看"严重得多）。按邮箱前缀补一个，重名就加序号。
+        // 状态：invited / inactive 一律归到 disabled（模板没有邀请流程，见 UserStatus 注释）。
+        if ((version ?? 0) < 2) {
+          const p = (persisted ?? {}) as Partial<OrgState>
+          if (p.users) {
+            const used = new Set<string>()
+            return {
+              ...p,
+              users: p.users.map((u) => {
+                const base =
+                  (u.email.split('@')[0] ?? '').replace(/[^A-Za-z0-9_.@-]/g, '').slice(0, 60) ||
+                  `user${u.id}`
+                let username = base
+                let n = 1
+                while (used.has(username.toLowerCase())) username = `${base}${++n}`
+                used.add(username.toLowerCase())
+                return {
+                  ...u,
+                  username,
+                  status: (u.status as string) === 'active' ? 'active' : 'disabled',
+                }
+              }),
+            }
+          }
+        }
+        return persisted
+      },
       partialize: (s) => ({
         users: s.users,
         teams: s.teams,

@@ -1,15 +1,31 @@
 # shadcn-admin-cn 项目进度（PROGRESS）
 
-> 更新于 2026-09-19 ｜ 项目根目录：`/Users/xilejun/WorkBuddy/ds_Harness/shadcn_admin_cn`
+> 更新于 2026-09-21 ｜ 项目根目录：`/Users/xilejun/WorkBuddy/ds_Harness/shadcn_admin_cn`
 
 ## 项目概况
 
 - **目标**：从零构建管理后台模板（React 19 + TypeScript 7 + Vite 8 + Tailwind CSS v4 + shadcn/ui(Radix) + TanStack Router），包含 shadcn-admin 的全部基础功能，**含 Tableau 页面**（favorites / recents / workbooks / views —— 浏览器内签发 Connected App JWT 嵌入真实视图，凭据见 README「凭据配置」），**不含 AI 功能**；也不含内部流程页（flows / amro / clean-layer / sql-icon-map，那些只存在于本地开发线），v0.4.0 起含**多团队 + 全局用户**（参照 pg-explorer，无部门管理），v0.5.0 起**团队身份进入 URL**（`/t/{slug}/...`，对齐 pg-explorer 的 `/t/{slug}` + `/admin/*` 划分），v0.6.0 起**页面级权限**（角色 × 路由，权限页勾选；按钮级权限仅预留命名空间），v0.7.0 起**个人资料归位**（`/settings` → `/profile`，入口在左下角用户菜单）+ **Config 分组与 SMTP 配置页** + **帮助页** + **前端通用件**；i18n 当前仅 **en-US**，中文/日文后期扩展。
 - **关键决策**：跳过 shadcn-admin 模板（无 Sat Naing 署名义务）、TypeScript 7.1.0-dev（next 开发版，验证未来升级，正式版发布后直接升级）、Vite 8.2.1 最新稳定、i18n 当前仅 en-US（zh-CN / zh-TW / ja-JP 后期扩展）。
 - **注意**：用户原指定路径 `/Users/xilejun/ds_Harness/shadcn_admin_cn` 不存在，实际目录在 `/Users/xilejun/WorkBuddy/ds_Harness/shadcn_admin_cn`。
-- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.7.1**）。
+- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.8.0**）。
 
 ---
+
+## ✅ v0.8.0（2026-09-21）— Users 页补齐登录名与重置口令，状态口径收敛
+
+来自 order-center 那条线的回灌（只回灌与后端无关的部分，模板保持纯前端开箱即跑）：
+
+- ✅ **账号新增「登录名」**（`OrgUser.username`）：列表新增一列、新建表单必填、
+  唯一性校验（`usernameIssue`，大小写不敏感，与后端 `USERNAME_PATTERN` 同口径）
+- ✅ **「重置口令」独立入口 + `ResetPasswordDialog`**：管理员重置不需要旧口令、
+  两次输入 + 最短 8 位；**口令不进前端状态**（演示态只记 `passwordUpdatedAt` 时间戳）
+- ✅ **状态口径收敛为 `active` / `disabled`**（去掉 `invited` / `inactive`）：
+  接后端时类型不用改；旧 localStorage 数据由 `persist.migrate` v1→v2 自动迁移
+- ✅ 空态区分「无权限」与「真的没有账号」（原先两者都显示「No users yet」）
+- ✅ 版本五处同步 0.8.0（package.json / `src/config/app.ts` / 侧边栏 / PROGRESS.md / CHANGELOG.md）
+
+**未搬**（刻意）：api 层 / session-store / team-store / AuthContext（要后端才有意义）、
+`RefreshBar` / `PageToolbar`（模板里没有这两个通用件）。详见 CHANGELOG 的 0.8.0 一节。
 
 ## ✅ v0.7.1（2026-09-19）— 文档订正
 

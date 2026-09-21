@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { Info, Pencil, Plus, ShieldCheck, Star, Trash2, Users } from 'lucide-react'
+import { Info, KeyRound, Pencil, Plus, ShieldCheck, Star, Trash2, Users } from 'lucide-react'
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ActionButtons } from '@/components/action-bar'
@@ -32,6 +32,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { TeamLogo } from '@/components/org/team-logo'
+import { ResetPasswordDialog } from '@/components/org/reset-password-dialog'
 import { UserFormDialog, UserTeamsDialog } from '@/components/org/user-dialogs'
 import {
   TEAM_ROLE_LABEL_KEYS,
@@ -46,15 +47,18 @@ export const Route = createFileRoute('/users')({
 })
 
 function statusBadgeVariant(status: UserStatus) {
-  if (status === 'active') return 'default' as const
-  if (status === 'invited') return 'secondary' as const
-  return 'outline' as const
+  return status === 'active' ? ('default' as const) : ('outline' as const)
 }
 
 /**
  * 全局用户管理页：用户位于 Team 之上 ——
  * 每个用户可属于多个团队（各自持有团队岗位），可被提升为系统管理员。
  * 系统管理员可增删改；其它用户只读浏览。
+ *
+ * 本页演示态的账号来自 `stores/org-store.ts`（localStorage）。接后端时把该 store 的
+ * `users` / `addUser` / `updateUser` / `deleteUser` / `setUserPassword` 换成接口调用即可，
+ * **本文件一行都不用改**（数据形状保持不变）—— 列与动作就是按真实账号表的字段定的：
+ *   `username`（登录名，唯一且不可改）/ `name`（展示名）/ `email` / `status` / `isSystemAdmin`。
  */
 function UsersPage() {
   const { t } = useTranslation()
@@ -69,6 +73,7 @@ function UsersPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<OrgUser | null>(null)
   const [teamsUser, setTeamsUser] = useState<OrgUser | null>(null)
+  const [passwordUser, setPasswordUser] = useState<OrgUser | null>(null)
   const [deletingUser, setDeletingUser] = useState<OrgUser | null>(null)
 
   const membershipsOf = (userId: number) =>
@@ -77,6 +82,11 @@ function UsersPage() {
       .map((m) => ({ ...m, team: teams.find((team) => team.id === m.teamId) }))
       .filter((m) => m.team !== undefined)
 
+  /**
+   * 两道闸在这里只是不让用户白点一下弹窗；**真正的判据在服务端**
+   * （`UserRepository` / `UserApi` 会再判一次「至少保留一名管理员」与「不能删自己」）。
+   * 演示态没有服务端，所以这两条就是唯一的一道 —— 接后端后建议保留（省一次往返）。
+   */
   const handleDelete = () => {
     if (!deletingUser) return
     if (deletingUser.id === currentUserId) {
@@ -96,6 +106,9 @@ function UsersPage() {
     toast.success(t('users.deleted', { name: deletingUser.name }))
     setDeletingUser(null)
   }
+
+  // 表头列数：管理员多一个操作列（空态行的 colSpan 要跟着走，否则会串列）
+  const columnCount = isSuperAdmin ? 7 : 6
 
   return (
     <div className="flex flex-col gap-6">
@@ -131,18 +144,27 @@ function UsersPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>{t('users.name')}</TableHead>
+                <TableHead>{t('users.username')}</TableHead>
                 <TableHead>{t('users.email')}</TableHead>
                 <TableHead>{t('users.status')}</TableHead>
                 <TableHead>{t('users.role')}</TableHead>
                 <TableHead>{t('users.teams')}</TableHead>
-                {isSuperAdmin && <TableHead className="w-28" />}
+                {isSuperAdmin && <TableHead className="w-40" />}
               </TableRow>
             </TableHeader>
             <TableBody>
               {users.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
-                    {t('users.empty')}
+                  <TableCell
+                    colSpan={columnCount}
+                    className="py-8 text-center text-muted-foreground"
+                  >
+                    {/*
+                      两种空态含义不同，不能都写成「No users yet」：
+                      非系统管理员看不到账号列表（真实系统里接口会回 403），
+                      说「还没有用户」会让人以为库里真的没人。
+                    */}
+                    {isSuperAdmin ? t('users.empty') : t('users.noPermission')}
                   </TableCell>
                 </TableRow>
               )}
@@ -160,6 +182,10 @@ function UsersPage() {
                           <Badge variant="outline">{t('users.you')}</Badge>
                         )}
                       </div>
+                    </TableCell>
+                    {/* 登录名：账号的主键口径，与展示名分开显示（等宽字体，便于对照日志） */}
+                    <TableCell className="font-mono text-sm text-muted-foreground">
+                      {user.username}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {user.email}
@@ -221,6 +247,21 @@ function UsersPage() {
                           >
                             <Pencil className="size-4" />
                           </Button>
+                          {/*
+                            重置口令是**独立入口**，不塞进编辑表单：
+                            两者语义不同 —— 改资料不需要旧口令、也不该顺带改口令；
+                            而管理员重置口令是「这个人进不来了，给他换一把钥匙」。
+                          */}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-8"
+                            aria-label={t('users.resetPassword')}
+                            title={t('users.resetPassword')}
+                            onClick={() => setPasswordUser(user)}
+                          >
+                            <KeyRound className="size-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -258,6 +299,16 @@ function UsersPage() {
         open={formOpen}
         onOpenChange={setFormOpen}
       />
+      {/* 重置口令（管理员操作，不需要旧口令） */}
+      {passwordUser && (
+        <ResetPasswordDialog
+          user={passwordUser}
+          open
+          onOpenChange={(open) => {
+            if (!open) setPasswordUser(null)
+          }}
+        />
+      )}
       {/* 用户 ↔ 团队分配 */}
       {teamsUser && (
         <UserTeamsDialog

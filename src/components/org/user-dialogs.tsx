@@ -33,6 +33,7 @@ import {
   USER_STATUSES,
   USER_STATUS_LABEL_KEYS,
   useOrgStore,
+  usernameIssue,
   type OrgUser,
   type TeamRole,
   type UserStatus,
@@ -47,7 +48,21 @@ interface UserFormDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
-/** 新建 / 编辑全局用户对话框（用户位于 Team 之上：创建后可在 Teams 中分配成员关系） */
+/**
+ * 新建 / 编辑全局用户对话框。
+ *
+ * 新建与编辑的字段刻意不同：
+ *   - 新建：**登录名** + 姓名 + 邮箱 + **初始口令** + 状态 + 是否系统管理员。
+ *     登录名与口令在建号时是必须的 —— 账号本来就是靠它们登录的，
+ *     建一个没有登录名、没有口令的账号没有意义；
+ *   - 编辑：只有姓名 / 邮箱 / 状态 / 是否系统管理员。**登录名与口令都不在这里改**：
+ *     登录名是账号的主键口径（登录、日志、按录入人隔离的业务归属都认它，改一次全漂），
+ *     口令则走独立的「重置口令」入口（管理员重置不需要旧口令）。
+ *
+ * 演示态的口令**不会被保存**（见 `stores/org-store.ts` 的 `passwordUpdatedAt` 说明）：
+ * 这里收集它是为了让表单形状与真实后端一致 —— 接后端时把 `addUser` 换成
+ * `POST /api/users`（入参带上 `password`）即可，本文件无需改动。
+ */
 export function UserFormDialog({ user, open, onOpenChange }: UserFormDialogProps) {
   const { t } = useTranslation()
   const users = useOrgStore((s) => s.users)
@@ -55,8 +70,10 @@ export function UserFormDialog({ user, open, onOpenChange }: UserFormDialogProps
   const updateUser = useOrgStore((s) => s.updateUser)
 
   const editing = user !== undefined
+  const [username, setUsername] = useState('')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [status, setStatus] = useState<UserStatus>('active')
   const [isSystemAdmin, setIsSystemAdmin] = useState(false)
 
@@ -67,14 +84,20 @@ export function UserFormDialog({ user, open, onOpenChange }: UserFormDialogProps
   if (syncedFrom === null || syncedFrom.open !== open || syncedFrom.user !== user) {
     setSyncedFrom({ open, user })
     if (open) {
+      setUsername(user?.username ?? '')
       setName(user?.name ?? '')
       setEmail(user?.email ?? '')
+      setPassword('')
       setStatus(user?.status ?? 'active')
       setIsSystemAdmin(user?.isSystemAdmin ?? false)
     }
   }
 
+  /** 新建时的登录名校验结果（编辑态登录名不可改，无需校验） */
+  const usernameProblem = editing ? null : usernameIssue(username, users)
+
   const handleSubmit = () => {
+    const trimmedUsername = username.trim()
     const trimmedName = name.trim()
     const trimmedEmail = email.trim()
     if (!trimmedName) {
@@ -85,15 +108,6 @@ export function UserFormDialog({ user, open, onOpenChange }: UserFormDialogProps
       toast.error(t('users.emailInvalid'))
       return
     }
-    const duplicated = users.some(
-      (existing) =>
-        existing.id !== user?.id &&
-        existing.email.toLowerCase() === trimmedEmail.toLowerCase(),
-    )
-    if (duplicated) {
-      toast.error(t('users.emailTaken'))
-      return
-    }
     if (editing && user) {
       updateUser(user.id, {
         name: trimmedName,
@@ -102,10 +116,42 @@ export function UserFormDialog({ user, open, onOpenChange }: UserFormDialogProps
         status,
       })
       toast.success(t('users.updated'))
-    } else {
-      addUser({ name: trimmedName, email: trimmedEmail, isSystemAdmin, status })
-      toast.success(t('users.created'))
+      onOpenChange(false)
+      return
     }
+    // 下面三道都只是前端先拦一道、省一次往返；真实系统里**服务端必须再判一次** ——
+    // 登录名有 UNIQUE 约束、口令有长度下限，前端算出来的东西不能当校验依据。
+    if (usernameProblem === 'empty') {
+      toast.error(t('users.usernameRequired'))
+      return
+    }
+    if (usernameProblem === 'charset') {
+      toast.error(t('users.usernameInvalid'))
+      return
+    }
+    if (usernameProblem === 'taken') {
+      toast.error(t('users.usernameTaken'))
+      return
+    }
+    if (password.length < 8) {
+      toast.error(t('users.passwordTooShort'))
+      return
+    }
+    try {
+      addUser({
+        username: trimmedUsername,
+        name: trimmedName,
+        email: trimmedEmail,
+        isSystemAdmin,
+        status,
+      })
+    } catch (error) {
+      // store 里也做了唯一性兜底（大小写不敏感）。走到这里说明上面那道漏了 ——
+      // 原样把原因抛出来，不要静默吞掉（吞掉就会表现成「点了创建，什么都没发生」）。
+      toast.error(error instanceof Error ? error.message : t('users.usernameTaken'))
+      return
+    }
+    toast.success(t('users.created'))
     onOpenChange(false)
   }
 
@@ -116,9 +162,22 @@ export function UserFormDialog({ user, open, onOpenChange }: UserFormDialogProps
           <DialogTitle>
             {editing ? t('users.editUser') : t('users.newUser')}
           </DialogTitle>
-          <DialogDescription>{t('users.formHint')}</DialogDescription>
+          <DialogDescription>
+            {editing ? t('users.editPasswordHint') : t('users.formHint')}
+          </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="user-username">{t('users.username')}</Label>
+            <Input
+              id="user-username"
+              value={username}
+              disabled={editing}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder={t('users.usernamePlaceholder')}
+              autoComplete="off"
+            />
+          </div>
           <div className="grid gap-2">
             <Label htmlFor="user-name">{t('users.name')}</Label>
             <Input
@@ -138,6 +197,20 @@ export function UserFormDialog({ user, open, onOpenChange }: UserFormDialogProps
               placeholder={t('users.emailPlaceholder')}
             />
           </div>
+          {!editing && (
+            <div className="grid gap-2">
+              <Label htmlFor="user-password">{t('users.password')}</Label>
+              <Input
+                id="user-password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={t('users.passwordPlaceholder')}
+                autoComplete="new-password"
+              />
+              <p className="text-xs text-muted-foreground">{t('users.passwordHint')}</p>
+            </div>
+          )}
           <div className="grid gap-2">
             <Label>{t('users.statusLabel')}</Label>
             <Select
