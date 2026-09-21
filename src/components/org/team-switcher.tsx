@@ -124,8 +124,6 @@ export function TeamSwitcher() {
     )
   }
 
-  const isActiveDefault = activeTeam.id === defaultTeamId
-
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -140,24 +138,9 @@ export function TeamSwitcher() {
               <div className="flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                 <TeamLogo logo={activeTeam.logo} className="size-4" />
               </div>
-              <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
-                <span className="flex min-w-0 items-center gap-1.5">
-                  <span className="truncate font-semibold">{activeTeam.name}</span>
-                  {isActiveDefault && (
-                    <span
-                      title={t('teams.defaultTeam')}
-                      className="inline-flex shrink-0"
-                    >
-                      <Star
-                        className="size-3.5 fill-amber-400 text-amber-400"
-                        aria-label={t('teams.defaultTeam')}
-                      />
-                    </span>
-                  )}
-                </span>
-                <span className="truncate text-xs text-muted-foreground">
-                  {activeTeam.description || t('nav.noDescription')}
-                </span>
+              {/* 仅显示团队名称（不放 default 星标、不显示说明），保证标题完整可读 */}
+              <div className="min-w-0 flex-1 truncate text-left text-sm font-semibold">
+                {activeTeam.name}
               </div>
               <ChevronsUpDown className="ml-auto size-4 shrink-0 opacity-60" />
             </SidebarMenuButton>

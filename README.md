@@ -6,7 +6,7 @@
 
 ## 版本
 
-当前版本：**0.8.0** ｜ 变更记录见 [CHANGELOG.md](./CHANGELOG.md)（含遗留问题与待办，跨文件核对：package.json / 侧边栏 / PROGRESS.md）
+当前版本：**0.8.1** ｜ 变更记录见 [CHANGELOG.md](./CHANGELOG.md)（含遗留问题与待办，跨文件核对：package.json / 侧边栏 / PROGRESS.md）
 
 ## 技术栈
 
