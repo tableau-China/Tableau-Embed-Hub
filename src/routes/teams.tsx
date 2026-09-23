@@ -2,7 +2,16 @@ import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { Info, Pencil, Plus, Star, Trash2, Users } from 'lucide-react'
+import {
+  Info,
+  PauseCircle,
+  Pencil,
+  Play,
+  Plus,
+  Star,
+  Trash2,
+  Users,
+} from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -33,7 +42,12 @@ import { TeamDialog } from '@/components/org/team-dialog'
 import { ActionButtons } from '@/components/action-bar'
 import { TeamLogo } from '@/components/org/team-logo'
 import { TeamMembersDialog } from '@/components/org/team-members-dialog'
-import { sortTeamsById, useOrgStore, type OrgTeam } from '@/stores/org-store'
+import {
+  orphanedUsersOfTeam,
+  sortTeamsById,
+  useOrgStore,
+  type OrgTeam,
+} from '@/stores/org-store'
 
 export const Route = createFileRoute('/teams')({
   component: TeamsPage,
@@ -51,6 +65,7 @@ function TeamsPage() {
   const members = useOrgStore((s) => s.members)
   const activeTeamId = useOrgStore((s) => s.activeTeamId)
   const deleteTeam = useOrgStore((s) => s.deleteTeam)
+  const setTeamSuspended = useOrgStore((s) => s.setTeamSuspended)
   const currentUser = useOrgStore((s) =>
     s.users.find((u) => u.id === s.currentUserId),
   )
@@ -78,10 +93,29 @@ function TeamsPage() {
   const handleDelete = () => {
     if (!deletingTeam) return
     const name = deletingTeam.name
-    deleteTeam(deletingTeam.id)
+    // 归属不变量：有人只属于这个团队时不允许删除（store 同样兜底），提示先安置这些人
+    if (!deleteTeam(deletingTeam.id)) {
+      toast.error(t('teams.deleteBlocked'))
+      return
+    }
     toast.success(t('teams.deleted', { name }))
     setDeletingTeam(null)
   }
+
+  /** 冻结 / 解冻团队：冻结后除系统管理员外都进不来（成员自动回落到自己的其它团队） */
+  const handleToggleSuspend = (team: OrgTeam) => {
+    const next = !team.suspended
+    setTeamSuspended(team.id, next)
+    toast.success(
+      next
+        ? t('teams.suspendedToast', { name: team.name })
+        : t('teams.resumedToast', { name: team.name }),
+    )
+  }
+
+  /** 删除前提示里列出受影响人数（只属于该团队的成员） */
+  const orphanCountOf = (teamId: number) =>
+    orphanedUsersOfTeam(members, teamId).length
 
   return (
     <div className="flex flex-col gap-6">
@@ -145,6 +179,16 @@ function TeamsPage() {
                         </span>
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="font-medium">{team.name}</span>
+                          {team.suspended && (
+                            <Badge
+                              variant="outline"
+                              className="gap-1 border-rose-400/50 bg-rose-400/10 text-rose-700 dark:text-rose-300"
+                              title={t('teams.suspendHint')}
+                            >
+                              <PauseCircle className="size-3" />
+                              {t('teams.suspended')}
+                            </Badge>
+                          )}
                           {isDefault && (
                             <Badge
                               variant="outline"
@@ -157,7 +201,7 @@ function TeamsPage() {
                           )}
                           {team.id === activeTeamId && (
                             <Badge variant="secondary">
-                              {t('teams.activeLabel')}
+                              {t('teams.currentLabel')}
                             </Badge>
                           )}
                         </div>
@@ -195,6 +239,28 @@ function TeamsPage() {
                             }}
                           >
                             <Pencil className="size-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className={
+                              team.suspended
+                                ? 'size-8 text-rose-600 hover:text-rose-700 dark:text-rose-400'
+                                : 'size-8 text-muted-foreground'
+                            }
+                            aria-label={
+                              team.suspended ? t('teams.resume') : t('teams.suspend')
+                            }
+                            title={
+                              team.suspended ? t('teams.resume') : t('teams.suspend')
+                            }
+                            onClick={() => handleToggleSuspend(team)}
+                          >
+                            {team.suspended ? (
+                              <Play className="size-4" />
+                            ) : (
+                              <PauseCircle className="size-4" />
+                            )}
                           </Button>
                           <Button
                             variant="ghost"
@@ -260,6 +326,16 @@ function TeamsPage() {
                 name: deletingTeam?.name ?? '',
               })}
             </DialogDescription>
+            {deletingTeam && orphanCountOf(deletingTeam.id) > 0 && (
+              <div className="flex items-start gap-2 rounded-md border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-300">
+                <Info className="mt-0.5 size-4 shrink-0" />
+                <span>
+                  {t('teams.deleteBlockedHint', {
+                    count: orphanCountOf(deletingTeam.id),
+                  })}
+                </span>
+              </div>
+            )}
           </DialogHeader>
           <DialogFooter>
             <ActionButtons

@@ -67,6 +67,11 @@ export function UserFormDialog({ user, open, onOpenChange }: UserFormDialogProps
   const { t } = useTranslation()
   const users = useOrgStore((s) => s.users)
   const addUser = useOrgStore((s) => s.addUser)
+  const activeTeamId = useOrgStore((s) => s.activeTeamId)
+  const activeTeam = useOrgStore((s) =>
+    s.teams.find((team) => team.id === s.activeTeamId),
+  )
+  const currentUserId = useOrgStore((s) => s.currentUserId)
   const updateUser = useOrgStore((s) => s.updateUser)
 
   const editing = user !== undefined
@@ -109,6 +114,23 @@ export function UserFormDialog({ user, open, onOpenChange }: UserFormDialogProps
       return
     }
     if (editing && user) {
+      // 表单里的状态下拉与列表里的冻结按钮走同一条规则：不能把自己或最后一名可用管理员冻结
+      // （否则会当场失去管理入口 —— 演示态没有后台可以救回来）
+      if (status === 'disabled' && user.status === 'active') {
+        if (user.id === currentUserId) {
+          toast.error(t('users.cannotFreezeSelf'))
+          return
+        }
+        if (user.isSystemAdmin) {
+          const otherActiveAdmins = users.filter(
+            (u) => u.isSystemAdmin && u.status === 'active' && u.id !== user.id,
+          )
+          if (otherActiveAdmins.length === 0) {
+            toast.error(t('users.cannotFreezeLastAdmin'))
+            return
+          }
+        }
+      }
       updateUser(user.id, {
         name: trimmedName,
         email: trimmedEmail,
@@ -138,13 +160,20 @@ export function UserFormDialog({ user, open, onOpenChange }: UserFormDialogProps
       return
     }
     try {
-      addUser({
+      // 归属不变量：新用户默认加入**当前团队**（岗位 viewer）。
+      // 一个团队都没有时 store 返回 null —— 这时不能创建用户，否则会多出一个无家可归的账号。
+      const created = addUser({
         username: trimmedUsername,
         name: trimmedName,
         email: trimmedEmail,
         isSystemAdmin,
         status,
+        teamId: activeTeamId ?? undefined,
       })
+      if (!created) {
+        toast.error(t('users.noTeamAvailable'))
+        return
+      }
     } catch (error) {
       // store 里也做了唯一性兜底（大小写不敏感）。走到这里说明上面那道漏了 ——
       // 原样把原因抛出来，不要静默吞掉（吞掉就会表现成「点了创建，什么都没发生」）。
@@ -163,7 +192,18 @@ export function UserFormDialog({ user, open, onOpenChange }: UserFormDialogProps
             {editing ? t('users.editUser') : t('users.newUser')}
           </DialogTitle>
           <DialogDescription>
-            {editing ? t('users.editPasswordHint') : t('users.formHint')}
+            {editing ? (
+              t('users.editPasswordHint')
+            ) : (
+              <>
+                {t('users.formHint')}
+                {activeTeam && (
+                  <span className="mt-1 block">
+                    {t('users.currentTeamHint', { team: activeTeam.name })}
+                  </span>
+                )}
+              </>
+            )}
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4">
@@ -314,7 +354,12 @@ export function UserTeamsDialog({
             </Avatar>
             {t('users.teamsTitle', { user: user.name })}
           </DialogTitle>
-          <DialogDescription>{t('users.teamsHint')}</DialogDescription>
+          <DialogDescription>
+            {t('users.teamsHint')}{' '}
+            <span className="text-muted-foreground">
+              {t('users.mustBelongToTeam')}
+            </span>
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex max-h-80 flex-col gap-2 overflow-y-auto pr-1">
@@ -419,9 +464,18 @@ export function UserTeamsDialog({
                       size="icon"
                       className="size-8 shrink-0 text-muted-foreground hover:text-destructive"
                       aria-label={t('users.removeTeam')}
-                      title={t('users.removeTeam')}
+                      title={
+                        // 归属不变量：这是该用户唯一的团队 —— 移除会让他没有归属，只能先加别的团队
+                        rows.length <= 1
+                          ? t('users.lastTeamBlocked')
+                          : t('users.removeTeam')
+                      }
+                      disabled={rows.length <= 1}
                       onClick={() => {
-                        removeMember(team.id, user.id)
+                        if (!removeMember(team.id, user.id)) {
+                          toast.error(t('users.lastTeamBlocked'))
+                          return
+                        }
                         toast.success(t('users.removedFromTeam', { team: team.name }))
                       }}
                     >

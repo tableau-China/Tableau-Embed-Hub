@@ -67,6 +67,10 @@ export function TeamMembersDialog({
     [users, rows],
   )
 
+  /** 某成员当前属于几个团队（用于归属不变量：只剩 1 个时不允许移除） */
+  const memberTeamCount = (userId: number) =>
+    members.filter((m) => m.userId === userId).length
+
   const handleAdd = () => {
     const userId = Number(newUserId)
     if (!Number.isInteger(userId)) {
@@ -196,9 +200,18 @@ export function TeamMembersDialog({
                       size="icon"
                       className="size-8 shrink-0 text-muted-foreground hover:text-destructive"
                       aria-label={t('teams.removeMember')}
-                      title={t('teams.removeMember')}
+                      title={
+                        // 归属不变量：该成员只属于这个团队 —— 不能直接移除（先给他加别的团队）
+                        memberTeamCount(row.userId) <= 1
+                          ? t('users.lastTeamBlocked')
+                          : t('teams.removeMember')
+                      }
+                      disabled={memberTeamCount(row.userId) <= 1}
                       onClick={() => {
-                        removeMember(team.id, row.userId)
+                        if (!removeMember(team.id, row.userId)) {
+                          toast.error(t('users.lastTeamBlocked'))
+                          return
+                        }
                         toast.success(t('teams.memberRemoved'))
                       }}
                     >

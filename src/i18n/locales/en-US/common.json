@@ -89,7 +89,6 @@
     "status": "Status",
     "statusLabel": "Status",
     "active": "Active",
-    "disabled": "Disabled",
     "empty": "No users yet. Add the first user to get started.",
     "noPermission": "Only system administrators can manage users.",
     "you": "You",
@@ -123,7 +122,20 @@
     "noTeamsWarning": "This user is not a member of any team yet",
     "removeTeam": "Remove from team",
     "removedFromTeam": "Removed from {{team}}",
-    "addMembershipHint": "Assign to another team"
+    "addMembershipHint": "Assign to another team",
+    "frozen": "Frozen",
+    "freeze": "Freeze user",
+    "unfreeze": "Unfreeze user",
+    "frozenHint": "Frozen users cannot sign in.",
+    "frozenToast": "User “{{name}}” frozen",
+    "unfrozenToast": "User “{{name}}” unfrozen",
+    "frozenCannotLogin": "“{{name}}” is frozen and cannot sign in",
+    "cannotFreezeSelf": "You cannot freeze the signed-in user",
+    "cannotFreezeLastAdmin": "At least one system administrator must stay active",
+    "currentTeamHint": "New users join the current team ({{team}}) as Viewer.",
+    "noTeamAvailable": "Create a team first — every user must belong to a team.",
+    "mustBelongToTeam": "Every user must belong to at least one team.",
+    "lastTeamBlocked": "This is the user’s only team — assign another team first."
   },
   "tasks": {
     "title": "Tasks",
@@ -351,7 +363,6 @@
     "members_other": "{{count}} members",
     "admins_one": "{{count}} admin",
     "admins_other": "{{count}} admins",
-    "activeLabel": "Active",
     "newTeam": "New team",
     "editTeam": "Edit team",
     "deleteTeam": "Delete team",
@@ -385,7 +396,17 @@
     "selectTeamRequired": "Select a team to add",
     "manageMembers": "Members",
     "readOnlyHint": "Only system administrators can create, edit or delete teams.",
-    "addMemberHint": "Add a member"
+    "addMemberHint": "Add a member",
+    "currentLabel": "Current",
+    "suspended": "Suspended",
+    "suspend": "Suspend team",
+    "resume": "Resume team",
+    "suspendHint": "Suspended teams can only be entered by system administrators.",
+    "suspendedToast": "Team “{{name}}” suspended",
+    "resumedToast": "Team “{{name}}” resumed",
+    "deleteBlocked": "Cannot delete: some members belong only to this team",
+    "deleteBlockedHint_one": "{{count}} member belongs only to this team — assign them to another team first.",
+    "deleteBlockedHint_other": "{{count}} members belong only to this team — assign them to another team first."
   },
   "favorites": {
     "title": "Favorites",
@@ -439,7 +460,9 @@
     "noAccessMessage": "\"{{name}}\" is not one of your teams. Ask an administrator to add you, or open one of your own teams.",
     "backHome": "Go to dashboard",
     "manageTeams": "Manage teams",
-    "switchToMyTeam": "Open my team"
+    "switchToMyTeam": "Open my team",
+    "suspendedTitle": "Team suspended",
+    "suspendedMessage": "The team “{{name}}” is suspended. Only system administrators can enter it."
   },
   "routeAccess": {
     "title": "You don't have access to this page",

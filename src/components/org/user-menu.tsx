@@ -50,7 +50,12 @@ export function UserMenu() {
     : t('users.roleMember')
 
   const handleSwitch = (userId: number) => {
-    setCurrentUser(userId)
+    // 冻结（status: disabled）的账号无法登录 —— store 会拒绝，这里给出原因提示
+    if (!setCurrentUser(userId)) {
+      const frozenName = users.find((u) => u.id === userId)?.name ?? ''
+      toast.error(t('users.frozenCannotLogin', { name: frozenName }))
+      return
+    }
     const nextMemberships = userMemberships(members, userId)
     const switchedName = users.find((u) => u.id === userId)?.name ?? ''
 
@@ -139,6 +144,10 @@ export function UserMenu() {
                 {others.map((user) => (
                   <DropdownMenuItem
                     key={user.id}
+                    disabled={user.status !== 'active'}
+                    title={
+                      user.status !== 'active' ? t('users.frozenHint') : undefined
+                    }
                     onClick={() => handleSwitch(user.id)}
                     className="gap-2 p-2"
                   >
@@ -148,11 +157,17 @@ export function UserMenu() {
                       </AvatarFallback>
                     </Avatar>
                     <span className="flex-1 truncate">{user.name}</span>
-                    <span className="truncate text-xs text-muted-foreground">
-                      {user.isSystemAdmin
-                        ? t('users.roleSuperAdmin')
-                        : t('users.roleMember')}
-                    </span>
+                    {user.status !== 'active' ? (
+                      <span className="shrink-0 rounded-md border border-rose-400/40 bg-rose-400/10 px-1.5 py-0.5 text-[10px] font-medium text-rose-700 dark:text-rose-300">
+                        {t('users.frozen')}
+                      </span>
+                    ) : (
+                      <span className="truncate text-xs text-muted-foreground">
+                        {user.isSystemAdmin
+                          ? t('users.roleSuperAdmin')
+                          : t('users.roleMember')}
+                      </span>
+                    )}
                   </DropdownMenuItem>
                 ))}
                 <DropdownMenuSeparator />

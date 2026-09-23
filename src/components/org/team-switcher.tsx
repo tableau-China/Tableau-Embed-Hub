@@ -4,11 +4,13 @@ import {
   Building2,
   Check,
   ChevronsUpDown,
+  PauseCircle,
   Plus,
   ShieldAlert,
   Star,
 } from 'lucide-react'
 import { Link, useLocation, useNavigate } from '@tanstack/react-router'
+import { toast } from 'sonner'
 
 import {
   DropdownMenu,
@@ -28,7 +30,7 @@ import { TeamLogo } from '@/components/org/team-logo'
 import { TeamDialog } from '@/components/org/team-dialog'
 import { useCurrentTeam } from '@/hooks/use-current-team'
 import { stripTeamPrefix } from '@/lib/team-context'
-import { sortTeamsById, useOrgStore } from '@/stores/org-store'
+import { canEnterTeam, sortTeamsById, useOrgStore } from '@/stores/org-store'
 import { cn } from '@/lib/utils'
 
 /**
@@ -55,10 +57,13 @@ export function TeamSwitcher() {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
 
-  // 当前用户可用团队：按创建次序（id 升序）展示
+  // 当前用户可进入的团队：按创建次序（id 升序）展示。
+  // 冻结团队（suspended）只有系统管理员能看到并进入 —— 普通成员的列表里直接不出现。
   const myTeams = sortTeamsById(
-    teams.filter((team) =>
-      members.some((m) => m.userId === currentUserId && m.teamId === team.id),
+    teams.filter(
+      (team) =>
+        members.some((m) => m.userId === currentUserId && m.teamId === team.id) &&
+        canEnterTeam(team, currentUser),
     ),
   )
   // URL 里的团队必须是「我的团队」之一才用于高亮，否则退回首个可用团队
@@ -71,7 +76,11 @@ export function TeamSwitcher() {
    * 切团队相当于「换个站点看同一个页面」；跨团队页面（/users、/teams、/config/smtp 等）则回到团队首页。
    */
   const switchTeam = (teamSlug: string, teamId: number) => {
-    setActiveTeam(teamId)
+    // 冻结团队对非管理员会被 store 拒绝 —— 不跳转，避免把用户带进打不开的 URL
+    if (!setActiveTeam(teamId)) {
+      toast.error(t('teams.suspendHint'))
+      return
+    }
     navigate({ href: `/t/${teamSlug}${stripTeamPrefix(pathname)}`, replace: true })
   }
 
@@ -167,6 +176,15 @@ export function TeamSwitcher() {
                   <TeamLogo logo={team.logo} className="size-4 shrink-0" />
                 </div>
                 <span className="flex-1 truncate">{team.name}</span>
+                {team.suspended && (
+                  <span
+                    className="inline-flex shrink-0 items-center gap-1 rounded-md border border-rose-400/40 bg-rose-400/10 px-1.5 py-0.5 text-[10px] font-medium text-rose-700 dark:text-rose-300"
+                    title={t('teams.suspendHint')}
+                  >
+                    <PauseCircle className="size-2.5" />
+                    {t('teams.suspended')}
+                  </span>
+                )}
                 {team.id === defaultTeamId && (
                   <span
                     className="inline-flex shrink-0 items-center gap-1 rounded-md border border-amber-400/40 bg-amber-400/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400"

@@ -1,7 +1,7 @@
 {
   "name": "shadcn-admin-cn",
   "private": true,
-  "version": "0.8.1",
+  "version": "0.9.0",
   "type": "module",
   "description": "基于 shadcn/ui + Tailwind CSS v4 + Radix UI 构建的管理后台模板（当前仅英文，后续扩展多语言）",
   "scripts": {

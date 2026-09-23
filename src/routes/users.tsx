@@ -2,7 +2,18 @@ import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { Info, KeyRound, Pencil, Plus, ShieldCheck, Star, Trash2, Users } from 'lucide-react'
+import {
+  Ban,
+  CircleCheck,
+  Info,
+  KeyRound,
+  Pencil,
+  Plus,
+  ShieldCheck,
+  Star,
+  Trash2,
+  Users,
+} from 'lucide-react'
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ActionButtons } from '@/components/action-bar'
@@ -50,6 +61,7 @@ function statusBadgeVariant(status: UserStatus) {
   return status === 'active' ? ('default' as const) : ('outline' as const)
 }
 
+
 /**
  * 全局用户管理页：用户位于 Team 之上 ——
  * 每个用户可属于多个团队（各自持有团队岗位），可被提升为系统管理员。
@@ -67,6 +79,7 @@ function UsersPage() {
   const members = useOrgStore((s) => s.members)
   const currentUserId = useOrgStore((s) => s.currentUserId)
   const deleteUser = useOrgStore((s) => s.deleteUser)
+  const freezeUser = useOrgStore((s) => s.freezeUser)
   const currentUser = users.find((u) => u.id === currentUserId)
   const isSuperAdmin = currentUser?.isSystemAdmin === true
 
@@ -87,6 +100,24 @@ function UsersPage() {
    * （`UserRepository` / `UserApi` 会再判一次「至少保留一名管理员」与「不能删自己」）。
    * 演示态没有服务端，所以这两条就是唯一的一道 —— 接后端后建议保留（省一次往返）。
    */
+  /** 冻结 / 解冻用户：冻结后无法登录（store 里也拦一道，见 setCurrentUser） */
+  const handleToggleFreeze = (user: OrgUser) => {
+    const frozen = user.status === 'active'
+    if (!freezeUser(user.id, frozen)) {
+      toast.error(
+        user.id === currentUserId
+          ? t('users.cannotFreezeSelf')
+          : t('users.cannotFreezeLastAdmin'),
+      )
+      return
+    }
+    toast.success(
+      frozen
+        ? t('users.frozenToast', { name: user.name })
+        : t('users.unfrozenToast', { name: user.name }),
+    )
+  }
+
   const handleDelete = () => {
     if (!deletingUser) return
     if (deletingUser.id === currentUserId) {
@@ -191,7 +222,14 @@ function UsersPage() {
                       {user.email}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={statusBadgeVariant(user.status)}>
+                      <Badge
+                        variant={statusBadgeVariant(user.status)}
+                        title={
+                          user.status === 'disabled'
+                            ? t('users.frozenHint')
+                            : undefined
+                        }
+                      >
                         {t(USER_STATUS_LABEL_KEYS[user.status])}
                       </Badge>
                     </TableCell>
@@ -261,6 +299,32 @@ function UsersPage() {
                             onClick={() => setPasswordUser(user)}
                           >
                             <KeyRound className="size-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className={
+                              user.status === 'disabled'
+                                ? 'size-8 text-rose-600 hover:text-rose-700 dark:text-rose-400'
+                                : 'size-8 text-muted-foreground'
+                            }
+                            aria-label={
+                              user.status === 'disabled'
+                                ? t('users.unfreeze')
+                                : t('users.freeze')
+                            }
+                            title={
+                              user.status === 'disabled'
+                                ? t('users.unfreeze')
+                                : t('users.freeze')
+                            }
+                            onClick={() => handleToggleFreeze(user)}
+                          >
+                            {user.status === 'disabled' ? (
+                              <CircleCheck className="size-4" />
+                            ) : (
+                              <Ban className="size-4" />
+                            )}
                           </Button>
                           <Button
                             variant="ghost"

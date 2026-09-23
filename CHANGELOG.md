@@ -6,6 +6,7 @@
 
 | 版本 | package.json | 侧边栏显示 | PROGRESS.md | CHANGELOG 条目 | 日期 |
 | --- | --- | --- | --- | --- | --- |
+| 0.9.0 | ✅ `0.9.0` | ✅ `v0.9.0`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#090---2026-09-21) | 2026-09-21 |
 | 0.8.1 | ✅ `0.8.1` | ✅ `v0.8.1`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#081---2026-09-21) | 2026-09-21 |
 | 0.8.0 | ✅ `0.8.0` | ✅ `v0.8.0`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#080---2026-09-21) | 2026-09-21 |
 | 0.7.1 | ✅ `0.7.1` | ✅ `v0.7.1`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#071---2026-09-19) | 2026-09-19 |
@@ -19,6 +20,53 @@
 | 0.1.0 | ✅ `0.1.0` | ✅ `v0.1.0` | ✅ 已同步 | ✅ [本节](#010---2026-08-16) | 2026-08-16 |
 
 > 约定：新版本发布时，先升 `package.json` 的 `version`，再更新本表与下方条目。
+
+## [0.9.0] - 2026-09-21
+
+### 团队冻结（suspend）+ 用户冻结（freeze）+ 用户必须归属某个团队
+
+三件事一起做，因为它们共享同一条线索：**状态属于数据模型，拦截必须落在 store，界面只负责把话说清楚**。
+新规则集中写在 [`docs/org-rules.md`](./docs/org-rules.md)（含三条铁律与接后端映射）。
+
+#### Added（新增）
+
+- **团队冻结** `OrgTeam.suspended`：冻结后**仅系统管理员可进入**——
+  TeamSwitcher 对非管理员不再列出该团队、`setActiveTeam()` 直接拒绝、`/t/$teamSlug` 守卫渲染
+  `TeamSuspended` 兜底页（直接粘 URL 也进不去）；管理员在列表与 `/teams` 行内看到 `Suspended` 徽章。
+  冻结是**临时停用**：团队、成员关系、数据都保留，成员自动回落到自己所属的其它团队
+  （不需要把人逐个移出去再拉回来，那会丢岗位设置）。
+- **`setTeamSuspended(id, suspended)`** + `/teams` 行内一键冻结/解冻（`PauseCircle` / `Play`），
+  冻结后立即重算 `activeTeamId`，避免有人「停在一个进不去的团队」。
+- **用户冻结** `freezeUser(id, frozen)`：冻结即 `status: 'disabled'`，**该用户无法登录**
+  —— `setCurrentUser()` 返回 `false`，侧栏用户菜单里该项 `disabled` 并标 `Frozen`。
+  账号与团队关系保留，解冻即恢复（与「删除账号」是两件事）。
+- **`/users` 行内冻结/解冻按钮**（`Ban` / `CircleCheck`）+ 状态徽章文案改为 **Frozen**。
+- **用户归属不变量**：每个用户必须至少属于一个团队。
+  - 新建用户默认加入**当前团队**（岗位 `viewer`，并作为其默认团队），表单里明确写出「New users join the current team (X) as Viewer」；
+  - 没有任何团队可用时**拒绝创建**（`addUser()` 返回 `null`）；
+  - 移除成员关系时，若是该用户唯一的团队 → 拒绝（按钮同步禁用）；
+  - 删除团队时，若团队里有成员**只属于它** → 拒绝删除，确认框直接列出受影响人数；
+  - `persist.migrate` **v2 → v3**：给老数据里的「无归属」账号补一条成员关系，团队补 `suspended: false`。
+- **`docs/org-rules.md`**：三条铁律、各拦截点、接后端映射（`status` 列 / `suspended_at` / `(team_id,user_id)` 唯一约束）、改这块代码的自查清单。
+
+#### Changed（变更）
+
+- `USER_STATUS_LABEL_KEYS.disabled` → `users.frozen`（**值不变**，仍是 `disabled`；只是界面口径统一为「冻结」）
+- `/teams` 行内「当前团队」徽章由 `Active` 改名为 **`Current`**（`teams.currentLabel`），与新增的冻结状态区分开
+- `removeMember()` / `deleteTeam()` / `setActiveTeam()` / `setCurrentUser()` 现在**返回布尔值**表达「是否执行」，
+  调用方据此提示原因（原先静默失败）；`addUser()` 返回 `OrgUser | null`
+- 版本 0.8.1 → 0.9.0（package.json / `src/config/app.ts` / README / PROGRESS.md / CHANGELOG.md）
+
+#### Verified（验证）
+
+- `tsc -b` / `pnpm lint`（0 error）/ `vite build` / `pnpm check:i18n`（452 keys）全绿
+- **store 单测**（Node + TS strip-types）：冻结团队进入判定、非管理员切换被拒、默认团队被冻结时自动回落、
+  冻结用户无法登录、不能冻结自己、不能冻结最后一名管理员、新用户落入当前团队、唯一团队不可移除、
+  含「唯一团队成员」的团队不可删除、迁移 v1→v3 / v2→v3 —— 全部通过
+- **无头 Chrome 端到端**：冻结 Analytics → 行内 `Suspended` 徽章；管理员仍可进入；切到 Bob 后侧栏不再出现该团队、
+  直接访问 `/t/acme_analytics` 命中 `Team suspended` 兜底页；解冻恢复；冻结 Dave → 行内 `Frozen`、
+  用户菜单该项 `disabled` + `Frozen`；新建用户落进当前团队（`Viewer · Acme Analytics`）；
+  删除 `Acme Data Platform` 被拦下并提示「2 members belong only to this team」
 
 ## [0.8.1] - 2026-09-21
 

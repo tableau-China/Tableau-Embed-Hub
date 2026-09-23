@@ -2,11 +2,11 @@
 
 基于 shadcn/ui + Tailwind CSS v4 + Radix UI 从零构建的管理后台模板（当前仅英文，多语言后期扩展）。
 
-> 当前状态：Phase 1 进行中 —— 布局、多团队工作区、页面级权限、个人资料、系统配置（SMTP）与帮助页已就绪；i18n 当前仅 en-US。
+> 当前状态：Phase 1 进行中 —— 布局、多团队工作区（含团队冻结）、全局用户（含用户冻结）、页面级权限、个人资料、系统配置（SMTP）与帮助页已就绪；i18n 当前仅 en-US。
 
 ## 版本
 
-当前版本：**0.8.1** ｜ 变更记录见 [CHANGELOG.md](./CHANGELOG.md)（含遗留问题与待办，跨文件核对：package.json / 侧边栏 / PROGRESS.md）
+当前版本：**0.9.0** ｜ 变更记录见 [CHANGELOG.md](./CHANGELOG.md)（含遗留问题与待办，跨文件核对：package.json / 侧边栏 / PROGRESS.md）
 
 ## 技术栈
 

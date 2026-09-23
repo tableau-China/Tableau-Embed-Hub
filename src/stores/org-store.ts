@@ -73,6 +73,16 @@ export interface OrgTeam {
   description: string
   /** TeamLogo 图标 key（lucide 图标名，见 components/org/team-logo.tsx） */
   logo: string
+  /**
+   * 是否已冻结（临时停用）。除系统管理员外，任何人都**不能进入**冻结的团队：
+   * 它不会出现在成员的切换列表里，`setActiveTeam` 也会拒绝。
+   *
+   * 用途：团队整改 / 数据有问题 / 预算暂停时先冻结——成员自然回落到自己所属的其它团队，
+   * 不需要把人逐个移出去（移出去再拉回来会丢岗位设置）。
+   *
+   * 与 `OrgUser.status` 的区别：冻结**不影响账号**，人还能登录，只是进不去这个团队。
+   */
+  suspended: boolean
 }
 
 export interface TeamMember {
@@ -98,10 +108,14 @@ export const TEAM_ROLE_LABEL_KEYS: Record<TeamRole, string> = {
   viewer: 'users.roleViewer',
 }
 
-/** 用户状态 → i18n label key */
+/**
+ * 用户状态 → i18n label key。
+ * 注意 `disabled` 在界面上叫 **Frozen（冻结）**：值是 `disabled`（与后端 status 列对齐），
+ * 展示文案用「冻结」是因为它描述的正是这个动作——临时停用、账号与团队关系都还在。
+ */
 export const USER_STATUS_LABEL_KEYS: Record<UserStatus, string> = {
   active: 'users.active',
-  disabled: 'users.disabled',
+  disabled: 'users.frozen',
 }
 
 /** 允许的 TeamLogo 图标 key（与 team-logo.tsx 的映射保持一致） */
@@ -228,6 +242,42 @@ export function userMemberships(members: TeamMember[], userId: number): TeamMemb
 }
 
 /**
+ * 该用户能否进入这个团队：正常团队人人可进；**冻结团队只有系统管理员能进**。
+ * 系统管理员保留入口是为了能进去处理故障/查看数据，而不是被自己的冻结操作锁在外面。
+ */
+export function canEnterTeam(
+  team: Pick<OrgTeam, 'suspended'>,
+  user: Pick<OrgUser, 'isSystemAdmin'> | undefined,
+): boolean {
+  if (!team.suspended) return true
+  return user?.isSystemAdmin === true
+}
+
+/** 用户可进入的团队 id 集合（冻结团队对非管理员直接排除） */
+export function enterableTeamIds(
+  teams: readonly OrgTeam[],
+  members: TeamMember[],
+  user: Pick<OrgUser, 'id' | 'isSystemAdmin'> | undefined,
+): number[] {
+  if (!user) return []
+  return userMemberships(members, user.id)
+    .map((m) => teams.find((t) => t.id === m.teamId))
+    .filter((t): t is OrgTeam => t !== undefined && canEnterTeam(t, user))
+    .map((t) => t.id)
+}
+
+/**
+ * 删除团队时会「失去全部团队」的成员用户（这些用户只属于该团队）。
+ * 归属不变量（每个用户至少属于一个团队）要求删除前先处理这批人，UI 与 store 共用此判定。
+ */
+export function orphanedUsersOfTeam(members: TeamMember[], teamId: number): number[] {
+  const affected = members.filter((m) => m.teamId === teamId).map((m) => m.userId)
+  return affected.filter(
+    (userId) => userMemberships(members, userId).length <= 1,
+  )
+}
+
+/**
  * 团队按创建次序展示：id 自增单调，升序即创建次序。
  * 数组本身由 createTeam 保证追加到末尾，此函数供展示层兜底
  * （兼容 v0.4.0 早期持久化数据中新建团队被插入队首的乱序）。
@@ -245,6 +295,7 @@ const SEED_TEAMS: OrgTeam[] = [
     slug: 'acme_hq',
     description: 'Headquarters workspace · default team of the Administrator',
     logo: 'building2',
+    suspended: false,
   },
   {
     id: 2,
@@ -252,6 +303,7 @@ const SEED_TEAMS: OrgTeam[] = [
     slug: 'acme_analytics',
     description: 'Tableau workbooks, views and embedded analytics demos',
     logo: 'monitor-play',
+    suspended: false,
   },
   {
     id: 3,
@@ -259,6 +311,7 @@ const SEED_TEAMS: OrgTeam[] = [
     slug: 'acme_data_platform',
     description: 'Data platform & governance pipeline demos',
     logo: 'workflow',
+    suspended: false,
   },
 ]
 
@@ -353,8 +406,15 @@ interface OrgState {
   currentUserId: number | null
   activeTeamId: number | null
 
-  setCurrentUser: (userId: number) => void
-  setActiveTeam: (teamId: number) => void
+  /**
+   * 切换当前登录用户（演示态的「登录」）。
+   * **被冻结的用户无法登录** —— 返回 false，调用方负责提示原因。
+   */
+  setCurrentUser: (userId: number) => boolean
+  /**
+   * 切换当前团队。返回 false = 被拒（不是该团队成员，或团队已冻结而当前用户不是系统管理员）。
+   */
+  setActiveTeam: (teamId: number) => boolean
 
   addUser: (data: {
     /** 登录名（唯一，大小写不敏感）；重复时抛错 */
@@ -363,8 +423,25 @@ interface OrgState {
     email: string
     isSystemAdmin: boolean
     status: UserStatus
-  }) => OrgUser
+    /**
+     * 新用户初始所属团队。不传时取**当前团队**（`activeTeamId`），再退回第一个团队。
+     *
+     * 「每个用户必须属于某个团队」是硬性不变量：如果没有任何团队可用，本动作返回 `null`，
+     * 由调用方提示「请先创建团队」——而不是造出一个没有归属的用户。
+     */
+    teamId?: number
+    /** 在初始团队中的岗位，默认 viewer（最小权限） */
+    role?: TeamRole
+  }) => OrgUser | null
   updateUser: (id: number, patch: Partial<Pick<OrgUser, 'name' | 'email' | 'initials' | 'isSystemAdmin' | 'status'>>) => void
+  /**
+   * 冻结 / 解冻用户：冻结把 `status` 置为 `disabled`，**该用户无法登录**；
+   * 账号本身与它的团队关系都保留（与删除账号是两件事）。
+   *
+   * 返回 false = 被护栏拦下：不能冻结自己（否则当场把自己锁在外面）、
+   * 不能冻结最后一名未冻结的系统管理员。
+   */
+  freezeUser: (id: number, frozen: boolean) => boolean
   deleteUser: (id: number) => void
   /**
    * 重置口令（管理员操作，不需要旧口令）。
@@ -379,21 +456,47 @@ interface OrgState {
    * 非空、仅英文/数字/下划线、且未被其它团队占用。slug 落库后即固定不变。
    */
   createTeam: (data: { name: string; slug: string; description: string; logo: string }) => OrgTeam
-  updateTeam: (id: number, patch: Partial<Pick<OrgTeam, 'name' | 'description' | 'logo'>>) => void
-  deleteTeam: (id: number) => void
+  updateTeam: (id: number, patch: Partial<Pick<OrgTeam, 'name' | 'description' | 'logo' | 'suspended'>>) => void
+  /** 冻结 / 解冻团队：冻结后仅系统管理员可进入（见 `canEnterTeam`） */
+  setTeamSuspended: (id: number, suspended: boolean) => void
+  /**
+   * 删除团队。返回 false = 被护栏拦下：该团队里有成员**只属于它**，
+   * 删掉会让这些人失去全部团队（违反「每个用户必须属于某个团队」）。
+   */
+  deleteTeam: (id: number) => boolean
 
   addMember: (teamId: number, userId: number, role: TeamRole) => void
   updateMember: (teamId: number, userId: number, patch: { role?: TeamRole; isDefault?: boolean }) => void
-  removeMember: (teamId: number, userId: number) => void
+  /** 移除成员关系。返回 false = 被拦下：这是该用户唯一的团队，移除会让他没有归属 */
+  removeMember: (teamId: number, userId: number) => boolean
 }
 
-/** 切换用户后重算 activeTeamId：保留原团队（若仍属于该用户），否则取默认团队 → 首个团队 */
+/**
+ * 持久化到 localStorage 的字段（与 `persist.partialize` 一一对应）。
+ * 迁移函数可能拿到更老、字段不全的数据，因此把返回值断言成这个形状。
+ */
+type PersistedOrgState = Pick<
+  OrgState,
+  'users' | 'teams' | 'members' | 'currentUserId' | 'activeTeamId'
+>
+
+/**
+ * 切换用户/团队关系变化后重算 activeTeamId：
+ * 优先保留原团队（前提是该用户仍是成员、且他能进入——冻结团队对非管理员不算数），
+ * 否则取默认团队 → 第一个可进入的团队；一个都进不去时返回 null。
+ */
 function resolveActiveTeamId(
+  teams: readonly OrgTeam[],
   members: TeamMember[],
+  users: readonly OrgUser[],
   userId: number,
   fallbackTeamId: number | null,
 ): number | null {
-  const mine = userMemberships(members, userId)
+  const user = users.find((u) => u.id === userId)
+  const mine = userMemberships(members, userId).filter((m) => {
+    const team = teams.find((t) => t.id === m.teamId)
+    return team !== undefined && canEnterTeam(team, user)
+  })
   if (mine.length === 0) return null
   if (fallbackTeamId !== null && mine.some((m) => m.teamId === fallbackTeamId)) {
     return fallbackTeamId
@@ -415,17 +518,34 @@ export const useOrgStore = create<OrgState>()(
       activeTeamId: 1,
 
       setCurrentUser: (userId) => {
-        const { members } = get()
+        const { members, teams, users } = get()
+        const user = users.find((u) => u.id === userId)
+        // 冻结（status: disabled）的账号无法登录 —— 演示态的“登录”就是切换身份，这里同样拦住
+        if (!user || user.status !== 'active') return false
         set({
           currentUserId: userId,
-          activeTeamId: resolveActiveTeamId(members, userId, get().activeTeamId),
+          activeTeamId: resolveActiveTeamId(
+            teams,
+            members,
+            users,
+            userId,
+            get().activeTeamId,
+          ),
         })
+        return true
       },
 
       setActiveTeam: (teamId) => {
-        const { members, currentUserId } = get()
-        if (currentUserId !== null && !isMemberOf(members, currentUserId, teamId)) return
+        const { members, teams, users, currentUserId } = get()
+        if (currentUserId === null || !isMemberOf(members, currentUserId, teamId)) {
+          return false
+        }
+        const team = teams.find((t) => t.id === teamId)
+        const user = users.find((u) => u.id === currentUserId)
+        // 冻结团队只有系统管理员能进
+        if (!team || !canEnterTeam(team, user)) return false
         set({ activeTeamId: teamId })
+        return true
       },
 
       addUser: (data) => {
@@ -439,6 +559,13 @@ export const useOrgStore = create<OrgState>()(
         if (problem === 'taken') {
           throw new Error(`Username already taken: ${username}`)
         }
+        // 归属不变量：新用户必须落进某个团队。默认落到**当前团队**（团队页范围），
+        // 当前团队为空时退回第一个团队；一个团队都没有则拒绝创建。
+        const { teams, activeTeamId, members } = get()
+        const initialTeam =
+          teams.find((t) => t.id === (data.teamId ?? activeTeamId)) ?? teams[0]
+        if (!initialTeam) return null
+
         const user: OrgUser = {
           id: nextId(get().users),
           username,
@@ -449,7 +576,18 @@ export const useOrgStore = create<OrgState>()(
           status: data.status,
           createdAt: new Date().toISOString(),
         }
-        set((s) => ({ users: [...s.users, user] }))
+        const membership: TeamMember = {
+          id: `${initialTeam.id}:${user.id}`,
+          userId: user.id,
+          teamId: initialTeam.id,
+          role: data.role ?? 'viewer',
+          // 第一个（也是唯一一个）团队即默认团队
+          isDefault: userMemberships(members, user.id).length === 0,
+        }
+        set((s) => ({
+          users: [...s.users, user],
+          members: [...s.members, membership],
+        }))
         return user
       },
 
@@ -468,8 +606,29 @@ export const useOrgStore = create<OrgState>()(
         }))
       },
 
+      freezeUser: (id, frozen) => {
+        const { users, currentUserId } = get()
+        const user = users.find((u) => u.id === id)
+        if (!user) return false
+        // 护栏 1：不能冻结自己 —— 否则当场把自己锁在系统外（真实系统里同样如此）
+        if (currentUserId === id) return false
+        // 护栏 2：不能冻结最后一名「未冻结」的系统管理员（否则没人能再解冻/管理）
+        if (frozen && user.isSystemAdmin) {
+          const activeAdmins = users.filter(
+            (u) => u.isSystemAdmin && u.status === 'active' && u.id !== id,
+          )
+          if (activeAdmins.length === 0) return false
+        }
+        set((s) => ({
+          users: s.users.map((u) =>
+            u.id === id ? { ...u, status: frozen ? 'disabled' : 'active' } : u,
+          ),
+        }))
+        return true
+      },
+
       deleteUser: (id) => {
-        const { users } = get()
+        const { users, teams } = get()
         const user = users.find((u) => u.id === id)
         if (!user) return
         // 保护：不能删除最后一个系统管理员
@@ -485,7 +644,13 @@ export const useOrgStore = create<OrgState>()(
             activeTeamId:
               s.currentUserId !== id
                 ? s.activeTeamId
-                : resolveActiveTeamId(remaining, s.currentUserId!, null),
+                : resolveActiveTeamId(
+                    teams,
+                    remaining,
+                    s.users,
+                    s.currentUserId!,
+                    null,
+                  ),
           }
         })
       },
@@ -508,6 +673,8 @@ export const useOrgStore = create<OrgState>()(
           slug: data.slug.trim(),
           description: data.description.trim(),
           logo: data.logo,
+          // 新团队默认不冻结
+          suspended: false,
         }
         const creatorId = get().currentUserId
         set((s) => {
@@ -554,21 +721,42 @@ export const useOrgStore = create<OrgState>()(
         }))
       },
 
-      deleteTeam: (id) => {
+      setTeamSuspended: (id, suspended) => {
         set((s) => {
-          const members = s.members.filter((m) => m.teamId !== id)
-          const activeTeamId =
-            s.activeTeamId === id
-              ? s.currentUserId !== null
-                ? resolveActiveTeamId(members, s.currentUserId, null)
-                : null
-              : s.activeTeamId
+          const teams = s.teams.map((t) => (t.id === id ? { ...t, suspended } : t))
           return {
-            teams: s.teams.filter((t) => t.id !== id),
-            members,
-            activeTeamId,
+            teams,
+            // 冻结的团队对非管理员不再可进：当前用户若是非管理员且正停在这个团队，
+            // 需要立刻把他挪到自己可进入的团队（否则会出现“停留在已冻结团队”的破窗）
+            activeTeamId:
+              s.currentUserId !== null
+                ? resolveActiveTeamId(
+                    teams,
+                    s.members,
+                    s.users,
+                    s.currentUserId,
+                    s.activeTeamId,
+                  )
+                : s.activeTeamId,
           }
         })
+      },
+
+      deleteTeam: (id) => {
+        const { members, teams, users, currentUserId, activeTeamId } = get()
+        // 归属不变量：删掉这个团队会让部分成员失去全部团队 —— 拒绝删除，由 UI 提示先安置这些人
+        if (orphanedUsersOfTeam(members, id).length > 0) return false
+        const remaining = members.filter((m) => m.teamId !== id)
+        const nextTeams = teams.filter((t) => t.id !== id)
+        set({
+          teams: nextTeams,
+          members: remaining,
+          activeTeamId:
+            activeTeamId === id && currentUserId !== null
+              ? resolveActiveTeamId(nextTeams, remaining, users, currentUserId, null)
+              : activeTeamId,
+        })
+        return true
       },
 
       addMember: (teamId, userId, role) => {
@@ -604,63 +792,90 @@ export const useOrgStore = create<OrgState>()(
       },
 
       removeMember: (teamId, userId) => {
-        set((s) => {
-          let members = s.members.filter(
-            (m) => !(m.userId === userId && m.teamId === teamId),
+        const { members, teams, users, currentUserId, activeTeamId } = get()
+        // 归属不变量：这是该用户唯一的团队 —— 拒绝移除，由 UI 提示先给他分配其它团队
+        if (userMemberships(members, userId).length <= 1) return false
+        let next = members.filter((m) => !(m.userId === userId && m.teamId === teamId))
+        // 若被移除的是该用户唯一的默认团队，则把剩余成员关系的第一个提升为默认
+        const mine = userMemberships(next, userId)
+        if (mine.length > 0 && !mine.some((m) => m.isDefault)) {
+          next = next.map((m) =>
+            m.userId === userId && m.teamId === mine[0]!.teamId
+              ? { ...m, isDefault: true }
+              : m,
           )
-          // 若被移除的是该用户唯一的默认团队，则把剩余成员关系的第一个提升为默认
-          const mine = userMemberships(members, userId)
-          if (mine.length > 0 && !mine.some((m) => m.isDefault)) {
-            members = members.map((m) =>
-              m.userId === userId && m.teamId === mine[0]!.teamId
-                ? { ...m, isDefault: true }
-                : m,
-            )
-          }
-          return {
-            members,
-            // 移除的是当前用户的团队 → 重算其 activeTeamId
-            activeTeamId:
-              s.currentUserId === userId && s.activeTeamId === teamId
-                ? resolveActiveTeamId(members, userId, null)
-                : s.activeTeamId,
-          }
+        }
+        set({
+          members: next,
+          // 移除的是当前用户当前所在的团队 → 重算其 activeTeamId
+          activeTeamId:
+            currentUserId === userId && activeTeamId === teamId
+              ? resolveActiveTeamId(teams, next, users, userId, null)
+              : activeTeamId,
         })
+        return true
       },
     }),
     {
       name: 'shadcn-admin-cn:org',
-      version: 2,
+      version: 3,
       migrate: (persisted, version) => {
+        const from = version ?? 0
+        let p = (persisted ?? {}) as Partial<PersistedOrgState>
+
         // v1 -> v2：账号新增必填的 `username`，状态收敛为 active / disabled。
         //
         // 老数据是 localStorage 里已经存着的账号，没有登录名 —— 不补就会在列表与表单里
         // 渲染出 `undefined`（比"名字不好看"严重得多）。按邮箱前缀补一个，重名就加序号。
         // 状态：invited / inactive 一律归到 disabled（模板没有邀请流程，见 UserStatus 注释）。
-        if ((version ?? 0) < 2) {
-          const p = (persisted ?? {}) as Partial<OrgState>
-          if (p.users) {
-            const used = new Set<string>()
-            return {
-              ...p,
-              users: p.users.map((u) => {
-                const base =
-                  (u.email.split('@')[0] ?? '').replace(/[^A-Za-z0-9_.@-]/g, '').slice(0, 60) ||
-                  `user${u.id}`
-                let username = base
-                let n = 1
-                while (used.has(username.toLowerCase())) username = `${base}${++n}`
-                used.add(username.toLowerCase())
-                return {
-                  ...u,
-                  username,
-                  status: (u.status as string) === 'active' ? 'active' : 'disabled',
-                }
-              }),
-            }
+        if (from < 2 && p.users) {
+          const used = new Set<string>()
+          p = {
+            ...p,
+            users: p.users.map((u) => {
+              const base =
+                ((u.email ?? '').split('@')[0] ?? '').replace(/[^A-Za-z0-9_.@-]/g, '').slice(0, 60) ||
+                `user${u.id}`
+              let username = base
+              let n = 1
+              while (used.has(username.toLowerCase())) username = `${base}${++n}`
+              used.add(username.toLowerCase())
+              return {
+                ...u,
+                username,
+                status: (u.status as string) === 'active' ? 'active' : 'disabled',
+              }
+            }),
           }
         }
-        return persisted
+
+        // v2 -> v3：团队新增 `suspended`（默认不冻结）；并落实**每个用户必须属于某个团队**——
+        // 早期版本新建的用户可能一个团队都没有（那时还没有这条不变量），
+        // 这里给他们补一条成员关系（当前团队 → 第一个团队），否则列表里会出现"无家可归"的账号。
+        if (from < 3) {
+          const teams: OrgTeam[] = (p.teams ?? []).map((t) => ({
+            ...t,
+            suspended: t.suspended === true,
+          }))
+          const members: TeamMember[] = [...(p.members ?? [])]
+          const fallbackTeamId =
+            teams.find((t) => t.id === p.activeTeamId)?.id ?? teams[0]?.id
+          if (fallbackTeamId !== undefined) {
+            for (const u of p.users ?? []) {
+              if (members.some((m) => m.userId === u.id)) continue
+              members.push({
+                id: `${fallbackTeamId}:${u.id}`,
+                userId: u.id,
+                teamId: fallbackTeamId,
+                role: 'viewer',
+                isDefault: true,
+              })
+            }
+          }
+          p = { ...p, teams, members }
+        }
+
+        return p as PersistedOrgState
       },
       partialize: (s) => ({
         users: s.users,

@@ -7,9 +7,22 @@
 - **目标**：从零构建管理后台模板（React 19 + TypeScript 7 + Vite 8 + Tailwind CSS v4 + shadcn/ui(Radix) + TanStack Router），包含 shadcn-admin 的全部基础功能，**含 Tableau 页面**（favorites / recents / workbooks / views —— 浏览器内签发 Connected App JWT 嵌入真实视图，凭据见 README「凭据配置」），**不含 AI 功能**；也不含内部流程页（flows / amro / clean-layer / sql-icon-map，那些只存在于本地开发线），v0.4.0 起含**多团队 + 全局用户**（参照 pg-explorer，无部门管理），v0.5.0 起**团队身份进入 URL**（`/t/{slug}/...`，对齐 pg-explorer 的 `/t/{slug}` + `/admin/*` 划分），v0.6.0 起**页面级权限**（角色 × 路由，权限页勾选；按钮级权限仅预留命名空间），v0.7.0 起**个人资料归位**（`/settings` → `/profile`，入口在左下角用户菜单）+ **Config 分组与 SMTP 配置页** + **帮助页** + **前端通用件**；i18n 当前仅 **en-US**，中文/日文后期扩展。
 - **关键决策**：跳过 shadcn-admin 模板（无 Sat Naing 署名义务）、TypeScript 7.1.0-dev（next 开发版，验证未来升级，正式版发布后直接升级）、Vite 8.2.1 最新稳定、i18n 当前仅 en-US（zh-CN / zh-TW / ja-JP 后期扩展）。
 - **注意**：用户原指定路径 `/Users/xilejun/ds_Harness/shadcn_admin_cn` 不存在，实际目录在 `/Users/xilejun/WorkBuddy/ds_Harness/shadcn_admin_cn`。
-- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.8.1**）。
+- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.9.0**）。
 
 ---
+
+## ✅ v0.9.0（2026-09-21）— 团队冻结 + 用户冻结 + 用户必须归属团队
+
+- ✅ **团队冻结**（`OrgTeam.suspended`）：仅系统管理员可进入——切换器对非管理员隐藏、`setActiveTeam` 拒绝、
+  `/t/$teamSlug` 守卫给 `TeamSuspended` 兜底页；`/teams` 行内 `PauseCircle`/`Play` 一键冻结/解冻 + `Suspended` 徽章；
+  冻结后自动重算 `activeTeamId`（不会停在进不去的团队）
+- ✅ **用户冻结**（`freezeUser`，即 `status: disabled`）：无法登录（`setCurrentUser` 拒绝 + 用户菜单禁用并标 `Frozen`）；
+  `/users` 行内 `Ban`/`CircleCheck` 一键冻结/解冻；护栏：不能冻结自己、不能冻结最后一名可用管理员
+- ✅ **归属不变量**（每个用户至少一个团队）：新建用户默认入**当前团队**(viewer)；无团队可拒绝创建；
+  唯一团队不可移除；含「唯一团队成员」的团队不可删除（确认框列出人数）；`persist.migrate` v2→v3 给老数据补归属
+- ✅ 新增 `docs/org-rules.md`（三条铁律 + 拦截点 + 接后端映射 + 自查清单）
+- ✅ 验证：tsc / lint(0 error) / build / check:i18n(452 keys) ✅；store 单测 20 项 ✅；无头 Chrome 端到端 7 组场景 ✅
+- ✅ 版本五处同步 0.9.0（package.json / `src/config/app.ts` / 侧边栏 / README / PROGRESS / CHANGELOG）
 
 ## ✅ v0.8.1（2026-09-21）— 侧栏团队切换器只保留团队名称
 
