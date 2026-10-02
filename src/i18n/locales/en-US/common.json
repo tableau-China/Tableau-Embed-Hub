@@ -15,6 +15,8 @@
     "profile": "Profile",
     "help": "Help",
     "config": "Config",
+    "ai": "AI assistant",
+    "aiGroup": "AI",
     "smtp": "SMTP",
     "switchTeam": "Switch team",
     "createTeam": "Create team",
@@ -41,6 +43,14 @@
     "save": "Save changes",
     "discard": "Discard changes",
     "close": "Close"
+  },
+  "filters": {
+    "all": "All",
+    "search": "Search",
+    "clearSearch": "Clear search",
+    "clearAll": "Reset filters",
+    "clearAllHint": "Clear every filter and show all rows",
+    "showing": "Showing {{shown}} of {{total}}"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -91,6 +101,9 @@
     "active": "Active",
     "empty": "No users yet. Add the first user to get started.",
     "noPermission": "Only system administrators can manage users.",
+    "searchPlaceholder": "Search username…",
+    "filterTeam": "Team",
+    "noMatch": "No users match the current filters.",
     "you": "You",
     "formHint": "Users are global accounts above teams. After creating a user, assign them to one or more teams.",
     "superAdminHint": "System administrators sit above teams and can manage all users and teams",
@@ -184,6 +197,24 @@
     "website": "Website",
     "version": "Version",
     "license": "License",
+    "config": {
+      "title": "Environment check",
+      "subtitle": "What this build is actually pointing at",
+      "tableauSite": "Tableau site",
+      "tableauCredentials": "Tableau credentials",
+      "projectFilter": "Project filter",
+      "apiProxy": "REST proxy path",
+      "demoSite": "Demo site",
+      "ownSite": "Your own site",
+      "demoCredentials": "Built-in demo credentials",
+      "envCredentials": "From .env",
+      "projectLimited": "Limited to {{project}}",
+      "projectAll": "No restriction",
+      "aiProvider": "AI provider",
+      "aiDemo": "Built-in demo",
+      "aiProxy": "Via proxy",
+      "hint": "On the demo site? Copy .env.example to .env and fill in your own Tableau Cloud site — no code changes needed. Step-by-step guide: docs/tableau-setup.md."
+    },
     "featuresTitle": "Core features",
     "featuresSubtitle": "What is actually implemented in this version — not a roadmap",
     "feature": {
@@ -198,10 +229,6 @@
       "tableau": {
         "title": "Tableau embedding",
         "body": "Workbooks, views, favourites and recents, embedded with a Connected App JWT signed in the browser."
-      },
-      "flows": {
-        "title": "Processing flow atlas",
-        "body": "FOC / AMRO / clean-layer pipelines drawn as graphs, with per-node field lineage, single-row SQL, the full CTE SQL and the generated PySpark source."
       },
       "config": {
         "title": "System configuration",
@@ -223,15 +250,19 @@
     "stackTitle": "Tech stack",
     "stackSubtitle": "Major versions — exact versions are pinned in package.json",
     "docsTitle": "Where to look next",
-    "docsSubtitle": "The three files that answer most follow-up questions",
+    "docsSubtitle": "The four files that answer most follow-up questions",
     "docs": {
+      "tableau": {
+        "path": "docs/tableau-setup.md",
+        "body": "Connect your own Tableau Cloud site: which .env values to set, Connected App setup, the REST reverse proxy, and a troubleshooting table."
+      },
+      "ai": {
+        "path": "docs/ai-integration.md",
+        "body": "Wire up a real model: the proxy contract, an nginx sample and a ~20-line Node gateway. API keys stay on the server."
+      },
       "permissions": {
         "path": "docs/route-permissions.md",
         "body": "Permission model, evaluation rules, and the standard flow for adding a page or a button-level permission."
-      },
-      "flows": {
-        "path": "docs/flow-page-conventions.md",
-        "body": "Conventions for flow pages: routing, layout and the checks a new graph page has to pass."
       },
       "checks": {
         "path": "scripts/check-*.mjs",
@@ -240,6 +271,32 @@
     },
     "securityTitle": "Before you ship this",
     "securityNote": "This template is front-end only. Tableau credentials and the SMTP password therefore live in the browser, and the route guards control visibility rather than authorisation. Real access control belongs on a server: verify permissions per request, keep secrets server-side, and validate the sending domain (SPF / DKIM) before email goes live."
+  },
+  "ai": {
+    "title": "AI assistant",
+    "subtitle": "A drop-in chat page: swap the provider without touching the page",
+    "demoBadge": "Demo provider",
+    "proxyBadge": "Proxy provider",
+    "emptyTitle": "Ask something to get started",
+    "emptyBody": "With no provider configured this page runs a built-in demo implementation, so you can see the full interaction without any keys. Point VITE_AI_PROXY_URL at your own gateway to switch to a real model.",
+    "starter": {
+      "explain": "What is in this template?",
+      "tableau": "How do I connect my own Tableau site?",
+      "ai": "How do I plug in a real model?"
+    },
+    "you": "You",
+    "thinking": "Generating…",
+    "errorNotRetryable": "Check the proxy configuration before retrying.",
+    "placeholder": "Type a message — Enter to send, Shift+Enter for a new line",
+    "inputHint": "Streaming output; press Stop to interrupt.",
+    "clear": "Clear",
+    "retry": "Retry",
+    "stop": "Stop",
+    "send": "Send",
+    "demoNoticeTitle": "Demo provider in use",
+    "demoNotice": "Replies come from a built-in local implementation — no model is called and nothing leaves the browser. To use a real model, run a same-origin proxy that speaks the OpenAI-compatible /chat/completions streaming API, then set VITE_AI_PROXY_URL (and VITE_AI_MODEL) in .env and rebuild. Contract and samples: docs/ai-integration.md.",
+    "securityNoticeTitle": "Keep the API key on the server",
+    "securityNotice": "This page only talks to the same-origin proxy path in VITE_AI_PROXY_URL; it never sends an API key. Anything shipped to the browser is public — put the provider key in your gateway, not in .env."
   },
   "smtp": {
     "serverTitle": "SMTP server",

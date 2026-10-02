@@ -20,17 +20,54 @@ jobs:
           GITHUB_EVENT_BEFORE: ${{ github.event.before }}
       - uses: pnpm/action-setup@v4
         with:
-          version: 11
+          # 与 package.json 的 packageManager 字段保持一致（本地 corepack 用同一版本），改一处要改两处
+          version: 11.28.2
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm check:i18n
+      # 路由 ↔ 权限目录一致性。路由守卫是 **fail-open** 的：目录里没登记的页面一律放行，
+      # 于是"新建了页面文件却忘了登记"会静默产生权限盲区（不进侧边栏、也不在权限页）。
+      # 这是纯静态检查（不启浏览器），所以放在阻塞步骤里。
+      - run: pnpm check:routes
+      # 纯函数用例（vitest，毫秒级、不需要浏览器）：权限目录不变量、通配语义、
+      # SMTP 校验规则、环境变量口径。页面行为另有 CDP 用例（见下方 ui-checks）。
+      - run: pnpm test
       # pnpm lint 已恢复（2026-09-19）。typescript-eslint 仍不支持 TS 7 的编译器 API
       # （上游 #10940），因此按官方方案「TS 6 API 并行」配置（见 package.json 的 alias 结构）：
       #   "typescript": "npm:@typescript/typescript6@6.0.2"     ← lint 解析到的 JS API
       #   "@typescript/native": "npm:typescript@7.1.0-dev…"     ← tsc/typecheck 仍用原生 TS 7
       - run: pnpm lint
       - run: pnpm build
+
+  # 浏览器用例（真实 Chrome CDP）。单独一个 job，且**暂时允许失败**（advisory）：
+  #  · 脚本原先硬编码 macOS 的 Chrome 路径，Linux 上根本起不来 —— 已改为跨平台探测
+  #    （CHROME_PATH 优先，其次 /usr/bin/google-chrome 等；ubuntu runner 自带）。
+  #  · 但 check:filters 里有**几何断言**（宽窄屏的偏移与宽度），依赖字体渲染，
+  #    Linux 与 macOS 可能有细微差异 —— 尚未实测。因此先收集结果，跑绿几次后
+  #    再去掉 continue-on-error 并加入必需检查。
+  #  · check:permissions 也在这里跑，但**有一条已知失败用例**：它切换到了刻意冻结的种子用户
+  #    （Carol White），store 按设计拒绝切换，断言落在管理员身份上（详见 PROGRESS「阻塞点」）。
+  #    所以这个 job 必须保持 advisory，直到 fixture 修好 —— 别把它当成"权限没问题"的证据。
+  ui-checks:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.28.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # 用例跑在构建产物上
+      - run: pnpm build
+      - run: pnpm check:team-routes
+      - run: pnpm check:smtp
+      - run: pnpm check:filters
+      - run: pnpm check:permissions
 

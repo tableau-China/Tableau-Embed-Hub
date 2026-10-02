@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SplatRouteImport } from './routes/$'
+import { Route as AiRouteImport } from './routes/ai'
 import { Route as ConfigRouteImport } from './routes/config'
 import { Route as FavoritesRouteImport } from './routes/favorites'
 import { Route as HelpRouteImport } from './routes/help'
@@ -38,6 +39,11 @@ const IndexRoute = IndexRouteImport.update({
 const SplatRoute = SplatRouteImport.update({
   id: '/$',
   path: '/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AiRoute = AiRouteImport.update({
+  id: '/ai',
+  path: '/ai',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConfigRoute = ConfigRouteImport.update({
@@ -134,6 +140,7 @@ const TTeamSlugWorkbooksRoute = TTeamSlugWorkbooksRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/ai': typeof AiRoute
   '/config': typeof ConfigRouteWithChildren
   '/favorites': typeof FavoritesRoute
   '/help': typeof HelpRoute
@@ -156,6 +163,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/ai': typeof AiRoute
   '/favorites': typeof FavoritesRoute
   '/help': typeof HelpRoute
   '/permissions': typeof PermissionsRoute
@@ -177,6 +185,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/ai': typeof AiRoute
   '/config': typeof ConfigRouteWithChildren
   '/favorites': typeof FavoritesRoute
   '/help': typeof HelpRoute
@@ -201,6 +210,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/$'
+    | '/ai'
     | '/config'
     | '/favorites'
     | '/help'
@@ -223,6 +233,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/$'
+    | '/ai'
     | '/favorites'
     | '/help'
     | '/permissions'
@@ -243,6 +254,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/$'
+    | '/ai'
     | '/config'
     | '/favorites'
     | '/help'
@@ -266,6 +278,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SplatRoute: typeof SplatRoute
+  AiRoute: typeof AiRoute
   ConfigRoute: typeof ConfigRouteWithChildren
   FavoritesRoute: typeof FavoritesRoute
   HelpRoute: typeof HelpRoute
@@ -293,6 +306,13 @@ declare module '@tanstack/react-router' {
       path: '/$'
       fullPath: '/$'
       preLoaderRoute: typeof SplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ai': {
+      id: '/ai'
+      path: '/ai'
+      fullPath: '/ai'
+      preLoaderRoute: typeof AiRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/config': {
@@ -460,6 +480,7 @@ const TTeamSlugRouteWithChildren = TTeamSlugRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SplatRoute: SplatRoute,
+  AiRoute: AiRoute,
   ConfigRoute: ConfigRouteWithChildren,
   FavoritesRoute: FavoritesRoute,
   HelpRoute: HelpRoute,

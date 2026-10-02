@@ -1,0 +1,68 @@
+# =============================================================================
+# nginx 反代样例 —— 让 shadcn-admin-cn 的 REST 请求能走通（生产环境必备）
+#
+# 为什么需要：Tableau Cloud 的 REST API **不支持 CORS**（实测：无 ACAO 头、OPTIONS 预检 405）。
+# 浏览器直连会被拦，所以 REST 必须经同源反代；应用侧把请求发到 `VITE_TABLEAU_API_BASE`
+# （默认 `/tableau-proxy`），本文件把这个前缀转给 Tableau。
+#
+# 用法：
+#   1) 把下面 upstream / location 段并进你的 server 块；
+#   2) 把 UPSTREAM 换成你的站点主机（与 .env 的 VITE_TABLEAU_SERVER_URL 同源）；
+#   3) 若改了 VITE_TABLEAU_API_BASE，这里的 location 路径要改成同一个值；
+#   4) nginx -t && nginx -s reload
+#
+# 注意：嵌入用的 iframe（Embedding API v3）**直连** Tableau，不经过这里。
+#       这里只服务 REST（workbooks / views / auth/signin / 缩略图）。
+# =============================================================================
+
+upstream tableau_cloud {
+    # 换成你自己的站点主机（注意保持 HTTPS）
+    server 10ax.online.tableau.com:443;
+    keepalive 16;
+}
+
+server {
+    listen 443 ssl;
+    server_name your-app.example.com;
+
+    # ... 你的证书与前端静态资源（dist/）配置 ...
+
+    # ---- REST 反代 ----
+    # 路径必须与 VITE_TABLEAU_API_BASE 一致（默认 /tableau-proxy）
+    location /tableau-proxy/ {
+        # 去掉前缀后转发：/tableau-proxy/api/3.23/... → https://<站点>/api/3.23/...
+        # 应用侧构建时已保证这里只有一次前缀替换（见 vite.config.ts 的 rewrite）
+        rewrite ^/tableau-proxy/(.*)$ /$1 break;
+
+        proxy_pass https://tableau_cloud;
+        proxy_http_version 1.1;
+        proxy_set_header Host $proxy_host;              # Tableau 按 Host 路由，必须覆盖
+        proxy_set_header Connection "";
+        proxy_ssl_server_name on;                        # SNI：TLS 握手要带真实主机名
+
+        # 认证令牌（POST /auth/signin）与列表查询都是短请求，超时不宜过短
+        proxy_connect_timeout 10s;
+        proxy_read_timeout 60s;
+        proxy_send_timeout 60s;
+
+        # 反代的是 JSON：不要把响应体缓冲关掉（与下面的 SSE 段不同）
+        proxy_buffering on;
+        client_max_body_size 2m;
+    }
+
+    # ---- AI 代理（可选，接了 AI 功能才需要；见 docs/ai-integration.md）----
+    # ⚠️ AI 的 API Key 只能放服务端。这个 location 反向代理你自己的 AI 网关，
+    #    绝不能把厂商 Key 下发到浏览器。
+    # location /ai-proxy/ {
+    #     rewrite ^/ai-proxy/(.*)$ /$1 break;
+    #     proxy_pass https://your-ai-gateway.internal;
+    #     proxy_http_version 1.1;
+    #     proxy_set_header Host $proxy_host;
+    #     proxy_set_header Connection "";
+    #     # 流式输出（SSE）必须关闭缓冲，否则前端会"一次性"收到全部内容
+    #     proxy_buffering off;
+    #     proxy_cache off;
+    #     proxy_read_timeout 300s;
+    #     chunked_transfer_encoding on;
+    # }
+}

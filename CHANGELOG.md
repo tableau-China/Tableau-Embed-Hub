@@ -6,6 +6,7 @@
 
 | 版本 | package.json | 侧边栏显示 | PROGRESS.md | CHANGELOG 条目 | 日期 |
 | --- | --- | --- | --- | --- | --- |
+| 0.10.0 | ✅ `0.10.0` | ✅ `v0.10.0`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0100---2026-09-23) | 2026-09-23 |
 | 0.9.0 | ✅ `0.9.0` | ✅ `v0.9.0`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#090---2026-09-21) | 2026-09-21 |
 | 0.8.1 | ✅ `0.8.1` | ✅ `v0.8.1`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#081---2026-09-21) | 2026-09-21 |
 | 0.8.0 | ✅ `0.8.0` | ✅ `v0.8.0`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#080---2026-09-21) | 2026-09-21 |
@@ -20,6 +21,214 @@
 | 0.1.0 | ✅ `0.1.0` | ✅ `v0.1.0` | ✅ 已同步 | ✅ [本节](#010---2026-08-16) | 2026-08-16 |
 
 > 约定：新版本发布时，先升 `package.json` 的 `version`，再更新本表与下方条目。
+
+## [0.10.0] - 2026-09-23
+
+### 列表筛选栏公共件 + Users 页筛选（登录名 / 状态 / 团队）
+
+筛选这件事在本模板里第一次出现，因此**先立公共件再用**：控件长什么样、什么时候出现「重置」、
+「没有数据」与「被筛掉」怎么区分，都收在两处（`components/filter-bar.tsx` + `hooks/use-list-filters.ts`），
+后续列表页直接复用（约定见 [`docs/ui-conventions.md`](./docs/ui-conventions.md) §5）。
+
+#### Added（新增）
+
+- **`src/components/filter-bar.tsx`（公共件，与 `action-bar.tsx` / `form-field.tsx` 同级）**
+  - `FilterBar` —— 筛选栏容器：`flex-wrap` 一行排布，**有筛选生效时**才在右侧显示
+    `Showing X of Y` 与「重置筛选」（没有筛选时不该出现无处发力的按钮）；
+  - `FilterSearch` —— 关键词搜索框（`InputGroup` + 放大镜），有内容时出现一键清空；
+    用 `type="search"` 保留语义与 Esc 清空，但隐藏 WebKit 自带的清除叉（否则界面上会有两个「✕」）；
+  - `FilterSelect` —— 单选下拉，**首项恒为「全部」**（`'all'`），触发器上是「字段名 + 当前值」
+    （`Status  All`）—— 收起后仍要知道这一格筛的是什么字段；
+    `aria-label` 带上当前值（`role="combobox"` 上 `aria-label` 会盖掉可见文本，只写字段名会让读屏用户听不到筛掉了什么）。
+  - 三条刻意的约束：**受控**（状态归页面，控件不碰数据源，因此也能用在弹窗里）、
+    **值一律字符串**（数字 id 用 `String(id)`）、**带 `data-filter-*` 钩子**（供端到端脚本定位）。
+- **`src/hooks/use-list-filters.ts`** —— 筛选状态：`values / set / reset / activeCount / isFiltered / isDirty`。
+  默认值只在挂载时取一次快照（调用方通常写字面量），因此 `reset` 与 `activeCount` 不会每帧变化而拖累下游 `useMemo`。
+- **`/users` 筛选**：登录名搜索（包含匹配、大小写不敏感、去首尾空格）+ 状态（Active / Frozen，选项与文案同源于
+  `USER_STATUSES` / `USER_STATUS_LABEL_KEYS`）+ 团队（**成员关系命中**，不区分岗位、不看默认团队）；
+  三者可叠加；筛选只影响视图，行内动作与表头列数不变。
+- **第三种空态**：列表里**有账号但被筛掉**时，显示「No users match the current filters.」+ 一键重置 ——
+  与「还没有用户」（`users.empty`）、「无权限」（`users.noPermission`）严格区分。
+- **i18n**：新增 `filters.*` 命名空间（`all` / `search` / `clearSearch` / `clearAll` / `clearAllHint` / `showing`）
+  与 `users.searchPlaceholder` / `users.filterTeam` / `users.noMatch`；词典 452 → **461 keys**。
+- **`scripts/check-filters.mjs`（`pnpm check:filters`）**：静态自检（公共件用到的 key 是否在词典里、
+  `USER_STATUSES` 与 `USER_STATUS_LABEL_KEYS` 是否一一对应、`filters.showing` 的插值占位符是否齐全）
+  + **7 项页面用例**（CDP）：初始态安静、搜索口径与一键清空、无匹配空态与重置出口、
+  状态 × 团队组合取交集、团队筛选按成员关系命中、非管理员视角、宽窄屏几何断言（单行 / 堆叠 / 无横向滚动条）。
+
+#### Changed（变更）
+
+- `/users` 顶部新增筛选栏（`CardContent` 内、表格之上）；**一条账号都没有时不渲染筛选栏** ——
+  没有数据可筛，摆一排控件只会让人以为坏了。
+- 表格行新增 `data-user-row="<username>"`、空态行新增 `data-user-empty="none|filtered"`，
+  与既有的 `data-smtp-*` / `data-perm-*` 一致，作为端到端脚本的稳定钩子。
+- 版本 0.9.0 → 0.10.0（package.json / `src/config/app.ts` / README / PROGRESS.md / CHANGELOG.md）
+
+#### 说明（边界，刻意的）
+
+- **只搜登录名**（`username`），不搜展示名与邮箱：登录名是账号的主键口径，与展示名刻意分开
+  （见 [`docs/org-rules.md`](./docs/org-rules.md)）。要扩到展示名/邮箱，改 `users.tsx` 里
+  `visibleUsers` 的一行判断即可 —— 控件、hook、i18n 都不用动。
+- **筛选是视图态**：默认不进 URL（刷新回默认）。需要「可分享 / 刷新不丢」时，把同一组受控组件接到
+  TanStack Router 的 `useSearch` + `navigate({ search })`，**公共件一行都不用改**。
+- 本版只有 `/users` 接入；`/teams` 与 Tableau 各列表页未动（公共件已就绪，下一步按需接）。
+
+#### Verified（验证）
+
+- `tsc -b` / `pnpm lint`（0 error，16 条既有 fast-refresh warning）/ `vite build` / `pnpm check:i18n`（**461 keys**）
+- `pnpm check:filters`：静态自检 PASS + **7/7 页面用例通过**（真实 Chrome CDP，见上）
+- 几何实测（1440 / 390 两档）：三个控件宽屏同一行（top 均为 174，搜索 256px、下拉各 160px、高 32px）、
+  窄屏纵向堆叠且等宽（326px）、两档 `scrollWidth - innerWidth = 0`（无横向滚动条）；
+  触发器文本 `Status All` / `Team All`、`aria-label="Status: All"`、占位符 `Search username…`
+
+#### Changed（工具链与依赖同步，2026-10-01 补记；仍属未发布的 0.10.0）
+
+本版发布前做了一次依赖面核对：**39 项依赖里没有任何包存在更高的大版本**，因此只做了小版本升级，
+并把三处「版本线不匹配」的问题一次修掉。
+
+- **TS 7 原生编译器刷新**：`@typescript/native` → `npm:typescript@7.1.0-dev.20260930.4`（原 `…20260918.1`）。
+  `tsc6` 线（`typescript` → `npm:@typescript/typescript6@6.0.2`）**保持不动**：typescript-eslint 8.71.0 的
+  peer 仍为 `>=4.8.4 <6.1.0`，**尚不支持 TS 7**，所以「TS 6 API 并行」的两条线都必须留着
+  （**升级 TS 7 只能动 `@typescript/native`**，写成 `pnpm add -D typescript@next` 会把 lint 那条线顶掉）。
+  退路已实测：TS `7.0.2` 稳定版对本项目同样零诊断，若 next 线出问题可直接回落。
+- **`@types/node` 26 → 24 线**（`^24.19.0`）：运行时与 CI 都是 Node 24，而类型装的是 Node 26 —— 类型线高于运行时
+  等于允许写出「`tsc` 通过、运行时才炸」的代码。**类型线以最低支持的运行时为准**。
+- **pnpm 版本收敛**：`package.json` 新增 `"packageManager": "pnpm@11.28.2"`，`ci.yml` 的 `version: 11`
+  → `11.28.2`。此前本地 corepack 是 11.10.0、CI 浮动到 11 线最新，同一个 lockfile 被两个版本处理。
+- **依赖小版本升级（9 项，全部在现有 range 内，无大版本跳跃）**：@tanstack/react-router 1.170.38→1.170.41、
+  @tanstack/router-plugin 1.168.40→1.168.42、@tanstack/react-query / react-query-devtools / eslint-plugin-query
+  5.103.1→5.104.0、vite 8.3.0→8.3.1、lucide-react 1.47.0→1.49.0、react-i18next 17.0.14→17.0.15、
+  typescript-eslint 8.70.0→8.71.0（**沿用精确锁定，未改成 `^`**）。
+- **文档订正**：`PROGRESS.md` 的 TS 版本号（20260815.1 → 20260930.4）、升级命令、lint 状态与阻塞点全部对齐实际；
+  `README.md` 技术栈表补 pnpm / Node 版本行与「TS 为什么装两份」说明。
+
+#### Fixed（公开路径守卫，2026-10-01 补记；仍属未发布的 0.10.0）
+
+- **`scripts/check-public-paths.sh` 不再把 `src/features/` 整体列为内部内容**：该前缀是守卫上线时（8/29）
+  写的，当时 `src/features/` 确实只有内部页；v0.7.0 起 `config` / `help` / `permissions` / `profile`
+  四个**公开页**也搬了进去，于是规则变成误报 —— 任何一次改动这四个页面都会被 CI 拦下，
+  而无基线运行（首次推送 / 强推）**在当时的 main 上直接 exit 1**。
+  实测：`bash scripts/check-public-paths.sh` 修复前报 4 个违规、exit 1；修复后 ✅ exit 0。
+- **改为按真实内部路径列举**（依据 `git diff --name-status main custom`，即 custom 分支专有文件）：
+  `src/features/{amro,clean-layer,flows,sql-icon-map}/`、`src/routes/flows*`、
+  `src/routes/t.$teamSlug.flows*`、内部文档与抽取/构建/校验脚本，以及只在 custom 线的
+  框架同步与评审材料（`GIT_SYNC.md`、`scripts/sync-framework.sh`、`docs/architecture-review.html`）。
+  顺带补上原来**漏拦**的 6 个团队作用域路由 `src/routes/t.$teamSlug.flows*.tsx`
+  （旧规则 `src/routes/flows` 是前缀匹配，够不到 slug 那一段）。
+- 规则自检（一次性核对，未入库）：应拦的 custom 专有文件 **56/56 命中**，main 已跟踪文件 **0 误伤**，
+  custom 专有文件 **0 未覆盖**。脚本头部补了维护要点：**不要再用整目录前缀**，改规则后必须跑一次无基线全量自检。
+
+#### Changed（通用起点：站点绑定 env 化 + 接入/部署文档，2026-10-01 补记；仍属未发布的 0.10.0）
+
+目标：让**别人 clone 下来就能接自己的站点**，而不是"必须改作者的代码"。
+
+- **品牌信息不再被测试钉死**（原先 fork 必然 CI 红）：`scripts/check-permissions.mjs` 的 Help 用例
+  改为**从 `src/config/app.ts` 导入期望值**（`APP_NAME` / `APP_AUTHOR` / `APP_WEBSITE` / `APP_WEBSITE_LABEL`），
+  不再写死 `'xilejun'` / `'xilejun.com'`；`APP_WEBSITE_LABEL` 由 `APP_WEBSITE` **派生**（fork 只改一处）。
+  **实测**：把品牌改成 `acme-admin` / `ACME Inc` / `https://acme.example.com` 后重新构建，Help 用例仍 ✅，
+  失败数没有任何增加；`app.ts` 头部补了「fork 时改这里」的说明。
+- **站点绑定全部 env 化**（原先 serverUrl / siteName / siteContentUrl / embedUser / 项目过滤 / API 版本 /
+  代理路径**六项硬编码**，只有凭据走 env）：新增 7 个 `VITE_TABLEAU_*` 变量，`src/vite-env.d.ts` 全量声明，
+  `.env.example` 重写为「站点绑定 / 凭据」两段并逐项注释。
+- **dev 代理与运行时同源读取 `.env`**：`vite.config.ts` 改用 `loadEnv`，`serverUrl` 不再有第二份拷贝
+  （原先改 .env 只改了应用、dev 代理仍打旧站点）。
+- **项目过滤缺省规则修正**：演示站点默认 `Samples`；**配了自己的站点则默认不过滤** ——
+  原先新人接上自己的站点会"只看到 2 个工作簿"且无从归因。
+- **新增「Environment check」卡（`/help`）**：显示实际生效的站点、凭据来源（演示/`.env`）、项目过滤与代理路径，
+  让"我配对了没有"有个界面答案；`check:permissions` 的 Help 用例已覆盖该卡，并支持两个可选严格断言
+  `EXPECT_TABLEAU_SITE_SOURCE=demo|own` / `EXPECT_TABLEAU_PROJECT=<项目名>|all` 用于验证 `.env` 覆盖。
+- **新增 `docs/tableau-setup.md`**（Connected App 创建、域名白名单、访问级别 vs REST、五分钟接入、排查表、安全边界）
+  与 **`deploy/nginx.conf.example`**（REST 反代要点：`proxy_ssl_server_name`、`Host` 覆盖、SSE 段预留）；
+  README 新增「配置自己的 Tableau 站点」「部署」两节，并修掉**重复的 `## 路线图`**标题、刷新路线图。
+- **公开线移除内部功能宣传**：Help 页的「Core features」原有一条 *Processing flow atlas*（文案点名
+  FOC / AMRO / clean-layer）与一条指向 `docs/flow-page-conventions.md` 的文档入口 —— 这两样在公开线**都不存在**
+  （页面与文档只在 custom 分支），且属于内部代号外泄。已从 `FEATURES` / `DOCS` 与 i18n 中移除，
+  并在注释里写明「这里只列 main 真实存在的功能」。路径守卫管不了文案，这条只能靠人守。
+
+#### Added（AI 应用起点：`src/lib/ai` + `/ai` 页面 + 代理契约，2026-10-01 补记；仍属未发布的 0.10.0）
+
+目标：让它同时是「AI 应用起点」——**clone 下来零配置就能看到 AI 页在动**，配一个代理就能换成真模型，且**API Key 永不进浏览器**。
+
+- **抽象层 `src/lib/ai/`**（照 Tableau 那套的三段式：配置 / 客户端 / 错误类型）：
+  - `types.ts`：`AiProvider` 接口（`chat({ messages, signal, onDelta })`）+ `AiError` 错误分类
+    （config / http / network / aborted / parse）与 `retryable` 语义 —— UI 据此区分"重试有没有用"；
+  - `config.ts`：环境变量 → 运行时配置。**留空 `VITE_AI_PROXY_URL` 即演示模式**；
+  - `demo.ts`：内置演示 provider，本地流式输出、**输出确定**（便于断言），并把"怎么接真模型"写进回复；
+  - `deepseek.ts`：OpenAI 兼容 `/chat/completions` 的 **SSE 流式**客户端 —— 只 POST 同源代理、**请求里不带任何 Key**；
+  - `index.ts`：`resolveAiProvider()`（换上游只改这里，页面不动）。
+- **`src/lib/env.ts`（新）**：抽出「空串算未配置 / 取缺省值 / 取可选值」三个后处理工具，
+  `src/config/tableau.ts` 改为复用（去掉一份重复实现）。注释里写明**为什么不提供按名字取 env 的函数**：
+  Vite 只内联静态引用，`import.meta.env[key]` 在产物里拿不到值。
+- **`src/hooks/use-ai-chat.ts`（新）**：流式增量写入、失败时**移除空的占位气泡**、
+  取消时**保留已生成内容**、`retry / stop / clear`；卸载时中断进行中的请求。
+- **`/ai` 页面**（`src/features/ai/ai-chat-page.tsx`）：流式渲染 + Stop + Retry + Clear + 起始提示 +
+  错误分级提示 + provider 徽章（Demo / Proxy）；演示模式下给出一条明确的接入指引。
+- **一行接入权限体系**：`ROUTE_CATALOG` 新增 `page.ai`（`scope: 'global'`、新分组 `ai`、默认授权 `member`）——
+  侧边栏入口、URL 直达拦截、权限页勾选三处同时生效；侧边栏与权限页的**分组文案由 tsc 强制补齐**
+  （`Record<NavGroup, string>` 漏了 `ai` 直接编译报错，这正是这套目录设计想要的效果）。
+- **配置面**：`vite-env.d.ts` 声明 3 个 AI 变量；`.env.example` 新增「③ AI 能力」段（含"Key 只能放网关"的警示）；
+  `/help` 环境自检卡新增 **AI provider** 行（demo / proxy + 模型名与代理路径）。
+- **文档**：新增 `docs/ai-integration.md`（铁律、数据流、**契约**、nginx / 约 20 行 Node 网关 / Serverless 三种落法、
+  环境变量、验收清单、排查表、以及"把 AI 接到 Tableau 上（VizQL Data Service）"的思路）；
+  Help 页文档入口从 3 条改为 4 条（新增 AI 接入）。
+- **用例**：
+  - 新增「**AI 页默认授权给成员，且演示 provider 能流式回复**」——真实浏览器里点起始提示、
+    等流式完成、断言消息条数与内容；
+  - 修掉「补齐默认授权」用例**把缺口数写死为 4** 的问题（新增 `page.ai` 后立刻误报，应用其实是对的）：
+    改为**从 `ROUTE_CATALOG` 动态计算**期望缺口数 —— 与「品牌硬编码」同一类"fixture 跟不上目录"的坑。
+
+#### Changed（起点信誉：静态断言进 CI、用例跨平台、路由级分割、单测、社区文件、双语 README，2026-10-01 补记；仍属未发布的 0.10.0）
+
+目标：让"别人 clone 下来 CI 是绿的、坏了自己能查"这件事成立。
+
+- **路由 ↔ 权限目录一致性断言**（`scripts/check-route-catalog.mjs` / `pnpm check:routes`）：
+  路由守卫是 **fail-open** 的（目录里没登记的路径一律放行），因此"新建页面文件却忘了登记"会静默
+  产生权限盲区。新脚本做三件事：未登记路由报错、目录里的死条目报错、白名单里的路径消失也报错
+  （防止白名单腐烂成"什么都放行"）。**纯静态、不需要浏览器，已加入 CI 的阻塞步骤**。
+  **实测**：把 `createFileRoute('/ai')` 临时改成别的路径，脚本同时报出"未登记路由"与"目录死条目"两条。
+- **路由级代码分割**：`tanstackRouter({ autoCodeSplitting: true })` —— **路由文件一行没改**，
+  但入口 chunk 从 **1.14 MB 降到 419 KB（gzip 133 KB）**；Tableau Embedding SDK 被隔离进
+  按需加载的 `t._teamSlug.views` chunk（337 KB），没打开过 Views 的人不再下载它。
+  **实测**：四套浏览器用例在懒加载后全部照常通过（说明分割没有破坏首屏与等待逻辑）。
+- **4 套 CDP 用例跨平台**：原先 4 个脚本都硬编码 macOS 的 Chrome 路径（Linux/CI 上根本起不来，
+  这也是它们长期只在作者本机跑、坏了没人发现的原因之一）。改为 `resolveChrome()`：
+  `CHROME_PATH` 优先 → 依次探测 macOS / Debian-Ubuntu / chromium 的常见位置，找不到时给出
+  带候选清单的明确报错。**实测**：默认探测与 `CHROME_PATH` 覆盖两种方式在本机均通过。
+- **CI 新增 `ui-checks` job**（`continue-on-error: true`，advisory）：在 ubuntu runner 上跑
+  `check:team-routes` / `check:smtp` / `check:filters` / `check:permissions` —— 四套浏览器用例全部进 CI。
+  **刻意标为 advisory 并写明原因**：① 首次在 Linux 上运行，`check:filters` 的**几何断言**依赖字体渲染，
+  可能与 macOS 有细微差异；② `check:permissions` 有一条**已知失败**用例（切到刻意冻结的种子用户，
+  见 PROGRESS「阻塞点」）。两条都解决后再去掉 `continue-on-error` 并加入必需检查 ——
+  在此之前它只提供可见性，不能当作"权限没问题"的证据。
+- **单元测试**：新增 `vitest`（`pnpm test`，`vitest.config.ts` 只保留 `@` 别名、不带路由插件）+
+  **45 个纯函数用例**：环境变量口径（空串必须落回缺省，否则 `.env` 里留空的 `VITE_AI_PROXY_URL`
+  会变成空代理地址）、权限通配与作用域语义（含 `page.user.*` **不**命中 `page.users` 的前缀陷阱）、
+  目录不变量（key/路由唯一、`defaultRoles` 合法且适用于该作用域、**每条 labelKey 在词典里都存在**、
+  动作的 owner 必须是已登记页面）、SMTP 校验规则与归一化。**已加入 CI**（毫秒级、无需浏览器）。
+- **社区文件**：`CONTRIBUTING.md`（含 5 条易踩的约定：一行登记页面、不要把密钥写进 `VITE_*`、
+  共用组件优先、注释写"为什么"、版本号到处核对）、`SECURITY.md`（把"纯前端不是安全边界""演示凭据
+  是有意的""AI Key 只能放服务端"写成明确条目）、`.github/ISSUE_TEMPLATE/{bug_report,feature_request}.yml`、
+  `.github/PULL_REQUEST_TEMPLATE.md`（勾选项直接对应 CI 跑的命令）。
+- **README 双语**：新增 `README.en.md`（英文完整版），中文版与英文版顶部互相链接；
+  同步了页面表（新增 `/ai`）、脚本表（新增 `test` / `check:routes`）与路线图（Phase 3–4 勾上）。
+
+#### Verified（补记，2026-10-01）
+
+- `tsc -b --force` ✅ ／ `pnpm lint` ✅（**0 error**，16 条既有 fast-refresh warning，与升级前一致，无新增）
+- `pnpm build` ✅（vite 8.3.1，2491 modules transformed）
+- 公开路径守卫 ✅（无基线全量自检 exit 0）
+- 静态检查：`pnpm test` **45/45**（vitest 0.9s）、`pnpm check:routes` ✅、`pnpm check:i18n` ✅ 501 keys
+- 四套浏览器用例回归：`check:permissions` **13/14**（唯一红的是「整列 Clear」那条 —— 它切到了刻意冻结的
+  种子用户 Carol White，store 按设计拒绝切换，属用例问题，按当前决策不修，见 PROGRESS「阻塞点」）、
+  `check:team-routes` **16/16**、`check:smtp` 6/6、`check:filters` 7/7
+- 通用起点改造的端到端实测：① 不写 `.env` → 运行时自检卡为 `demo` / `Samples`；
+  ② 写 `.env` 指向 `env-test.example.com` → 运行时为 `own` / `all`（`EXPECT_TABLEAU_*` 严格断言通过，
+  证明 `.env` 覆盖**改变的是运行时行为**，不只是产物里的字面量）；③ fork 模拟（改品牌）后 Help 用例仍 ✅；
+  ④ `/ai` 页在无 `.env` 时走演示 provider 并**真的流式出字**（新用例在真实浏览器中断言）；
+  ⑤ 代码分割后入口 chunk **1.14MB → 419KB**（gzip 133KB），且四套浏览器用例在懒加载后全部照常通过；
+  ⑥ `check:routes` 反向验证：故意把路由路径改错，脚本同时报出"未登记路由"与"目录死条目"。
+- 依赖漏洞审计**未完成**：npmmirror 不提供 audit 端点（`ERR_PNPM_AUDIT_ENDPOINT_NOT_EXISTS`），
+  需 `pnpm audit --registry=https://registry.npmjs.org` 才能核验（见 PROGRESS「阻塞点」）。
 
 ## [0.9.0] - 2026-09-21
 

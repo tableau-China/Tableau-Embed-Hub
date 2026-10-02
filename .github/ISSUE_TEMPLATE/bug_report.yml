@@ -1,0 +1,60 @@
+name: Bug report
+description: Something behaves incorrectly in the template
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Please fill in the fields below — most reports are resolved quickly
+        when we can reproduce them.
+
+        ⚠️ Security issues: **do not** file them here. See [SECURITY.md](../SECURITY.md).
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what happened, and what you expected instead.
+      placeholder: |
+        1. Go to /users
+        2. Click "Add user"
+        3. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Tableau pages (workbooks / views / favourites / recents)
+        - Permissions / route guard
+        - Users / teams / profile
+        - Config (SMTP)
+        - AI assistant (/ai)
+        - Layout / UI
+        - Build, CI or tooling
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      description: OS, Node version, pnpm version (`pnpm --version`), browser.
+      placeholder: macOS 15 · Node 24.18 · pnpm 11.28.2 · Chrome 141
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Did you run the checks?
+      options:
+        - label: '`pnpm typecheck` passes'
+        - label: '`pnpm lint` passes (0 errors)'
+        - label: '`pnpm check:routes` passes'
+        - label: 'I have a `.env` — my own Tableau site is configured'
+  - type: textarea
+    id: logs
+    attributes:
+      label: Console output / screenshot
+      description: Browser console errors, CI logs, or a screenshot. Redact anything sensitive.
+      render: shell

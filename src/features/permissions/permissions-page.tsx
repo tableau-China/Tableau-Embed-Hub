@@ -68,18 +68,20 @@ import { usePermissionStore } from '@/stores/permission-store'
 /** 分组 → i18n 标题 key（与侧边栏同源文案） */
 const GROUP_LABEL_KEYS: Record<NavGroup, string> = {
   general: 'nav.general',
+  ai: 'nav.aiGroup',
   settings: 'nav.settings',
   config: 'nav.config',
 }
 
-/** 分组 → 求值场景说明 key */
+/** 分组 → 求值场景说明 key（AI 页是跨团队页面，按全局身份求值） */
 const GROUP_SCOPE_KEYS: Record<NavGroup, string> = {
   general: 'permissions.noteTeam',
+  ai: 'permissions.noteGlobal',
   settings: 'permissions.noteGlobal',
   config: 'permissions.noteGlobal',
 }
 
-const GROUPS: NavGroup[] = ['general', 'settings', 'config']
+const GROUPS: NavGroup[] = ['general', 'ai', 'settings', 'config']
 
 export function PermissionsPage() {
   const { t } = useTranslation()

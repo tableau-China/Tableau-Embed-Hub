@@ -84,8 +84,8 @@ export interface ActorContext {
 /** 权限作用域：team = 团队作用域页面（带 slug）；global = 跨团队管理页 */
 export type RouteScope = 'team' | 'global'
 
-/** 侧边栏分组（general = 团队工作区；settings = 组织管理；config = 系统配置） */
-export type NavGroup = 'general' | 'settings' | 'config'
+/** 侧边栏分组（general = 团队工作区；ai = AI 能力；settings = 组织管理；config = 系统配置） */
+export type NavGroup = 'general' | 'ai' | 'settings' | 'config'
 
 export interface RouteEntry {
   /** 稳定权限键（点分层级：`page.<分支>.<叶子>`） */
@@ -161,6 +161,17 @@ export const ROUTE_CATALOG = [
     defaultRoles: ['team-admin', 'analyst', 'viewer'],
   },
   /* —— 跨团队页面（无 slug）：按全局身份求值 —— */
+  {
+    // AI 对话页：模板作为「AI 应用起点」的样板页。
+    // 不依赖团队（未配置代理时走内置演示 provider，零配置可看），因此是 global 作用域；
+    // 默认授权给 member —— 它是展示能力，不是管理面（与 fail-closed 的 SMTP / 权限页形成对照）。
+    key: 'page.ai',
+    to: '/ai',
+    scope: 'global',
+    group: 'ai',
+    labelKey: 'nav.ai',
+    defaultRoles: ['member'],
+  },
   {
     key: 'page.users',
     to: '/users',

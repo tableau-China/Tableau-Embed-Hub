@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -9,6 +9,7 @@ import {
   KeyRound,
   Pencil,
   Plus,
+  SearchX,
   ShieldCheck,
   Star,
   Trash2,
@@ -19,6 +20,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ActionButtons } from '@/components/action-bar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { FilterBar, FilterSearch, FilterSelect } from '@/components/filter-bar'
 import {
   Card,
   CardContent,
@@ -45,9 +47,12 @@ import {
 import { TeamLogo } from '@/components/org/team-logo'
 import { ResetPasswordDialog } from '@/components/org/reset-password-dialog'
 import { UserFormDialog, UserTeamsDialog } from '@/components/org/user-dialogs'
+import { useListFilters } from '@/hooks/use-list-filters'
 import {
   TEAM_ROLE_LABEL_KEYS,
+  USER_STATUSES,
   USER_STATUS_LABEL_KEYS,
+  sortTeamsById,
   useOrgStore,
   type OrgUser,
   type UserStatus,
@@ -61,6 +66,24 @@ function statusBadgeVariant(status: UserStatus) {
   return status === 'active' ? ('default' as const) : ('outline' as const)
 }
 
+/* ============================== 筛选 ============================== */
+
+/** 状态筛选：'all' = 不筛；其余取值与 `OrgUser.status` 同源（加了新状态这里自动多一项） */
+type StatusFilter = 'all' | UserStatus
+
+interface UserFilterValues extends Record<string, string> {
+  /** 登录名关键词（大小写不敏感的包含匹配） */
+  q: string
+  status: StatusFilter
+  /** 团队 id 的字符串形式；'all' = 不筛 */
+  team: string
+}
+
+/**
+ * 筛选默认值（**同时是「重置」的目标值**）—— 三条筛选的初始态与「未筛选」的定义都在这里，
+ * 页面其余部分不再重复判断「空串算不算在筛」。
+ */
+const USER_FILTER_DEFAULTS: UserFilterValues = { q: '', status: 'all', team: 'all' }
 
 /**
  * 全局用户管理页：用户位于 Team 之上 ——
@@ -89,11 +112,53 @@ function UsersPage() {
   const [passwordUser, setPasswordUser] = useState<OrgUser | null>(null)
   const [deletingUser, setDeletingUser] = useState<OrgUser | null>(null)
 
+  const filters = useListFilters(USER_FILTER_DEFAULTS)
+  const { q, status: statusFilter, team: teamFilter } = filters.values
+
   const membershipsOf = (userId: number) =>
     members
       .filter((m) => m.userId === userId)
       .map((m) => ({ ...m, team: teams.find((team) => team.id === m.teamId) }))
       .filter((m) => m.team !== undefined)
+
+  /* ------------------------------ 筛选 ------------------------------ */
+
+  /**
+   * 筛选口径（**唯一的一处**，别在渲染里再判一次）：
+   *   - 关键词：登录名包含匹配，大小写不敏感、去首尾空格（登录名本身就是大小写不敏感的账号口径）。
+   *     只搜 `username`：它是账号的主键口径，与展示名 `name` 刻意分开（见 org-rules.md）；
+   *     要连展示名/邮箱一起搜，只需在这一行加 `|| user.name` —— 控件不用动。
+   *   - 状态：精确匹配 `active` / `disabled`。
+   *   - 团队：**成员关系命中**（该用户属于这个团队，不区分岗位，也不看是不是默认团队）。
+   *
+   * 放在 `useMemo` 里：一次输入只过滤一遍，而不是每次渲染（含每个弹窗开关）都重算。
+   */
+  const visibleUsers = useMemo(() => {
+    const needle = q.trim().toLowerCase()
+    const teamId = teamFilter === 'all' ? null : Number(teamFilter)
+
+    return users.filter((user) => {
+      if (needle !== '' && !user.username.toLowerCase().includes(needle)) return false
+      if (statusFilter !== 'all' && user.status !== statusFilter) return false
+      if (teamId !== null && !members.some((m) => m.userId === user.id && m.teamId === teamId)) {
+        return false
+      }
+      return true
+    })
+  }, [users, members, q, statusFilter, teamFilter])
+
+  /** 状态选项与徽章同源（`USER_STATUS_LABEL_KEYS`）—— 加了新状态这里自动出现 */
+  const statusOptions = USER_STATUSES.map((value) => ({
+    value,
+    label: t(USER_STATUS_LABEL_KEYS[value]),
+  }))
+
+  /** 团队选项按创建次序（与 /teams 一致），带团队 Logo */
+  const teamOptions = sortTeamsById(teams).map((team) => ({
+    value: String(team.id),
+    label: team.name,
+    icon: <TeamLogo logo={team.logo} className="size-3.5 text-muted-foreground" />,
+  }))
 
   /**
    * 两道闸在这里只是不让用户白点一下弹窗；**真正的判据在服务端**
@@ -171,6 +236,41 @@ function UsersPage() {
               <span>{t('users.readOnlyHint')}</span>
             </div>
           )}
+          {/*
+            筛选栏（公共件 components/filter-bar.tsx）：
+            「一个用户都没有」时不渲染 —— 没有数据可筛，摆一排控件只会让人以为坏了。
+            筛选生效时右侧自动出现「Showing X of Y」与「重置筛选」。
+          */}
+          {users.length > 0 && (
+            <FilterBar
+              className="mb-4"
+              activeCount={filters.activeCount}
+              onReset={filters.reset}
+              shown={visibleUsers.length}
+              total={users.length}
+            >
+              <FilterSearch
+                id="user-filter-search"
+                value={q}
+                onChange={(value) => filters.set('q', value)}
+                placeholder={t('users.searchPlaceholder')}
+              />
+              <FilterSelect
+                id="user-filter-status"
+                label={t('users.status')}
+                value={statusFilter}
+                onChange={(value) => filters.set('status', value as StatusFilter)}
+                options={statusOptions}
+              />
+              <FilterSelect
+                id="user-filter-team"
+                label={t('users.filterTeam')}
+                value={teamFilter}
+                onChange={(value) => filters.set('team', value)}
+                options={teamOptions}
+              />
+            </FilterBar>
+          )}
           <Table>
             <TableHeader>
               <TableRow>
@@ -185,7 +285,7 @@ function UsersPage() {
             </TableHeader>
             <TableBody>
               {users.length === 0 && (
-                <TableRow>
+                <TableRow data-user-empty="none">
                   <TableCell
                     colSpan={columnCount}
                     className="py-8 text-center text-muted-foreground"
@@ -199,10 +299,29 @@ function UsersPage() {
                   </TableCell>
                 </TableRow>
               )}
-              {users.map((user) => {
+              {/*
+                第三种空态：**有账号，只是被筛掉了**。必须与「还没有用户」区分开，
+                否则用户会以为数据没了 —— 所以这里给出「重置筛选」的直接出口。
+              */}
+              {users.length > 0 && visibleUsers.length === 0 && (
+                <TableRow data-user-empty="filtered">
+                  <TableCell colSpan={columnCount} className="py-8">
+                    <div className="flex flex-col items-center gap-3 text-center">
+                      <SearchX className="size-6 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">
+                        {t('users.noMatch')}
+                      </span>
+                      <Button variant="outline" size="sm" onClick={filters.reset} data-user-empty-reset="">
+                        {t('filters.clearAll')}
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+              {visibleUsers.map((user) => {
                 const userTeams = membershipsOf(user.id)
                 return (
-                  <TableRow key={user.id}>
+                  <TableRow key={user.id} data-user-row={user.username}>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="size-8">

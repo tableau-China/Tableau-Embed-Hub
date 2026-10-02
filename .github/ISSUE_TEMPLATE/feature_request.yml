@@ -1,0 +1,46 @@
+name: Feature request
+description: Suggest something that would make the template a better starting point
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This repository is a **template**, not an application: changes are judged by
+        "does this help someone start faster?". Features that only make sense for one
+        specific deployment are usually better as a fork.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the situation you hit, not just the feature you want.
+      placeholder: When I clone the template and point it at my own site, I have to ...
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: What should the template do instead? Mention the files you expect to change.
+    validations:
+      required: true
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - Docs only
+        - Config / env var
+        - New shared component
+        - New page
+        - Tooling / CI
+        - Breaking change (would need a migration note)
+    validations:
+      required: true
+  - type: checkboxes
+    id: fits
+    attributes:
+      label: Fit with the project
+      options:
+        - label: It is useful to anyone cloning the template (not just my deployment)
+        - label: It does not require a backend to be useful (a documented proxy contract is fine)
+        - label: I checked `docs/` and it is not already covered

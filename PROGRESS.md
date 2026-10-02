@@ -1,13 +1,120 @@
 # shadcn-admin-cn 项目进度（PROGRESS）
 
-> 更新于 2026-09-21 ｜ 项目根目录：`/Users/xilejun/WorkBuddy/ds_Harness/shadcn_admin_cn`
+> 更新于 2026-10-01 ｜ 项目根目录：`/Users/xilejun/WorkBuddy/ds_Harness/shadcn_admin_cn`
 
 ## 项目概况
 
-- **目标**：从零构建管理后台模板（React 19 + TypeScript 7 + Vite 8 + Tailwind CSS v4 + shadcn/ui(Radix) + TanStack Router），包含 shadcn-admin 的全部基础功能，**含 Tableau 页面**（favorites / recents / workbooks / views —— 浏览器内签发 Connected App JWT 嵌入真实视图，凭据见 README「凭据配置」），**不含 AI 功能**；也不含内部流程页（flows / amro / clean-layer / sql-icon-map，那些只存在于本地开发线），v0.4.0 起含**多团队 + 全局用户**（参照 pg-explorer，无部门管理），v0.5.0 起**团队身份进入 URL**（`/t/{slug}/...`，对齐 pg-explorer 的 `/t/{slug}` + `/admin/*` 划分），v0.6.0 起**页面级权限**（角色 × 路由，权限页勾选；按钮级权限仅预留命名空间），v0.7.0 起**个人资料归位**（`/settings` → `/profile`，入口在左下角用户菜单）+ **Config 分组与 SMTP 配置页** + **帮助页** + **前端通用件**；i18n 当前仅 **en-US**，中文/日文后期扩展。
-- **关键决策**：跳过 shadcn-admin 模板（无 Sat Naing 署名义务）、TypeScript 7.1.0-dev（next 开发版，验证未来升级，正式版发布后直接升级）、Vite 8.2.1 最新稳定、i18n 当前仅 en-US（zh-CN / zh-TW / ja-JP 后期扩展）。
+- **目标**：从零构建管理后台模板（React 19 + TypeScript 7 + Vite 8 + Tailwind CSS v4 + shadcn/ui(Radix) + TanStack Router），包含 shadcn-admin 的全部基础功能，**含 Tableau 页面**（favorites / recents / workbooks / views —— 浏览器内签发 Connected App JWT 嵌入真实视图，凭据见 README「凭据配置」），**不含 AI 功能**；也不含内部流程页（flows / amro / clean-layer / sql-icon-map，那些只存在于本地开发线），v0.4.0 起含**多团队 + 全局用户**（参照 pg-explorer，无部门管理），v0.5.0 起**团队身份进入 URL**（`/t/{slug}/...`，对齐 pg-explorer 的 `/t/{slug}` + `/admin/*` 划分），v0.6.0 起**页面级权限**（角色 × 路由，权限页勾选；按钮级权限仅预留命名空间），v0.7.0 起**个人资料归位**（`/settings` → `/profile`，入口在左下角用户菜单）+ **Config 分组与 SMTP 配置页** + **帮助页** + **前端通用件**，v0.9.0 起**团队冻结 + 用户冻结 + 用户必须归属团队**，v0.10.0 起**列表筛选栏公共件**（`/users` 先行）；i18n 当前仅 **en-US**，中文/日文后期扩展。
+- **关键决策**：跳过 shadcn-admin 模板（无 Sat Naing 署名义务）、TypeScript 7.1.0-dev（next 开发版，验证未来升级，正式版发布后直接升级；**现锁 7.1.0-dev.20260930.4**）、Vite 8 最新稳定、i18n 当前仅 en-US（zh-CN / zh-TW / ja-JP 后期扩展）。
+- **工具链锁定**：pnpm **11.28.2**（`package.json` 的 `packageManager` 字段，CI 同版本）、Node **24**（本地与 CI 一致，`@types/node` 对齐 **24 线**——类型线高于运行时会写出跑不起来的代码）。
 - **注意**：用户原指定路径 `/Users/xilejun/ds_Harness/shadcn_admin_cn` 不存在，实际目录在 `/Users/xilejun/WorkBuddy/ds_Harness/shadcn_admin_cn`。
-- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.9.0**）。
+- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.10.0**）。
+
+---
+
+## ✅ v0.10.0（2026-09-23）— 列表筛选栏公共件 + Users 页筛选
+
+- ✅ **公共筛选件** `src/components/filter-bar.tsx`：`FilterBar`（容器：结果计数 + 「有筛选才出现」的重置按钮）、
+  `FilterSearch`（带一键清空的搜索框）、`FilterSelect`（字段名 + 当前值的下拉，首项恒为 All）——
+  与 `action-bar.tsx` / `form-field.tsx` 同级，**其它列表页直接复用**
+- ✅ **筛选状态 hook** `src/hooks/use-list-filters.ts`：`values / set / reset / activeCount / isFiltered / isDirty`
+  （默认值只取一次快照；「重置」的目标值与「未筛选」的定义收在一处）
+- ✅ **/users 筛选**：登录名搜索（包含匹配、大小写不敏感）+ 状态（Active / Frozen）+ 团队（**按成员关系命中**，不分岗位）；
+  三者可叠加，右侧显示 `Showing X of Y` 与「重置筛选」
+- ✅ **第三种空态**：有账号但被筛掉 →「No users match the current filters.」+ 一键重置（与「还没有账号」「无权限」严格区分）
+- ✅ **i18n**：新增 `filters.*` 命名空间（all / search / clearSearch / clearAll / clearAllHint / showing）+ `users.searchPlaceholder|filterTeam|noMatch`
+- ✅ **校验脚本** `scripts/check-filters.mjs`（`pnpm check:filters`）：静态自检（公共件 i18n key、状态选项与文案一一对应）
+  + 7 项页面用例（搜索口径 / 组合筛选 / 计数 / 重置 / 三种空态 / 非管理员视角 / 宽窄屏几何断言）
+- ✅ 验证：`tsc -b` / `pnpm lint`（0 error）/ `vite build` / `pnpm check:i18n`（461 keys）/ `pnpm check:filters`（7/7）全绿
+- ✅ 版本五处同步 0.10.0（package.json / `src/config/app.ts` / README / PROGRESS / CHANGELOG）
+
+### 工具链与依赖同步（2026-10-01 补记，并入未发布的 0.10.0）
+
+- ✅ **TS 7 原生编译器刷新**：`@typescript/native` → `npm:typescript@7.1.0-dev.20260930.4`（原 `7.1.0-dev.20260918.1`）；
+  `tsc6` 线（`typescript` → `npm:@typescript/typescript6@6.0.2`）**不动** —— typescript-eslint 的 peer 仍是
+  `>=4.8.4 <6.1.0`，**不支持 TS 7，别名结构必须保留**，升级 TS 7 只能动 `@typescript/native`
+- ✅ **依赖小版本升级（9 项，全部在 range 内）**：@tanstack/react-router 1.170.38→1.170.41、
+  @tanstack/router-plugin 1.168.40→1.168.42、@tanstack/react-query / -devtools / eslint-plugin-query
+  5.103.1→5.104.0、vite 8.3.0→8.3.1、lucide-react 1.47.0→1.49.0、react-i18next 17.0.14→17.0.15、
+  typescript-eslint 8.70.0→8.71.0（**保持精确锁定**，不改成 `^`）
+- ✅ **`@types/node` 26 → 24 线**（`^24.19.0`）：与运行时和 CI 的 Node 24 对齐。原先装 26 的类型却跑在 Node 24 上，
+  等于允许写出「类型检查通过、运行时炸」的代码；类型线**不应高于**最低支持的运行时
+- ✅ **pnpm 版本收敛**：`package.json` 新增 `"packageManager": "pnpm@11.28.2"`，`ci.yml` 的 `version: 11`
+  → `11.28.2`（原先本地 corepack 是 11.10.0、CI 浮动到 11 线最新，两边不一致）
+- ✅ **依赖面全量核对（39 项）**：**没有任何包存在更高的大版本**（react 19 / vite 8 / tailwind 4 / eslint 10 /
+  i18next 26 / TanStack 1.x·5.x 均已是当前大版本）；`radix-ui` 的 `next` 是 `1.7.0-rc` 预发布，跳过
+- ✅ 验证：`tsc -b --force` ✅ / `pnpm lint` ✅（0 error，16 条既有 fast-refresh warning）/ `pnpm build` ✅
+  （vite 8.3.1，2491 modules）；另**实测** TS `7.0.2` 稳定版对本项目同样零诊断（保留「7.1 正式版未发布时可回落稳定版」的退路，本次未采用）
+
+### 通用起点：站点绑定 env 化 + 接入文档（2026-10-01 补记，并入未发布的 0.10.0）
+
+- ✅ **品牌可 fork**：Help 用例改为**从 `src/config/app.ts` 读期望值**（原先写死 `xilejun` / `xilejun.com`，
+  任何改品牌的 fork 跑 `check:permissions` 必然红）；`APP_WEBSITE_LABEL` 改为由 `APP_WEBSITE` 派生。
+  **实测**：改品牌 + 换站点后重新构建，Help 用例仍 ✅。
+- ✅ **站点绑定 7 项全部 env 化**：`VITE_TABLEAU_SERVER_URL` / `_SITE_NAME` / `_SITE_CONTENT_URL` /
+  `_EMBED_USER` / `_PROJECT` / `_API_VERSION` / `_API_BASE`（原先只有 3 个凭据变量，其余六项硬编码在
+  `src/config/tableau.ts` 与 `vite.config.ts` —— 同一个 serverUrl 两份拷贝，改一处忘一处）。
+  `vite.config.ts` 改用 `loadEnv`，与运行时**同源读取同一份 `.env`**。
+- ✅ **项目过滤缺省规则修正**：演示站点默认 `Samples`；**配了自己的站点则默认不过滤** ——
+  原先新人接上自己的站点只会看到 2 个工作簿，且界面上无从归因。
+- ✅ **`/help` 新增「Environment check」卡**：显示实际生效的站点、凭据来源（演示 / `.env`）、项目过滤与代理路径；
+  `check:permissions` 的 Help 用例已覆盖，并支持 `EXPECT_TABLEAU_SITE_SOURCE` / `EXPECT_TABLEAU_PROJECT`
+  两个可选严格断言（用来证明 `.env` 覆盖改变的是**运行时行为**）。
+- ✅ 新增 **`docs/tableau-setup.md`**（Connected App 创建 / 域名白名单 / 访问级别 vs REST / 排查表 / 安全边界）
+  与 **`deploy/nginx.conf.example`**（REST 反代：`proxy_ssl_server_name`、`Host` 覆盖、SSE 段预留）；
+  README 新增「配置自己的 Tableau 站点」「部署」两节，修掉重复的 `## 路线图` 标题并刷新路线图。
+- ✅ **公开线移除内部功能宣传**：Help 页原有一条 *Processing flow atlas*（文案点名 FOC / AMRO / clean-layer）
+  和一条指向 `docs/flow-page-conventions.md` 的文档入口 —— 两者在公开线都不存在（只在 custom 分支）。
+  路径守卫只管路径、管不住文案，这条靠人守；已在 `FEATURES` / `DOCS` 与 i18n 中移除并加注释说明。
+- ⏭️ **custom 分支需要对应动作**：Help 页的 flows 卡片与 `docs/flow-page-conventions.md` 入口要在 custom 侧自己维护
+  （否则同步 main 后 custom 的 Help 页会少这两项）。
+
+### AI 应用起点（2026-10-01 补记，并入未发布的 0.10.0）
+
+- ✅ **抽象层 `src/lib/ai/`**：`types`（`AiProvider` + `AiError` 错误分类与 `retryable` 语义）、
+  `config`（留空 `VITE_AI_PROXY_URL` 即演示模式）、`demo`（零配置演示 provider，输出确定便于断言）、
+  `deepseek`（OpenAI 兼容 SSE 流式客户端，**只认同源代理、不带 Key**）、`index`（`resolveAiProvider()`）。
+- ✅ **`src/lib/env.ts`**（新）：抽出 `configured / envValue / envOptional`，`tableau.ts` 复用（去掉重复实现）。
+  注释写明**为什么不做通用的按名取值** —— Vite 只内联静态引用。
+- ✅ **`/ai` 页面 + `use-ai-chat`**：流式渲染、Stop、Retry、Clear、错误分级；失败移除空占位、取消保留内容。
+- ✅ **一行接入权限体系**：`page.ai`（global / 新分组 `ai` / 默认授权 member）；
+  侧边栏与权限页的分组文案由 `Record<NavGroup, string>` 强制补齐（tsc 报错即提醒，无需靠记忆）。
+- ✅ **配置与文档**：`vite-env.d.ts` 3 个变量、`.env.example` 新增「③ AI 能力」段、
+  `/help` 自检卡新增 AI 行、`docs/ai-integration.md`（契约 / nginx / 20 行 Node 网关 / 验收清单 / 排查表）、
+  Help 文档入口 3 → 4 条。
+- ✅ **用例**：新增「AI 页默认授权给成员 + 演示 provider 流式回复」（真实浏览器断言）；
+  并修掉「补齐默认授权」把**缺口数写死为 4** 的问题（新增页面后立刻误报）→ 改为从 `ROUTE_CATALOG` 动态计算。
+- ⚠️ **Key 边界的落实方式**：前端只发同源代理请求；`docs/ai-integration.md` 与 `.env.example` 都写明
+  "Key 只能放网关，`.env` 的值会内联进 bundle"。**没有**任何默认 Key、也没有可用的兜底凭据。
+
+### 起点信誉：静态断言进 CI + 用例跨平台 + 路由级分割 + 单测（2026-10-01 补记，并入未发布的 0.10.0）
+
+- ✅ **`scripts/check-route-catalog.mjs`（`pnpm check:routes`）**：路由文件 ↔ `ROUTE_CATALOG` 一致性。
+  路由守卫是 fail-open 的，漏登记 = 静默权限盲区；脚本同时抓「未登记路由」「目录死条目」「白名单腐烂」。
+  纯静态、**已进 CI 阻塞步骤**；反向验证过（改坏路径 → 两条都报出来）。
+- ✅ **路由级代码分割**：`tanstackRouter({ autoCodeSplitting: true })`，路由文件零改动，
+  入口 chunk **1.14MB → 419KB（gzip 133KB）**，Tableau SDK 隔离到按需加载的 views chunk（337KB）。
+- ✅ **CDP 用例跨平台**：4 个脚本的 Chrome 路径从硬编码 macOS 改为 `resolveChrome()`
+  （`CHROME_PATH` → macOS / Debian-Ubuntu / chromium 常见路径），找不到时给出候选清单。
+- ✅ **CI**：主 job 新增 `check:routes` 与 `pnpm test`（静态、阻塞）；
+  新增 `ui-checks` job（advisory / `continue-on-error`）跑**全部四套**浏览器用例。
+- ⚠️ **`ui-checks` 为什么必须保持 advisory**：① 首次在 Linux 上跑，`check:filters` 的几何断言依赖字体渲染；
+  ② `check:permissions` 有一条已知失败用例（切到刻意冻结的种子用户 Carol White，见下方阻塞点）。
+  两条都清了之后再去掉 `continue-on-error` 并加入必需检查 —— 现在它只提供**可见性**，不是"权限没问题"的证据。
+- ✅ **单元测试**：vitest + `pnpm test`（45 用例，0.9s）：环境变量口径、权限通配与作用域语义、
+  目录不变量（含**每条 labelKey 是否有文案**）、SMTP 规则与归一化。
+- ✅ **社区文件**：CONTRIBUTING / SECURITY / ISSUE_TEMPLATE ×2 / PR 模板。
+- ✅ **README 双语**：新增 `README.en.md`，中英互链；同步页面表、脚本表、路线图。
+- ⚠️ **仍未闭环的一处**：`check:permissions` 那条「切到冻结用户 Carol White」的用例（4 行可修：
+  三处换活跃 viewer + `switchUser` 断言身份真的变了）。按当前决策不动它，因此 `ui-checks` 只能 advisory。
+
+**刻意的边界**（接后端/后续页面时按需改）：
+
+- **只搜登录名**，不搜展示名与邮箱（登录名是账号主键口径，见 [docs/org-rules.md](./docs/org-rules.md)）；
+  要扩到展示名，改 `users.tsx` 里 `visibleUsers` 的那一行判断即可，控件不用动；
+- **筛选是视图态**：默认不进 URL（刷新回默认）。要「可分享 / 刷新不丢」时把同一组受控组件接到
+  `useSearch` + `navigate({ search })`，公共件本身不用改（已写进 [docs/ui-conventions.md](./docs/ui-conventions.md) §5）；
+- 目前只有 `/users` 接入（本版就是为后续列表页立的公共件），未顺带给 `/teams`、Tableau 列表页加筛选。
 
 ---
 
@@ -84,10 +191,10 @@
 | --- | --- | --- |
 | 1 | 方案评估 | 确定从 shadcn/ui + Tailwind + Radix 从零重建，避开老仓库（pg-explorer）的密钥历史与版权污染 |
 | 2 | 骨架文件 | 写入 14 个基础文件：package.json、tsconfig×3、vite.config.ts、index.html、.gitignore、README.md、LICENSE（MIT）、eslint.config.js、.github/workflows/ci.yml、scripts/check-i18n.mjs、src/index.css、src/vite-env.d.ts |
-| 3 | 依赖安装 | `pnpm install` 成功，关键版本：**typescript 7.1.0-dev.20260815.1（next 标签，自 7.0.2 升级）**、vite 8.2.1、react 19.2.8、tailwindcss 4.3.3、@tanstack/react-router 1.170.29、@tanstack/router-plugin 1.168.32、i18next 26.3.6 |
+| 3 | 依赖安装 | `pnpm install` 成功，关键版本：**typescript 7.1.0-dev.20260815.1（next 标签，自 7.0.2 升级）**、vite 8.2.1、react 19.2.8、tailwindcss 4.3.3、@tanstack/react-router 1.170.29、@tanstack/router-plugin 1.168.32、i18next 26.3.6（**骨架期快照**；各依赖此后已多次升级，TS 现锁 7.1.0-dev.20260930.4，见 v0.10.0 的「工具链与依赖同步」） |
 | 4 | 环境问题修复 | ① npm 缓存目录 root 权限损坏 → 用 `npm_config_cache=/tmp/npmcache` 绕过（后该目录也损坏，npm 查询改用 curl 直查 registry）；② pnpm dlx 缓存被沙箱拦截 → 改为本地安装 shadcn CLI（4.18.0）；③ `pnpm-workspace.yaml` 占位文件修复为 `allowBuilds: '@swc/core': true`，SWC postinstall 正常 |
 | 5 | 定位 shadcn 4.18 变更 | 新版 CLI 的 `-b` 参数从"基础色（slate）"改为"组件库选择"：`radix | base | aria`——需用 `-b radix`；init 另需 `-p nova` 预设（默认交互式弹菜单） |
-| 6 | 版本/范围调整 | TypeScript 切到 **7.1.0-dev.\***（next 标签，现锁 7.1.0-dev.20260815.1，升级开发版用 `pnpm add -D typescript@next`）；i18n 范围收敛为**仅 en-US**（zh-CN / zh-TW / ja-JP 后期扩展），index.html lang=en |
+| 6 | 版本/范围调整 | TypeScript 切到 **7.1.0-dev.\***（next 标签，**现锁 7.1.0-dev.20260930.4**；升级开发版**只能动 `@typescript/native`**，命令见「日常开发命令」——写 `pnpm add -D typescript@next` 会把 lint 用的 TS 6 API 别名线顶掉）；i18n 范围收敛为**仅 en-US**（zh-CN / zh-TW / ja-JP 后期扩展），index.html lang=en |
 | 7 | TS7 工具链适配 | ① tsconfig.app.json 删除 TS7 已移除的 `baseUrl`（paths 改相对解析）；② 修复骨架期漏装的 `@tanstack/eslint-plugin-query`；③ 实测 typescript-eslint 8.67.0 与 canary 均硬性拒绝 TS 7（上游 #10940），`pnpm lint` 暂不可用，**CI 已暂缓 lint 步骤**（ci.yml 注释含恢复说明） |
 | 8 | shadcn init + add | `shadcn init -y -b radix -p nova`（radix-nova 预设，neutral 基色）✅；add 21+1 个组件（sidebar/breadcrumb/collapsible/separator/sheet/tooltip/input/label/button/card/dropdown-menu/select/table/dialog/avatar/badge/skeleton/tabs/switch/sonner/command/toggle）✅ |
 | 9 | shadcn 别名 Bug 修复 | shadcn CLI 从**根 tsconfig.json** 解析 `@` 别名；根文件原无 paths → 组件被写入字面 `@/` 目录。修复：根 tsconfig.json 补 `paths` + 迁移 25 个文件到 src/；此后 add 已验证写盘正确 |
@@ -167,14 +274,37 @@
 
 ## ⏭️ 下一步（Next）
 
-1. 等 typescript-eslint 支持 TS 7 后恢复 lint（升级依赖 + 取消 ci.yml 注释）；
+1. 等 typescript-eslint 支持 TS 7（上游 [#10940](https://github.com/typescript-eslint/typescript-eslint/issues/10940) 关闭）后**去掉 TS 6 别名线**：
+   把 `typescript` 换回 `typescript@^7`，`tsc6` 与 `@typescript/native` 两套合一；在此之前别名结构不能删；
 2. 多语言扩展（zh-CN / zh-TW / ja-JP）：新增 `src/i18n/locales/<lang>/common.json` + i18n 配置加资源；
-3. 组件补充（如 data-table、form 等）、真实数据层（mock → API/DB）。
+3. 组件补充（如 data-table、form 等）、真实数据层（mock → API/DB）；
+4. 其它列表页接入筛选栏公共件（`/teams`、Tableau 的 workbooks / views / favorites / recents）——
+   控件与状态 hook 已就绪，页面只需写「筛什么、怎么匹配 + 第三种空态」。
 
 ## 🚧 阻塞点（Blockers）
 
-- **npm 缓存损坏**（机器级）：`~/.npm` 含 root 属主文件导致 EPERM，绕行目录 `/tmp/npmcache` 也已损坏；npm 命令（npm view 等）改用 curl 直查 registry；pnpm 有独立 store 不受影响。永久修复：`sudo chown -R 502:20 ~/.npm`（需用户自己操作）。
-- **typescript-eslint 不兼容 TS 7**（上游）：8.67.0 与 canary 均硬性拒绝（"typescript-eslint does not support TS 7.0"），官方跟踪 [typescript-eslint#10940](https://github.com/typescript-eslint/typescript-eslint/issues/10940)；`pnpm lint` 暂无法运行，CI 已暂缓该步骤。
+- **npm 缓存损坏**（机器级，2026-10-01 复查仍存在）：`~/.npm` 含 root 属主文件导致 `EPERM ... _cacache`，绕行目录 `/tmp/npmcache` 也已损坏；
+  **npm 命令（`npm view` / `npm audit` 等）一律不可用**。绕法：查版本用 `node` 直连 registry（`fetch("https://registry.npmmirror.com/<pkg>")`），
+  pnpm 有独立 store（`.pnpm-store/` 在项目内）不受影响。永久修复：`sudo chown -R 502:20 ~/.npm`（需用户自己操作）。
+- **`pnpm audit` 在 npmmirror 上不可用**：`ERR_PNPM_AUDIT_ENDPOINT_NOT_EXISTS`（镜像不实现 `/-/npm/v1/security/advisories/bulk`）。
+  要做安全审计需临时指定官方源：`pnpm audit --registry=https://registry.npmjs.org`。**本项目的依赖漏洞状态因此尚未核验过**。
+- **`pnpm dlx` 被沙箱拦截**：`EPERM mkdir ~/Library/Caches/pnpm/dlx`（缓存目录在工作区外）。
+  需要试跑某个包的 CLI 时，改用「下 tarball 到工作区内临时目录 + 直接执行」（本次验证 TS 7.0.2 稳定版即用此法）。
+- **corepack 装 packageManager 指定的版本要绕官方源**：`packageManager: pnpm@11.28.2` 加好后，
+  corepack 默认去 `registry.npmjs.org` 下载，本机被 TLS 代理拦截（`ERR_TLS_CERT_ALTNAME_INVALID`，证书是 IP 自签）。
+  绕法：`COREPACK_NPM_REGISTRY=https://registry.npmmirror.com pnpm --version`（装一次即入 `~/.cache/node/corepack`，之后正常使用）。
+- **`pnpm check:permissions` 当前 12/13（1 条红，2026-10-01 记录）**：失败的用例是
+  「整列「Clear」→ viewer 只剩底座页面」，根因**不在应用**而在用例 —— 它 `switchUser('Carol White')`，
+  而 Carol 的种子状态是 `status: 'disabled'`（**刻意保留，用于演示冻结用户**），
+  `setCurrentUser` 按设计拒绝切换（`org-store.ts:524`），用例未察觉切换失败就继续断言，
+  于是断言落在 Admin 身份上。**连带影响**：另两处同样切到 Carol 的用例
+  （`check-permissions.mjs:491`「重置全部授权」、`:532`「补齐默认授权」）因此变成**假通过**。
+  要修的话：把这三处换成 acme_hq 里**活跃的** viewer（Bob Martin，`userId=3`），并让 `switchUser`
+  在切换后核实身份真的变了。另有两点加剧了它长期没被发现：**CI 不跑这套用例**，
+  且 4 个 CDP 脚本硬编码 `/Applications/Google Chrome.app/...`（ubuntu runner 起不来）。
+- **typescript-eslint 不支持 TS 7**（上游 [#10940](https://github.com/typescript-eslint/typescript-eslint/issues/10940)，8.71.0 的 peer 仍是 `>=4.8.4 <6.1.0`）：
+  **`pnpm lint` 已可用**（靠「TS 6 API 并行」别名结构，见 package.json），代价是**必须保留两条 TS 线**；
+  在上游支持前，不要试图合并成单一 `typescript` 依赖。
 - ~~沙箱权限~~（已解决）：当前会话工作区即项目目录，workspace-write 模式已覆盖全部写入。
 
 ## 日常开发命令
@@ -185,12 +315,18 @@ cd /Users/xilejun/WorkBuddy/ds_Harness/shadcn_admin_cn
 pnpm dev          # 开发服务器（http://localhost:5173）
 pnpm build        # 类型检查（tsc -b）+ 生产构建
 pnpm check:i18n   # 校验语言词典 key 对齐（当前 en-US）
+pnpm check:filters # 列表筛选栏（静态自检 + 7 项页面用例；需先 pnpm build）
 pnpm typecheck    # 仅类型检查
-# pnpm lint       # 待 typescript-eslint 支持 TS 7 后恢复
+pnpm lint         # ESLint（走 TS 6 API 别名线 `tsc6`，不是 `tsc`）
 
 # 添加新组件（radix 库 + nova 预设；根 tsconfig.json 已有 @ 别名映射）
 pnpm exec shadcn add -y <component-name>
 
-# 升级 TypeScript 开发版
-pnpm add -D typescript@next
+# 升级 TS 7 原生编译器（开发版）：必须动 @typescript/native 这个别名，
+# 不能写 pnpm add -D typescript@next —— 那会把 lint 用的 TS 6 API 别名线顶掉
+pnpm add -D --save-exact "@typescript/native@npm:typescript@next"
+./node_modules/.bin/tsc --version   # 确认版本，然后 pnpm typecheck
 ```
+
+**工具链版本核对**（改动任一版本号时四处对齐）：`package.json` 的 `packageManager` ↔ `.github/workflows/ci.yml` 的 `version`；
+`@types/node` 大版本 ↔ 本地/CI 的 Node 大版本（`.github/workflows/ci.yml` 的 `node-version`）。

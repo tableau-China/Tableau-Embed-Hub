@@ -10,10 +10,10 @@ import {
   MonitorPlay,
   ShieldCheck,
   UserRound,
-  Workflow,
   type LucideIcon,
 } from 'lucide-react'
 
+import { ConfigStatusCard } from '@/components/config-status-card'
 import { DescriptionList } from '@/components/description-list'
 import { NoteCallout } from '@/components/note-callout'
 import { PageContainer } from '@/components/page-container'
@@ -49,20 +49,25 @@ import {
  * （功能网格 4 列、文档 3 列、技术栈为徽章流），只有键值摘要与长段落收在可读宽度内。
  */
 
-/** 核心功能条目（id 对应 i18n 的 `help.feature.<id>.title|body`，顺序即展示顺序） */
+/**
+ * 核心功能条目（id 对应 i18n 的 `help.feature.<id>.title|body`，顺序即展示顺序）。
+ *
+ * ⚠️ 这里只列**公开线（main）真实存在**的功能。内部功能（FOC / AMRO / clean-layer 图集）只在
+ * custom 分支有页面与文档，**不要写进本数组** —— 否则公开模板的 Help 页会宣传不存在的页面，
+ * 并把内部代号漏出去（路径守卫只管路径，管不住文案）。custom 分支自行维护自己的那份列表。
+ */
 const FEATURES: readonly { id: string; Icon: LucideIcon }[] = [
   { id: 'teams', Icon: Building2 },
   { id: 'permissions', Icon: ShieldCheck },
   { id: 'tableau', Icon: MonitorPlay },
-  { id: 'flows', Icon: Workflow },
   { id: 'config', Icon: Mail },
   { id: 'profile', Icon: UserRound },
   { id: 'i18n', Icon: Languages },
   { id: 'quality', Icon: FlaskConical },
 ]
 
-/** 文档入口（id 对应 i18n 的 `help.docs.<id>.path|body`） */
-const DOCS = ['permissions', 'flows', 'checks'] as const
+/** 文档入口（id 对应 i18n 的 `help.docs.<id>.path|body`）—— 同样只放 main 上确实存在的文件 */
+const DOCS = ['tableau', 'ai', 'permissions', 'checks'] as const
 
 export function HelpPage() {
   const { t } = useTranslation()
@@ -122,6 +127,10 @@ export function HelpPage() {
         </CardContent>
       </Card>
 
+      {/* ============================ 环境自检 ============================ */}
+      {/* clone 之后第一个问题「我现在连的是谁的站点」在这里回答；配置项见 .env.example */}
+      <ConfigStatusCard />
+
       {/* ============================ 核心功能 ============================ */}
       <Card>
         <CardHeader>
@@ -132,7 +141,7 @@ export function HelpPage() {
           <CardDescription>{t('help.featuresSubtitle')}</CardDescription>
         </CardHeader>
         <CardContent>
-          {/* 宽屏 4 列（8 条正好两行）、窄屏 2 列 → 内容用满页面宽度 */}
+          {/* 宽屏 4 列（7 条 = 两行，末行留白）、窄屏 2 列 → 内容用满页面宽度 */}
           <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4" data-help-features>
             {FEATURES.map(({ id, Icon }) => (
               <li key={id} className="flex gap-3" data-help-feature={id}>
@@ -175,7 +184,7 @@ export function HelpPage() {
           <CardDescription>{t('help.docsSubtitle')}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          <ul className="grid gap-4 sm:grid-cols-3">
+          <ul className="grid gap-4 sm:grid-cols-2">
             {DOCS.map((doc) => (
               <li key={doc} className="flex min-w-0 flex-col gap-1">
                 <code className="text-xs font-medium break-all">{t(`help.docs.${doc}.path`)}</code>

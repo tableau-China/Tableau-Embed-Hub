@@ -25,7 +25,7 @@
  * 不改动那份已通过的 17 用例套件。
  */
 import { spawn } from 'node:child_process'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
@@ -43,11 +43,42 @@ import {
   normalizeGrants,
   withDefaultRoles,
 } from '../src/config/permissions.ts'
+// 品牌信息从唯一来源读取，**不要在这里写死**：
+// fork 模板时改的是 src/config/app.ts，本用例跟着自动成立（原先写死 'xilejun' / 'xilejun.com'，
+// 导致任何改品牌的 fork 跑 check:permissions 必然失败）。
+import { APP_AUTHOR, APP_NAME, APP_WEBSITE, APP_WEBSITE_LABEL } from '../src/config/app.ts'
 
 const PORT = 4321
 const DEBUG_PORT = 9334
 const BASE = `http://127.0.0.1:${PORT}`
-const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+/**
+ * Chrome 可执行文件 —— **跨平台探测**。
+ *
+ * 原先这里硬编码 macOS 的路径，导致这套用例在 Linux / CI 上根本起不来（这也正是它长期只在
+ * 本机跑、坏了没人发现的原因之一）。现在：优先 CHROME_PATH 环境变量，其次按平台找常见安装位置
+ * （GitHub 的 ubuntu runner 自带 /usr/bin/google-chrome）。
+ */
+function resolveChrome() {
+  const candidates = [
+    process.env.CHROME_PATH,
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', // macOS
+    '/usr/bin/google-chrome', // Debian / Ubuntu（含 GitHub Actions runner）
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+    '/snap/bin/chromium',
+  ].filter(Boolean)
+  const found = candidates.find((p) => existsSync(p))
+  if (!found) {
+    throw new Error(
+      '未找到 Chrome。请设置 CHROME_PATH 指向可执行文件，或安装 google-chrome / chromium。已尝试：' +
+        candidates.join('、'),
+    )
+  }
+  return found
+}
+
+const CHROME = resolveChrome()
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 
 const children = []
@@ -496,17 +527,28 @@ const CASES = [
     name: '「补齐默认授权」只对真缺口出现（模拟升级新增页面），点击后补上默认授权',
     path: '/t/acme_hq/workbooks',
     before: async (page) => {
-      // 模拟「升级后新增页面」：三个团队岗位的持久化矩阵里都只有底座页面，于是
-      // favorites/recents/workbooks/views 四行没有任何角色能打开 —— 这正是 fail-closed 的状态，
-      // 也是「补齐默认授权」存在的唯一理由（只清空某一个角色不算缺口：其他角色仍能打开该页）。
+      // 模拟「升级后新增页面」：团队岗位只剩底座页面、member 只剩管理页，于是其余页面
+      // 没有任何角色能打开 —— 这正是 fail-closed 的状态，也是「补齐默认授权」存在的唯一理由
+      //（只清空某一个角色不算缺口：其他角色仍能打开该页）。
+      const INJECTED = {
+        'system-admin': ['*'],
+        member: ['page.users', 'page.teams', 'page.profile', 'page.help'],
+        'team-admin': ['page.dashboard'],
+        analyst: ['page.dashboard'],
+        viewer: ['page.dashboard'],
+      }
+      // ⚠️ 期望缺口数**从目录算出来**，不要写死：目录里新增页面（如 page.ai）时会自动跟上。
+      // 写死过一次 4，加页面后立刻误报（应用其实是对的）。
+      const expectedGaps = ROUTE_CATALOG.filter(
+        (e) =>
+          e.defaultRoles.length > 0 && // defaultRoles 为空 = 有意只给系统管理员，不算缺口
+          !applicableRoles(e).some((role) =>
+            (INJECTED[role] ?? []).some((g) => matchesGrant(g, e.key)),
+          ),
+      ).length
+
       await page.evaluate(`localStorage.setItem('shadcn-admin-cn:permissions', JSON.stringify({
-        state: { grants: {
-          'system-admin': ['*'],
-          member: ['page.users', 'page.teams', 'page.profile', 'page.help'],
-          'team-admin': ['page.dashboard'],
-          analyst: ['page.dashboard'],
-          viewer: ['page.dashboard'],
-        } },
+        state: { grants: ${JSON.stringify(INJECTED)} },
         version: 1,
       }))`)
       await navigate(page, '/permissions', { expectPath: '/permissions' })
@@ -522,10 +564,14 @@ const CASES = [
         }
       })()`)
       if (!state.fillLabel) failures.push('存在真缺口时「补齐默认授权」按钮应出现')
-      else if (!state.fillLabel.includes('4')) {
-        failures.push(`补齐按钮应标出缺口数 4（favorites/recents/workbooks/views 四行无人可开），实际文案：${state.fillLabel}`)
+      else if (!state.fillLabel.includes(String(expectedGaps))) {
+        failures.push(
+          `补齐按钮应标出缺口数 ${expectedGaps}（目录中无人可开的页面数），实际文案：${state.fillLabel}`,
+        )
       }
-      if (state.noRole < 4) failures.push(`应有 4 行标记「No role」，实际 ${state.noRole}`)
+      if (state.noRole < expectedGaps) {
+        failures.push(`应有 ${expectedGaps} 行标记「No role」，实际 ${state.noRole}`)
+      }
       if (state.checked !== 'false') failures.push('viewer 的 workbooks 此刻应未被授权')
 
       await clickSelector(page, '[data-perm-action="apply-defaults"]')
@@ -553,7 +599,7 @@ const CASES = [
       await navigate(page, '/t/acme_hq', { expectPath: '/t/acme_hq' })
       await switchUser(page, 'Alice Chen')
     },
-    contains: ['shadcn-admin-cn', 'Core features', 'xilejun', 'xilejun.com', 'v'],
+    contains: [APP_NAME, 'Core features', APP_AUTHOR, APP_WEBSITE_LABEL, 'v'],
     linkPresent: '/help',
     custom: async (page) => {
       const failures = []
@@ -566,12 +612,92 @@ const CASES = [
       const features = await page.evaluate(
         `document.querySelectorAll('[data-help-features] li').length`,
       )
-      if (features < 6) failures.push(`核心功能条目过少（应为 8 条），实际 ${features}`)
+      if (features < 6) failures.push(`核心功能条目过少（见 help-page.tsx 的 FEATURES），实际 ${features}`)
       const website = await page.evaluate(
         `document.querySelector('[data-help-website]')?.getAttribute('href')`,
       )
-      if (website !== 'https://xilejun.com') {
-        failures.push(`开发者站点链接应为 https://xilejun.com，实际：${website}`)
+      if (website !== APP_WEBSITE) {
+        failures.push(`开发者站点链接应为 ${APP_WEBSITE}（来自 src/config/app.ts），实际：${website}`)
+      }
+      // 环境自检卡：站点绑定全部走 .env，界面上必须能看出"当前连的是谁的站点"
+      const configCard = await page.evaluate(
+        `document.querySelector('[data-config-card]') ? 'yes' : 'no'`,
+      )
+      if (configCard !== 'yes') failures.push('Help 页应有「环境自检」卡片（data-config-card）')
+      const siteSource = await page.evaluate(
+        `document.querySelector('[data-config-tableau-site-source]')?.getAttribute('data-config-tableau-site-source')`,
+      )
+      if (siteSource !== 'demo' && siteSource !== 'own') {
+        failures.push(`环境自检卡应标出 Tableau 站点来源（demo/own），实际：${siteSource}`)
+      }
+      const credSource = await page.evaluate(
+        `document.querySelector('[data-config-tableau-credentials]')?.getAttribute('data-config-tableau-credentials')`,
+      )
+      if (credSource !== 'demo' && credSource !== 'env') {
+        failures.push(`环境自检卡应标出凭据来源（demo/env），实际：${credSource}`)
+      }
+      // 可选严格断言：验证 .env 覆盖**真的改变了运行时**（不只是进了构建产物）
+      //   EXPECT_TABLEAU_SITE_SOURCE=demo|own   站点来源必须正好是它
+      //   EXPECT_TABLEAU_PROJECT=<项目名>|all   生效的项目过滤必须正好是它
+      const expectSource = process.env.EXPECT_TABLEAU_SITE_SOURCE
+      if (expectSource && siteSource !== expectSource) {
+        failures.push(`站点来源期望 ${expectSource}，实际 ${siteSource}`)
+      }
+      const expectProject = process.env.EXPECT_TABLEAU_PROJECT
+      if (expectProject) {
+        const project = await page.evaluate(
+          `document.querySelector('[data-config-tableau-project]')?.getAttribute('data-config-tableau-project')`,
+        )
+        if (project !== expectProject) {
+          failures.push(`项目过滤期望 ${expectProject}，实际 ${project}`)
+        }
+      }
+      return failures
+    },
+  },
+  {
+    name: 'AI 页默认授权给成员，且演示 provider 能流式回复',
+    path: '/ai',
+    before: async (page) => {
+      await navigate(page, '/t/acme_hq', { expectPath: '/t/acme_hq' })
+      await switchUser(page, 'Alice Chen')
+    },
+    expectPath: '/ai',
+    linkPresent: '/ai',
+    contains: ['AI assistant'],
+    custom: async (page) => {
+      const failures = []
+      // 未配置 .env 时应是内置演示 provider（不发外部请求）
+      const provider = await page.evaluate(
+        `document.querySelector('[data-ai-provider]')?.getAttribute('data-ai-provider')`,
+      )
+      if (provider !== 'demo') failures.push(`无 .env 时 AI provider 应为 demo，实际：${provider}`)
+
+      const starters = await page.evaluate(
+        `document.querySelectorAll('[data-ai-starter]').length`,
+      )
+      if (starters < 3) failures.push(`空态应有至少 3 个起始提示，实际 ${starters}`)
+
+      // 点起始提示 → 出现 user + assistant 两条，且流式内容最终完整
+      await clickSelector(page, '[data-ai-starter="ai"]')
+      await waitFor(
+        'AI 流式回复完成',
+        async () => {
+          const text = await page.evaluate(
+            `document.querySelector('[data-ai-entry="assistant"]')?.innerText ?? ''`,
+          )
+          return text.includes('docs/ai-integration.md')
+        },
+        { timeout: 15000 },
+      ).catch(() => null)
+
+      const entries = await page.evaluate(`document.querySelectorAll('[data-ai-entry]').length`)
+      if (entries !== 2) failures.push(`应恰好 2 条消息（user + assistant），实际 ${entries}`)
+      const reply = await page.evaluate(
+        `document.querySelector('[data-ai-entry="assistant"]')?.innerText ?? ''`,
+      )
+      if (!reply.includes('docs/ai-integration.md')) {
+        failures.push(`演示回复不完整，实际内容：${reply.slice(0, 120)}`)
       }
       return failures
     },

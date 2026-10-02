@@ -16,7 +16,7 @@
  *（各自独立可跑），端口与它们错开，避免并行/残留实例互抢。
  */
 import { spawn } from 'node:child_process'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
@@ -41,7 +41,34 @@ import {
 const PORT = 4322
 const DEBUG_PORT = 9335
 const BASE = `http://127.0.0.1:${PORT}`
-const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+/**
+ * Chrome 可执行文件 —— **跨平台探测**。
+ *
+ * 原先这里硬编码 macOS 的路径，导致这套用例在 Linux / CI 上根本起不来（这也正是它长期只在
+ * 本机跑、坏了没人发现的原因之一）。现在：优先 CHROME_PATH 环境变量，其次按平台找常见安装位置
+ * （GitHub 的 ubuntu runner 自带 /usr/bin/google-chrome）。
+ */
+function resolveChrome() {
+  const candidates = [
+    process.env.CHROME_PATH,
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', // macOS
+    '/usr/bin/google-chrome', // Debian / Ubuntu（含 GitHub Actions runner）
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+    '/snap/bin/chromium',
+  ].filter(Boolean)
+  const found = candidates.find((p) => existsSync(p))
+  if (!found) {
+    throw new Error(
+      '未找到 Chrome。请设置 CHROME_PATH 指向可执行文件，或安装 google-chrome / chromium。已尝试：' +
+        candidates.join('、'),
+    )
+  }
+  return found
+}
+
+const CHROME = resolveChrome()
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 
 const children = []

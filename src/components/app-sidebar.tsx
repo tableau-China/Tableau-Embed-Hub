@@ -9,6 +9,7 @@ import {
   Mail,
   MonitorPlay,
   ShieldCheck,
+  Sparkles,
   Star,
   UserRound,
   Users,
@@ -59,6 +60,8 @@ type GlobalEntry = Extract<CatalogEntry, { scope: 'global' }>
 /** 分组渲染顺序：与权限页的分组顺序一致 */
 const NAV_GROUPS: { group: NavGroup; scope: 'team' | 'global'; labelKey: string }[] = [
   { group: 'general', scope: 'team', labelKey: 'nav.general' },
+  // AI 分组排在团队工作区之后、组织管理之前：它是能力展示，不是管理面
+  { group: 'ai', scope: 'global', labelKey: 'nav.aiGroup' },
   { group: 'settings', scope: 'global', labelKey: 'nav.settings' },
   { group: 'config', scope: 'global', labelKey: 'nav.config' },
 ]
@@ -90,6 +93,7 @@ const ICONS: Record<RouteKey, LucideIcon> = {
   'page.recents': Clock,
   'page.workbooks': BookOpen,
   'page.views': MonitorPlay,
+  'page.ai': Sparkles,
   'page.users': Users,
   'page.teams': Building2,
   'page.profile': UserRound,
