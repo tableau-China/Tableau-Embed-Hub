@@ -31,6 +31,11 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
+      // 固定端口 5174：同机常跑多个 Vite 项目，5173 已被占用时默认会静默换端口，
+      // 结果"以为在 5173、其实在 5175"。显式固定在 5174 并只监听 IPv4 环回
+      // （默认只监听 localhost 的 IPv6 ::1 时，127.0.0.1 直连会不通）。
+      host: '127.0.0.1',
+      port: 5174,
       proxy: {
         // Tableau Cloud REST API 不支持 CORS（实测：无 ACAO 头、OPTIONS 预检 405），
         // 开发环境通过本代理同源转发；生产部署请在网关/nginx 配置**相同路径**的反代
