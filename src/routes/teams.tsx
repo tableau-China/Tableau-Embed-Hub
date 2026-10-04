@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import {
+  Building2,
   Info,
   PauseCircle,
   Pencil,
@@ -43,6 +44,7 @@ import { ActionButtons } from '@/components/action-bar'
 import { TeamLogo } from '@/components/org/team-logo'
 import { TeamMembersDialog } from '@/components/org/team-members-dialog'
 import {
+  isDefaultTeam,
   orphanedUsersOfTeam,
   sortTeamsById,
   useOrgStore,
@@ -93,9 +95,13 @@ function TeamsPage() {
   const handleDelete = () => {
     if (!deletingTeam) return
     const name = deletingTeam.name
-    // 归属不变量：有人只属于这个团队时不允许删除（store 同样兜底），提示先安置这些人
+    // 两类拒绝原因分开提示：默认团队不可删除 / 有人只属于这个团队（store 同样兜底）
     if (!deleteTeam(deletingTeam.id)) {
-      toast.error(t('teams.deleteBlocked'))
+      toast.error(
+        isDefaultTeam(teams, deletingTeam.id)
+          ? t('teams.deleteDefaultBlocked')
+          : t('teams.deleteBlocked'),
+      )
       return
     }
     toast.success(t('teams.deleted', { name }))
@@ -169,6 +175,7 @@ function TeamsPage() {
               )}
               {orderedTeams.map((team) => {
                 const stats = statsOf(team.id)
+                const isSystemDefaultTeam = isDefaultTeam(teams, team.id)
                 const isDefault = team.id === defaultTeamId
                 return (
                   <TableRow key={team.id}>
@@ -189,6 +196,16 @@ function TeamsPage() {
                               {t('teams.suspended')}
                             </Badge>
                           )}
+                          {isSystemDefaultTeam && (
+                            <Badge
+                              variant="outline"
+                              className="gap-1"
+                              title={t('teams.defaultTeamSystemHint')}
+                            >
+                              <Building2 className="size-3" />
+                              {t('teams.defaultLabel')}
+                            </Badge>
+                          )}
                           {isDefault && (
                             <Badge
                               variant="outline"
@@ -196,7 +213,7 @@ function TeamsPage() {
                               title={t('teams.defaultTeam')}
                             >
                               <Star className="size-3 fill-amber-400 text-amber-400" />
-                              {t('teams.defaultLabel')}
+                              {t('teams.myDefaultLabel')}
                             </Badge>
                           )}
                           {team.id === activeTeamId && (
@@ -277,7 +294,12 @@ function TeamsPage() {
                             size="icon"
                             className="size-8 text-muted-foreground hover:text-destructive"
                             aria-label={t('teams.deleteTeam')}
-                            title={t('teams.deleteTeam')}
+                            title={
+                              isDefaultTeam(teams, team.id)
+                                ? t('teams.deleteDefaultBlocked')
+                                : t('teams.deleteTeam')
+                            }
+                            disabled={isDefaultTeam(teams, team.id)}
                             onClick={() => setDeletingTeam(team)}
                           >
                             <Trash2 className="size-4" />
@@ -326,6 +348,12 @@ function TeamsPage() {
                 name: deletingTeam?.name ?? '',
               })}
             </DialogDescription>
+            {deletingTeam && isDefaultTeam(teams, deletingTeam.id) && (
+              <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300">
+                <Info className="mt-0.5 size-4 shrink-0" />
+                <span>{t('teams.deleteDefaultBlocked')}</span>
+              </div>
+            )}
             {deletingTeam && orphanCountOf(deletingTeam.id) > 0 && (
               <div className="flex items-start gap-2 rounded-md border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-300">
                 <Info className="mt-0.5 size-4 shrink-0" />

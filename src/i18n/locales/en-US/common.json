@@ -433,7 +433,7 @@
     "namePlaceholder": "e.g. Acme Data Platform",
     "nameRequired": "Team name is required",
     "nameTaken": "A team with this name already exists",
-    "slugHint": "URL slug (auto): {{slug}}",
+    "slugHint": "English letters, numbers and underscores only — fixed after creation.",
     "dialogHint": "A team is a workspace. Users are invited into teams as members with a role (team admin / analyst / viewer).",
     "logo": "Logo",
     "membersTitle": "Members — {{team}}",
@@ -463,7 +463,18 @@
     "resumedToast": "Team “{{name}}” resumed",
     "deleteBlocked": "Cannot delete: some members belong only to this team",
     "deleteBlockedHint_one": "{{count}} member belongs only to this team — assign them to another team first.",
-    "deleteBlockedHint_other": "{{count}} members belong only to this team — assign them to another team first."
+    "deleteBlockedHint_other": "{{count}} members belong only to this team — assign them to another team first.",
+    "myDefaultLabel": "My default",
+    "defaultTeamSystemHint": "The first team created (the default team) — every account falls back to it, so it cannot be deleted.",
+    "deleteDefaultBlocked": "The default team cannot be deleted",
+    "suspendField": "Suspended",
+    "suspendFieldHint": "Suspended teams can only be entered by system administrators; members fall back to their other teams.",
+    "slugLabel": "URL slug",
+    "slugPlaceholder": "e.g. acme_hq",
+    "slugLocked": "Fixed after creation — it is the team’s stable identifier used in URLs.",
+    "slugRequired": "Slug is required",
+    "slugInvalid": "Slug may contain English letters, numbers and underscores only",
+    "slugTaken": "This slug is already taken by another team"
   },
   "favorites": {
     "title": "Favorites",
@@ -508,7 +519,11 @@
     "unfavorite": "Remove from favorites",
     "favorited": "Added to favorites",
     "unfavorited": "Removed from favorites",
-    "backToWorkbooks": "Back to Workbooks"
+    "backToWorkbooks": "Back to Workbooks",
+    "tableauUrl": "Tableau URL",
+    "copyUrl": "Copy link",
+    "copied": "Link copied",
+    "copyFailed": "Copy failed"
   },
   "teamRoute": {
     "notFoundTitle": "Team not found",

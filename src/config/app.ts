@@ -13,7 +13,7 @@
 export const APP_NAME = 'shadcn-admin-cn'
 
 /** 应用版本（与 package.json 同步） */
-export const APP_VERSION = '0.10.0'
+export const APP_VERSION = '0.10.1'
 
 /** 开发者 */
 export const APP_AUTHOR = 'xilejun'

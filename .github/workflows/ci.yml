@@ -28,6 +28,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm check:i18n
+      # 反向漏键检查：代码里在用的 key 是否都在词典里（check:i18n 只比对语言之间的一致性）
+      - run: pnpm check:i18n:keys
       # 路由 ↔ 权限目录一致性。路由守卫是 **fail-open** 的：目录里没登记的页面一律放行，
       # 于是"新建了页面文件却忘了登记"会静默产生权限盲区（不进侧边栏、也不在权限页）。
       # 这是纯静态检查（不启浏览器），所以放在阻塞步骤里。

@@ -8,9 +8,20 @@
 - **关键决策**：跳过 shadcn-admin 模板（无 Sat Naing 署名义务）、TypeScript 7.1.0-dev（next 开发版，验证未来升级，正式版发布后直接升级；**现锁 7.1.0-dev.20260930.4**）、Vite 8 最新稳定、i18n 当前仅 en-US（zh-CN / zh-TW / ja-JP 后期扩展）。
 - **工具链锁定**：pnpm **11.28.2**（`package.json` 的 `packageManager` 字段，CI 同版本）、Node **24**（本地与 CI 一致，`@types/node` 对齐 **24 线**——类型线高于运行时会写出跑不起来的代码）。
 - **注意**：用户原指定路径 `/Users/xilejun/ds_Harness/shadcn_admin_cn` 不存在，实际目录在 `/Users/xilejun/WorkBuddy/ds_Harness/shadcn_admin_cn`。
-- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.10.0**）。
+- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.10.1**）。
 
 ---
+
+## ✅ v0.10.1（2026-10-04）— 默认团队不可删除 + 冻结开关进编辑弹窗 + 修漏键
+
+- ✅ **默认团队（第一个团队）不可删除**：`defaultTeamId()`/`isDefaultTeam()` + `deleteTeam()` 护栏；
+  `/teams` 行内删除按钮 disabled + 原因提示；系统级 `Default` 徽章与「我的默认团队」`My default` 徽章区分开
+- ✅ **团队编辑对话框新增 `Suspended` 开关**（走 `setTeamSuspended`，顺带重算 activeTeamId）
+- ✅ **反向漏键检查** `scripts/check-i18n-keys.mjs`（已接入 CI）：扫 `t('literal')` 是否都在词典里
+- ✅ **修 12 个漏键**：`teams.slug*` 6 个（含过时的 `slugHint` 文案）、`views.tableauUrl/copyUrl/copied/copyFailed`、
+  `settings.language`（改用 `profile.language`）
+- ✅ 验证：tsc / lint / build / check:i18n(516) / check-i18n-keys(381) ✅ + store 单测 ✅ + 无头 Chrome 端到端 ✅
+- ✅ 版本同步 0.10.1（package.json / `src/config/app.ts` / README / PROGRESS / CHANGELOG）
 
 ## ✅ v0.10.0（2026-09-23）— 列表筛选栏公共件 + Users 页筛选
 

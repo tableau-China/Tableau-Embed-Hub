@@ -20,7 +20,7 @@ export function LanguageToggle() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon" aria-label={t('settings.language')}>
+        <Button variant="outline" size="icon" aria-label={t('profile.language')}>
           <Languages className="size-5" />
         </Button>
       </DropdownMenuTrigger>

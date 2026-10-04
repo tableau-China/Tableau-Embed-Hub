@@ -1,7 +1,7 @@
 {
   "name": "shadcn-admin-cn",
   "private": true,
-  "version": "0.10.0",
+  "version": "0.10.1",
   "packageManager": "pnpm@11.28.2",
   "type": "module",
   "description": "基于 shadcn/ui + Tailwind CSS v4 + Radix UI 构建的管理后台模板（当前仅英文，后续扩展多语言）",
@@ -12,6 +12,7 @@
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "check:i18n": "node scripts/check-i18n.mjs",
+    "check:i18n:keys": "node scripts/check-i18n-keys.mjs",
     "check:routes": "node scripts/check-route-catalog.mjs",
     "check:team-routes": "node scripts/check-team-routes.mjs",
     "check:permissions": "node scripts/check-permissions.mjs",

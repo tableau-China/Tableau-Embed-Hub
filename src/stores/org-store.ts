@@ -286,6 +286,22 @@ export function sortTeamsById<T extends OrgTeam>(teams: readonly T[]): T[] {
   return [...teams].sort((a, b) => a.id - b.id)
 }
 
+/**
+ * **默认团队** = 创建最早的那个团队（id 最小，见 `sortTeamsById` 的创建次序约定）。
+ *
+ * 它承担着「系统兜底团队」的角色：所有账号都必须有归属（见 docs/org-rules.md 铁律 1），
+ * 而它是最后一个可以被依赖的落点 —— 因此**不可删除**。
+ * 返回 `null` 表示当前没有任何团队。
+ */
+export function defaultTeamId(teams: readonly OrgTeam[]): number | null {
+  return sortTeamsById(teams)[0]?.id ?? null
+}
+
+/** 该团队是否是默认团队（默认团队不可删除） */
+export function isDefaultTeam(teams: readonly OrgTeam[], teamId: number): boolean {
+  return defaultTeamId(teams) === teamId
+}
+
 /* ============================== 种子数据 ============================== */
 
 const SEED_TEAMS: OrgTeam[] = [
@@ -744,7 +760,10 @@ export const useOrgStore = create<OrgState>()(
 
       deleteTeam: (id) => {
         const { members, teams, users, currentUserId, activeTeamId } = get()
-        // 归属不变量：删掉这个团队会让部分成员失去全部团队 —— 拒绝删除，由 UI 提示先安置这些人
+        // 护栏 1：默认团队（创建最早的那个）不可删除 —— 它是全系统的兜底落点，
+        // 删掉它之后「每个用户必须属于某个团队」就失去最后的锚（见 docs/org-rules.md）
+        if (isDefaultTeam(teams, id)) return false
+        // 护栏 2：归属不变量：删掉这个团队会让部分成员失去全部团队 —— 拒绝删除，由 UI 提示先安置这些人
         if (orphanedUsersOfTeam(members, id).length > 0) return false
         const remaining = members.filter((m) => m.teamId !== id)
         const nextTeams = teams.filter((t) => t.id !== id)

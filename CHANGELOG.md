@@ -6,6 +6,7 @@
 
 | 版本 | package.json | 侧边栏显示 | PROGRESS.md | CHANGELOG 条目 | 日期 |
 | --- | --- | --- | --- | --- | --- |
+| 0.10.1 | ✅ `0.10.1` | ✅ `v0.10.1`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0101---2026-10-04) | 2026-10-04 |
 | 0.10.0 | ✅ `0.10.0` | ✅ `v0.10.0`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0100---2026-09-23) | 2026-09-23 |
 | 0.9.0 | ✅ `0.9.0` | ✅ `v0.9.0`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#090---2026-09-21) | 2026-09-21 |
 | 0.8.1 | ✅ `0.8.1` | ✅ `v0.8.1`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#081---2026-09-21) | 2026-09-21 |
@@ -21,6 +22,44 @@
 | 0.1.0 | ✅ `0.1.0` | ✅ `v0.1.0` | ✅ 已同步 | ✅ [本节](#010---2026-08-16) | 2026-08-16 |
 
 > 约定：新版本发布时，先升 `package.json` 的 `version`，再更新本表与下方条目。
+
+## [0.10.1] - 2026-10-04
+
+### 默认团队不可删除 + 团队冻结补进编辑对话框 + 修 12 个漏键
+
+#### Added（新增）
+
+- **默认团队（创建最早的团队）不可删除**：`defaultTeamId()` / `isDefaultTeam()` 两个判定函数，
+  `deleteTeam()` 命中即返回 `false`；`/teams` 行内该行删除按钮 **disabled** 并在 title 说明原因，
+  行内新增系统级 `Default` 徽章（与「我的默认团队」`My default` 徽章区分——前者是系统兜底团队，
+  后者是当前用户切换身份时的初始团队）。规则写进 [`docs/org-rules.md`](./docs/org-rules.md) 铁律 4。
+- **团队编辑对话框新增 `Suspended` 开关**：此前冻结只能从列表行的 ⏸ 按钮操作，现在编辑弹窗里也能改
+  （走 `setTeamSuspended()`，会一并重算 `activeTeamId`，避免有人停在刚冻结、自己又进不去的团队）。
+- **`scripts/check-i18n-keys.mjs`（反向漏键检查）**：`check:i18n` 只比对语言之间是否对齐，
+  发现不了「代码在用、词典缺失」的 key；新脚本扫描全部 `t('literal')` 调用（含复数 `_one/_other`），
+  缺失即退出码 1。
+
+#### Fixed（修复）
+
+- **12 个「代码在用、词典缺失」的 key**（界面上会把 key 名原样渲染出来）：
+  - `teams.slugLabel` / `slugPlaceholder` / `slugLocked` / `slugRequired` / `slugInvalid` / `slugTaken`
+    —— v0.4.2 把 slug 改成手工输入后词典没跟上（`teams.slugHint` 的旧文案 `URL slug (auto): {{slug}}`
+    既过时又没传插值，会原样显示 `{{slug}}`，本次改写为「仅英文/数字/下划线，创建后固定」）；
+  - `views.tableauUrl` / `copyUrl` / `copied` / `copyFailed` —— 团队作用域 Views 页的链接弹层；
+  - `settings.language` —— 词典里没有 `settings` 命名空间，语言按钮改用已有的 `profile.language`。
+
+#### Changed（变更）
+
+- `teams.defaultLabel` 语义明确为**系统级默认团队**徽章；当前用户的默认团队徽章改用 `teams.myDefaultLabel`（`My default`）
+- 版本 0.10.0 → 0.10.1（package.json / `src/config/app.ts` / README / PROGRESS.md / CHANGELOG.md）
+
+#### Verified（验证）
+
+- `tsc -b` / `pnpm lint`（0 error）/ `vite build` / `pnpm check:i18n`（516 keys）/ 新脚本 `check-i18n-keys`（381 个字面量 key 全在）✅
+- **store 单测**：默认团队删除被拒、非默认且无孤儿成员的团队可删、冻结/解冻开关生效 ✅
+- **无头 Chrome 端到端**：默认团队行删除按钮 `disabled: true`、其余两行可删；编辑对话框内 `Suspended` 开关 →
+  行内出现 `Suspended` 徽章；超级管理员仍可进入冻结团队；切到 Bob 后该团队从侧栏消失、直进 URL 命中
+  `Team suspended` 兜底页；再切回 Admin 关闭开关 → 恢复 ✅
 
 ## [0.10.0] - 2026-09-23
 

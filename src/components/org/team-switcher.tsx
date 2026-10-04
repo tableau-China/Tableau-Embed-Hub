@@ -191,7 +191,7 @@ export function TeamSwitcher() {
                     title={t('teams.defaultTeam')}
                   >
                     <Star className="size-2.5 fill-amber-400 text-amber-400" />
-                    {t('teams.defaultLabel')}
+                    {t('teams.myDefaultLabel')}
                   </span>
                 )}
                 {team.id === activeTeam.id && (

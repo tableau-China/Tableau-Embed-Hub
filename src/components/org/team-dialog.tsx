@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { TEAM_LOGO_OPTIONS } from '@/components/org/team-logo'
 import { sanitizeTeamSlug, teamSlugIssue, useOrgStore, type OrgTeam } from '@/stores/org-store'
@@ -38,12 +39,14 @@ export function TeamDialog({ team, open, onOpenChange }: TeamDialogProps) {
   const teams = useOrgStore((s) => s.teams)
   const createTeam = useOrgStore((s) => s.createTeam)
   const updateTeam = useOrgStore((s) => s.updateTeam)
+  const setTeamSuspended = useOrgStore((s) => s.setTeamSuspended)
 
   const editing = team !== undefined
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
   const [description, setDescription] = useState('')
   const [logo, setLogo] = useState('building2')
+  const [suspended, setSuspended] = useState(false)
 
   // 打开（或切换编辑目标）时把表单恢复为该团队的值。
   // 用渲染期派生（React 官方 "adjusting state when props change" 模式）替代 effect 内 setState：
@@ -56,6 +59,7 @@ export function TeamDialog({ team, open, onOpenChange }: TeamDialogProps) {
       setSlug(team?.slug ?? '')
       setDescription(team?.description ?? '')
       setLogo(team?.logo ?? 'building2')
+      setSuspended(team?.suspended ?? false)
     }
   }
 
@@ -81,6 +85,9 @@ export function TeamDialog({ team, open, onOpenChange }: TeamDialogProps) {
     }
     if (editing && team) {
       updateTeam(team.id, { name: trimmed, description, logo })
+      // 冻结状态变化走 setTeamSuspended：它会顺带重算 activeTeamId，
+      // 避免有人「停在一个刚被冻结、自己又进不去的团队」
+      if (suspended !== team.suspended) setTeamSuspended(team.id, suspended)
       toast.success(t('teams.updated'))
     } else {
       if (slugIssue !== null) {
@@ -179,6 +186,17 @@ export function TeamDialog({ team, open, onOpenChange }: TeamDialogProps) {
               ))}
             </div>
           </div>
+          {editing && (
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div className="min-w-0">
+                <div className="text-sm font-medium">{t('teams.suspendField')}</div>
+                <div className="text-xs text-muted-foreground">
+                  {t('teams.suspendFieldHint')}
+                </div>
+              </div>
+              <Switch checked={suspended} onCheckedChange={setSuspended} />
+            </div>
+          )}
         </div>
         <DialogFooter>
           <ActionButtons
