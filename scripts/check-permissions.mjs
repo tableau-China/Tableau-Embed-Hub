@@ -343,6 +343,20 @@ async function clickMenuItem(page, triggerSelector, itemText) {
 /** 以某身份继续（先切换身份，随后由用例再次导航到目标 URL） */
 async function switchUser(page, name) {
   await clickMenuItem(page, '[data-slot="sidebar-footer"] button', name)
+
+  // 必须核实身份真的切换成功：被冻结（status: 'disabled'）的账号会被 store 拒绝登录，
+  // 菜单项是 disabled 的 —— 点了什么也不会发生。不核实就会「拿着上一个身份继续断言」，
+  // 用例可能因为错误的原因通过（v0.9.0 冻结功能上线后，原先切到 Carol White 的三条用例就是这样假通过的）。
+  const identity = await page.evaluate(`(() => {
+    const btn = document.querySelector('[data-slot="sidebar-footer"] button')
+    return btn ? btn.innerText.replace(/\\s+/g, ' ').trim() : ''
+  })()`)
+  if (!identity.includes(name)) {
+    throw new Error(
+      `切换到「${name}」失败：当前身份是「${identity}」` +
+        `（被冻结的账号无法登录；种子数据里请使用 status: 'active' 的用户）`,
+    )
+  }
 }
 
 /** 只打开左下角用户菜单（不点任何菜单项），用于断言菜单里的入口 */
@@ -504,7 +518,8 @@ const CASES = [
     before: async (page) => {
       await navigate(page, '/permissions', { expectPath: '/permissions' })
       await clickSelector(page, '[data-perm-action="clear-viewer"]')
-      await switchUser(page, 'Carol White')
+      // viewer 列清空后以「acme_hq 里活跃的 viewer」验证（Bob 在 HQ 的角色是 viewer）
+      await switchUser(page, 'Bob Martin')
     },
     contains: ['Dashboard'],
     linkAbsent: '/t/acme_hq/workbooks',
@@ -519,7 +534,7 @@ const CASES = [
       // 重置是危险操作：点按钮只弹确认框，必须再确认一次（避免被当成「保存」）
       await clickSelector(page, '[data-perm-action="reset"]')
       await clickDialogButton(page, 'Reset everything')
-      await switchUser(page, 'Carol White')
+      await switchUser(page, 'Bob Martin')
     },
     linkPresent: '/t/acme_hq/workbooks',
   },
@@ -575,7 +590,7 @@ const CASES = [
       if (state.checked !== 'false') failures.push('viewer 的 workbooks 此刻应未被授权')
 
       await clickSelector(page, '[data-perm-action="apply-defaults"]')
-      await switchUser(page, 'Carol White')
+      await switchUser(page, 'Bob Martin')
       if (failures.length > 0) throw new Error(failures.join('；'))
     },
     linkPresent: '/t/acme_hq/workbooks',

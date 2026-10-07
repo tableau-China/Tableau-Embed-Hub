@@ -8,16 +8,34 @@
 - **关键决策**：跳过 shadcn-admin 模板（无 Sat Naing 署名义务）、TypeScript 7.1.0-dev（next 开发版，验证未来升级，正式版发布后直接升级；**现锁 7.1.0-dev.20260930.4**）、Vite 8 最新稳定、i18n 当前仅 en-US（zh-CN / zh-TW / ja-JP 后期扩展）。
 - **工具链锁定**：pnpm **11.28.2**（`package.json` 的 `packageManager` 字段，CI 同版本）、Node **24**（本地与 CI 一致，`@types/node` 对齐 **24 线**——类型线高于运行时会写出跑不起来的代码）。
 - **注意**：用户原指定路径 `/Users/xilejun/ds_Harness/shadcn_admin_cn` 不存在，实际目录在 `/Users/xilejun/WorkBuddy/ds_Harness/shadcn_admin_cn`。
-- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.10.1**）。
+- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.11.0**）。
 
 ---
+
+## ✅ v0.11.0（2026-10-07）— 依赖版本巡检 + 每周定时检查
+
+- ✅ **`scripts/check-versions.mjs`（`pnpm check:versions`）**：把 `package.json` 里全部依赖逐个跟 registry 的 `latest` 比对，
+  并判断 latest 是否**仍在声明范围内** —— 以此区分「`pnpm update` 即可」（范围内）与「要改 `package.json`、可能有破坏性变更」（跨范围）。
+  `npm:` 别名依赖按**别名真实目标包**查 registry、按**别名声**读 `node_modules`（两者不同名，混用会读错版本）。
+  零第三方依赖（自带最小 semver 实现）；registry 依次取 `--registry` → `npm_config_registry` → 项目/用户 `.npmrc` → npmjs.org；
+  40 个依赖约 1 秒跑完；`--md` / `--json` 供文档与周报，`--strict` 在有跨范围升级时退出码 1（0 正常 / 2 脚本自身出错）。
+- ✅ **已知暂缓登记**：`package.json` → `checkVersions.hold`（包名 → 理由）。`@types/node` 的 `24 → 26` major 是**故意的**
+  （类型线不高于 Node 24 运行时），登记后不再计入「待升级」，改为单独列出 —— 否则每周都会重复误报同一个假警报。
+- ✅ **首次巡检（2026-10-04）**：40 个依赖，待升级 **8**，全部在声明范围内（eslint / globals / lucide-react、
+  @tanstack/react-query 三件套、shadcn、vite，均为 minor 或 patch），**跨范围 0、major 0**。
+- ⏭️ **组件本体漂移另算**：`node_modules/.bin/shadcn add <组件> --diff` 可看 `src/components/ui/*` 与上游 registry 的差异
+  （**实测只读**，不会改文件）。当前它对 `button.tsx` 建议把 `import { cn } from "@/lib/utils"` 改成 `from "cn"` ——
+  这是**本项目故意的本地约定**，所以该命令只能作参考，不作升级依据。
+- ✅ **定时检查**：DSH 会话内每周六 21:00（Asia/Shanghai）触发一次巡检提醒，产出简报并**等确认后再动手**（不自动升级）。
+- ✅ 验证：`pnpm check:versions` 实跑（40 依赖 / registry 可达 / 报告可读）✅；本轮随版本一起跑 tsc / lint / build / check:i18n / check:i18n:keys / check:routes / test 全绿
+- ✅ 版本同步 0.11.0（package.json / `src/config/app.ts` / README / PROGRESS / CHANGELOG）
 
 ## ✅ v0.10.1（2026-10-04）— 默认团队不可删除 + 冻结开关进编辑弹窗 + 修漏键
 
 - ✅ **默认团队（第一个团队）不可删除**：`defaultTeamId()`/`isDefaultTeam()` + `deleteTeam()` 护栏；
   `/teams` 行内删除按钮 disabled + 原因提示；系统级 `Default` 徽章与「我的默认团队」`My default` 徽章区分开
 - ✅ **团队编辑对话框新增 `Suspended` 开关**（走 `setTeamSuspended`，顺带重算 activeTeamId）
-- ✅ **反向漏键检查** `scripts/check-i18n-keys.mjs`（已接入 CI）：扫 `t('literal')` 是否都在词典里
+- ✅ **反向漏键检查** `scripts/check-i18n-keys.mjs`（已接入 CI）：扫 `t('literal')` 是否都在词典里（`check:i18n` 抓不到这类）
 - ✅ **修 12 个漏键**：`teams.slug*` 6 个（含过时的 `slugHint` 文案）、`views.tableauUrl/copyUrl/copied/copyFailed`、
   `settings.language`（改用 `profile.language`）
 - ✅ 验证：tsc / lint / build / check:i18n(516) / check-i18n-keys(381) ✅ + store 单测 ✅ + 无头 Chrome 端到端 ✅
@@ -109,15 +127,16 @@
   （`CHROME_PATH` → macOS / Debian-Ubuntu / chromium 常见路径），找不到时给出候选清单。
 - ✅ **CI**：主 job 新增 `check:routes` 与 `pnpm test`（静态、阻塞）；
   新增 `ui-checks` job（advisory / `continue-on-error`）跑**全部四套**浏览器用例。
-- ⚠️ **`ui-checks` 为什么必须保持 advisory**：① 首次在 Linux 上跑，`check:filters` 的几何断言依赖字体渲染；
-  ② `check:permissions` 有一条已知失败用例（切到刻意冻结的种子用户 Carol White，见下方阻塞点）。
-  两条都清了之后再去掉 `continue-on-error` 并加入必需检查 —— 现在它只提供**可见性**，不是"权限没问题"的证据。
+- ⚠️ **`ui-checks` 为什么仍是 advisory**：① 首次在 Linux 上跑，`check:filters` 的几何断言依赖字体渲染；
+  ② `check:permissions` 的假通过用例**已于 v0.11.0 修好**（改用 acme_hq 里活跃的 viewer + `switchUser` 断言身份，
+  本地 15/15 全绿）—— 只剩字体渲染一条待观察，跑绿几次后即可去掉 `continue-on-error`。
 - ✅ **单元测试**：vitest + `pnpm test`（45 用例，0.9s）：环境变量口径、权限通配与作用域语义、
   目录不变量（含**每条 labelKey 是否有文案**）、SMTP 规则与归一化。
 - ✅ **社区文件**：CONTRIBUTING / SECURITY / ISSUE_TEMPLATE ×2 / PR 模板。
 - ✅ **README 双语**：新增 `README.en.md`，中英互链；同步页面表、脚本表、路线图。
-- ⚠️ **仍未闭环的一处**：`check:permissions` 那条「切到冻结用户 Carol White」的用例（4 行可修：
-  三处换活跃 viewer + `switchUser` 断言身份真的变了）。按当前决策不动它，因此 `ui-checks` 只能 advisory。
+- ✅ **已闭环（v0.11.0）**：`check:permissions` 那条「切到冻结用户 Carol White」的用例已修 ——
+  三处改用 acme_hq 里**活跃**的 viewer（Bob Martin），并让 `switchUser` 在切换后**核实身份真的变了**
+  （被冻结账号菜单项是 disabled，不核实就会拿上一个身份继续断言）。本地 15/15 全绿。
 
 **刻意的边界**（接后端/后续页面时按需改）：
 
@@ -126,6 +145,19 @@
 - **筛选是视图态**：默认不进 URL（刷新回默认）。要「可分享 / 刷新不丢」时把同一组受控组件接到
   `useSearch` + `navigate({ search })`，公共件本身不用改（已写进 [docs/ui-conventions.md](./docs/ui-conventions.md) §5）；
 - 目前只有 `/users` 接入（本版就是为后续列表页立的公共件），未顺带给 `/teams`、Tableau 列表页加筛选。
+
+  并判断 latest 是否**仍在声明范围内** —— 以此区分「`pnpm update` 即可」（范围内）与「要改 `package.json`、可能有破坏性变更」（跨范围）。
+  `npm:` 别名依赖按**别名真实目标包**查 registry、按**别名声**读 `node_modules`（两者不同名，混用会读错版本）。
+  零第三方依赖（自带最小 semver 实现）；registry 依次取 `--registry` → `npm_config_registry` → 项目/用户 `.npmrc` → npmjs.org；
+  40 个依赖约 1 秒跑完；`--md` / `--json` 供文档与周报，`--strict` 在有跨范围升级时退出码 1。
+- ✅ **已知暂缓登记**：`package.json` → `checkVersions.hold`（包名 → 理由）。`@types/node` 的 `24 → 26` major 是**故意的**
+  （类型线不高于 Node 24 运行时），登记后不再计入「待升级」，改为单独列出 —— 否则每周都会重复误报同一个假警报。
+- ✅ **首次巡检（2026-10-04）**：40 个依赖，待升级 **8**，全部在声明范围内（eslint / globals / lucide-react、
+  @tanstack/react-query 三件套、shadcn、vite，均为 minor 或 patch），**跨范围 0、major 0**。
+- ⏭️ **组件本体漂移另算**：`node_modules/.bin/shadcn add <组件> --diff` 可看 `src/components/ui/*` 与上游 registry 的差异
+  （**实测只读**，不会改文件）。当前它对 `button.tsx` 建议把 `import { cn } from "@/lib/utils"` 改成 `from "cn"` ——
+  这是**本项目故意的本地约定**，所以该命令只能作参考，不作升级依据。
+- ✅ **定时检查**：DSH 会话内每周六 21:00（Asia/Shanghai）触发一次巡检提醒，产出简报并**等确认后再动手**（不自动升级）。
 
 ---
 
@@ -304,15 +336,16 @@
 - **corepack 装 packageManager 指定的版本要绕官方源**：`packageManager: pnpm@11.28.2` 加好后，
   corepack 默认去 `registry.npmjs.org` 下载，本机被 TLS 代理拦截（`ERR_TLS_CERT_ALTNAME_INVALID`，证书是 IP 自签）。
   绕法：`COREPACK_NPM_REGISTRY=https://registry.npmmirror.com pnpm --version`（装一次即入 `~/.cache/node/corepack`，之后正常使用）。
-- **`pnpm check:permissions` 当前 12/13（1 条红，2026-10-01 记录）**：失败的用例是
+- **`pnpm check:permissions` 的「切到冻结用户」假通过（2026-10-01 记录 → v0.11.0 已修）**：失败的用例是
   「整列「Clear」→ viewer 只剩底座页面」，根因**不在应用**而在用例 —— 它 `switchUser('Carol White')`，
   而 Carol 的种子状态是 `status: 'disabled'`（**刻意保留，用于演示冻结用户**），
   `setCurrentUser` 按设计拒绝切换（`org-store.ts:524`），用例未察觉切换失败就继续断言，
   于是断言落在 Admin 身份上。**连带影响**：另两处同样切到 Carol 的用例
   （`check-permissions.mjs:491`「重置全部授权」、`:532`「补齐默认授权」）因此变成**假通过**。
-  要修的话：把这三处换成 acme_hq 里**活跃的** viewer（Bob Martin，`userId=3`），并让 `switchUser`
-  在切换后核实身份真的变了。另有两点加剧了它长期没被发现：**CI 不跑这套用例**，
-  且 4 个 CDP 脚本硬编码 `/Applications/Google Chrome.app/...`（ubuntu runner 起不来）。
+  **修法（已实施）**：把这三处换成 acme_hq 里**活跃的** viewer（Bob Martin，`userId=3`），并让 `switchUser`
+  在切换后核实身份真的变了（失败即抛错，不再静默用旧身份跑断言）。另有两点曾加剧它长期没被发现：**CI 不跑这套用例**，
+  且 4 个 CDP 脚本硬编码 `/Applications/Google Chrome.app/...`（ubuntu runner 起不来）—— 这两点已在 2026-10-01 修掉
+  （`resolveChrome()` + `ui-checks` job 已跑起来，才暴露出本条）。
 - **typescript-eslint 不支持 TS 7**（上游 [#10940](https://github.com/typescript-eslint/typescript-eslint/issues/10940)，8.71.0 的 peer 仍是 `>=4.8.4 <6.1.0`）：
   **`pnpm lint` 已可用**（靠「TS 6 API 并行」别名结构，见 package.json），代价是**必须保留两条 TS 线**；
   在上游支持前，不要试图合并成单一 `typescript` 依赖。

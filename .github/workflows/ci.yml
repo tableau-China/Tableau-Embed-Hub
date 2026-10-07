@@ -50,9 +50,9 @@ jobs:
   #  · 但 check:filters 里有**几何断言**（宽窄屏的偏移与宽度），依赖字体渲染，
   #    Linux 与 macOS 可能有细微差异 —— 尚未实测。因此先收集结果，跑绿几次后
   #    再去掉 continue-on-error 并加入必需检查。
-  #  · check:permissions 也在这里跑，但**有一条已知失败用例**：它切换到了刻意冻结的种子用户
-  #    （Carol White），store 按设计拒绝切换，断言落在管理员身份上（详见 PROGRESS「阻塞点」）。
-  #    所以这个 job 必须保持 advisory，直到 fixture 修好 —— 别把它当成"权限没问题"的证据。
+  #  · check:permissions 的假通过用例已修（v0.11.0：改用活跃 viewer + switchUser 断言身份，本地 15/15）。
+  #    本 job 仍保持 advisory，只剩「check:filters 几何断言依赖字体渲染（Linux 未实测）」一条待观察；
+  #    连续跑绿几次后再去掉 continue-on-error 并加入必需检查。
   ui-checks:
     runs-on: ubuntu-latest
     continue-on-error: true

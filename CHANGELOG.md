@@ -6,6 +6,7 @@
 
 | 版本 | package.json | 侧边栏显示 | PROGRESS.md | CHANGELOG 条目 | 日期 |
 | --- | --- | --- | --- | --- | --- |
+| 0.11.0 | ✅ `0.11.0` | ✅ `v0.11.0`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0110---2026-10-07) | 2026-10-07 |
 | 0.10.1 | ✅ `0.10.1` | ✅ `v0.10.1`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0101---2026-10-04) | 2026-10-04 |
 | 0.10.0 | ✅ `0.10.0` | ✅ `v0.10.0`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0100---2026-09-23) | 2026-09-23 |
 | 0.9.0 | ✅ `0.9.0` | ✅ `v0.9.0`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#090---2026-09-21) | 2026-09-21 |
@@ -22,6 +23,53 @@
 | 0.1.0 | ✅ `0.1.0` | ✅ `v0.1.0` | ✅ 已同步 | ✅ [本节](#010---2026-08-16) | 2026-08-16 |
 
 > 约定：新版本发布时，先升 `package.json` 的 `version`，再更新本表与下方条目。
+
+## [0.11.0] - 2026-10-07
+
+### 依赖版本巡检脚本 + 每周定时检查（`pnpm check:versions`）
+
+#### Added（新增）
+
+- **`scripts/check-versions.mjs`**：把 `package.json` 里全部依赖与 registry 的 `latest` 逐个比对，
+  并判断 latest 是否**仍在声明范围内**，以此区分两类升级：
+  - 范围内 → `pnpm update` 即可；
+  - 跨范围 → 要改 `package.json`、可能有破坏性变更，必须人工评估。
+
+  实现要点：零第三方依赖（自带最小 semver）；`npm:` 别名依赖按**别名真实目标包**查 registry、
+  按**别名声**读 `node_modules`（两者不同名，混用会读错版本）；registry 依次取
+  `--registry` → `npm_config_registry` → 项目/用户 `.npmrc` → npmjs.org；带并发、超时与重试；
+  `--md` / `--json` 供文档与周报，`--strict` 在存在跨范围升级时退出码 1（0 正常 / 2 脚本自身出错）。
+- **`package.json` → `checkVersions.hold`**：已知要**刻意暂缓**的包（包名 → 理由）。`@types/node` 的 `24 → 26` major
+  是故意的（类型线不高于最低支持的 Node 24 运行时），登记后不再计入「待升级」，改为单独列出 ——
+  否则每周都会重复误报同一个假警报。
+- **每周定时检查**：DSH 会话内每周六 21:00（Asia/Shanghai）触发一次巡检，产出简报并**等确认后再动手**（不自动升级）。
+
+#### Changed（变更）
+
+- 版本 0.10.1 → 0.11.0（package.json / `src/config/app.ts` / README / PROGRESS.md / CHANGELOG.md）
+- 修复上一条提交在本地被覆盖的两处：`package.json` 的 `check:i18n:keys` 脚本行、PROGRESS 里该条的措辞
+  （CI 一直在调用 `pnpm check:i18n:keys`，脚本行必须留在 package.json 里）
+
+#### Fixed（修复）
+
+- **`check:permissions` 的「假通过」用例**（2026-10-01 起记录在 PROGRESS「阻塞点」）：该用例 `switchUser('Carol White')`，
+  而 Carol 的种子状态是 `status: 'disabled'`（刻意保留用于演示用户冻结），`setCurrentUser` 按设计拒绝切换，
+  用例没察觉就以管理员身份继续断言 —— 三条用例因此长期「假通过」。修法：
+  ① 三处改用 acme_hq 里**活跃**的 viewer（Bob Martin）；② `switchUser` 切换后**核实身份真的变了**，失败即抛错，
+  不再静默沿用旧身份。本地 `pnpm check:permissions` **15/15 全绿**。
+  CI 注释与 PROGRESS 阻塞点同步更新：`ui-checks` 仍为 advisory，但只剩「几何断言依赖字体渲染」一条待观察。
+
+#### Verified（验证）
+
+- `pnpm check:versions` 实跑通过：40 个依赖、registry 可达、报告可读
+- `pnpm check:permissions` 15/15（修好的假通过用例首次全绿）
+- `tsc -b` / `pnpm lint` / `vite build` / `pnpm check:i18n` / `pnpm check:i18n:keys` / `pnpm check:routes` / `pnpm check:team-routes` / `pnpm check:filters` / `pnpm check:smtp` / `pnpm test` 全绿
+
+#### 备注（组件本体漂移）
+
+- `node_modules/.bin/shadcn add <组件> --diff` 可看 `src/components/ui/*` 与上游 registry 的差异（只读）；
+  当前它建议把 `button.tsx` 的 `import { cn } from "@/lib/utils"` 改成 `from "cn"` —— 这是本项目故意的本地约定，
+  该命令只作参考，**不作升级依据**。
 
 ## [0.10.1] - 2026-10-04
 
