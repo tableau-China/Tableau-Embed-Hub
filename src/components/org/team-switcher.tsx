@@ -7,7 +7,6 @@ import {
   PauseCircle,
   Plus,
   ShieldAlert,
-  Star,
 } from 'lucide-react'
 import { Link, useLocation, useNavigate } from '@tanstack/react-router'
 import { toast } from 'sonner'
@@ -83,13 +82,6 @@ export function TeamSwitcher() {
     }
     navigate({ href: `/t/${teamSlug}${stripTeamPrefix(pathname)}`, replace: true })
   }
-
-  // 当前用户的默认团队（用户切到其他 team 时会被选中的那个）
-  const defaultTeamId =
-    currentUserId === null
-      ? null
-      : (members.find((m) => m.userId === currentUserId && m.isDefault)?.teamId ??
-        null)
 
   // 当前用户尚未加入任何团队
   if (activeTeam === null) {
@@ -183,15 +175,6 @@ export function TeamSwitcher() {
                   >
                     <PauseCircle className="size-2.5" />
                     {t('teams.suspended')}
-                  </span>
-                )}
-                {team.id === defaultTeamId && (
-                  <span
-                    className="inline-flex shrink-0 items-center gap-1 rounded-md border border-amber-400/40 bg-amber-400/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400"
-                    title={t('teams.defaultTeam')}
-                  >
-                    <Star className="size-2.5 fill-amber-400 text-amber-400" />
-                    {t('teams.myDefaultLabel')}
                   </span>
                 )}
                 {team.id === activeTeam.id && (

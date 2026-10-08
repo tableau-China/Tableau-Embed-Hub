@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as AiRouteImport } from './routes/ai'
+import { Route as ComponentsRouteImport } from './routes/components'
 import { Route as ConfigRouteImport } from './routes/config'
 import { Route as FavoritesRouteImport } from './routes/favorites'
 import { Route as HelpRouteImport } from './routes/help'
@@ -44,6 +45,11 @@ const SplatRoute = SplatRouteImport.update({
 const AiRoute = AiRouteImport.update({
   id: '/ai',
   path: '/ai',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComponentsRoute = ComponentsRouteImport.update({
+  id: '/components',
+  path: '/components',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConfigRoute = ConfigRouteImport.update({
@@ -141,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/ai': typeof AiRoute
+  '/components': typeof ComponentsRoute
   '/config': typeof ConfigRouteWithChildren
   '/favorites': typeof FavoritesRoute
   '/help': typeof HelpRoute
@@ -164,6 +171,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/ai': typeof AiRoute
+  '/components': typeof ComponentsRoute
   '/favorites': typeof FavoritesRoute
   '/help': typeof HelpRoute
   '/permissions': typeof PermissionsRoute
@@ -186,6 +194,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/ai': typeof AiRoute
+  '/components': typeof ComponentsRoute
   '/config': typeof ConfigRouteWithChildren
   '/favorites': typeof FavoritesRoute
   '/help': typeof HelpRoute
@@ -211,6 +220,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$'
     | '/ai'
+    | '/components'
     | '/config'
     | '/favorites'
     | '/help'
@@ -234,6 +244,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$'
     | '/ai'
+    | '/components'
     | '/favorites'
     | '/help'
     | '/permissions'
@@ -255,6 +266,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$'
     | '/ai'
+    | '/components'
     | '/config'
     | '/favorites'
     | '/help'
@@ -279,6 +291,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SplatRoute: typeof SplatRoute
   AiRoute: typeof AiRoute
+  ComponentsRoute: typeof ComponentsRoute
   ConfigRoute: typeof ConfigRouteWithChildren
   FavoritesRoute: typeof FavoritesRoute
   HelpRoute: typeof HelpRoute
@@ -313,6 +326,13 @@ declare module '@tanstack/react-router' {
       path: '/ai'
       fullPath: '/ai'
       preLoaderRoute: typeof AiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/components': {
+      id: '/components'
+      path: '/components'
+      fullPath: '/components'
+      preLoaderRoute: typeof ComponentsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/config': {
@@ -481,6 +501,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SplatRoute: SplatRoute,
   AiRoute: AiRoute,
+  ComponentsRoute: ComponentsRoute,
   ConfigRoute: ConfigRouteWithChildren,
   FavoritesRoute: FavoritesRoute,
   HelpRoute: HelpRoute,

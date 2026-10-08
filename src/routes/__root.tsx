@@ -25,7 +25,7 @@ function RootComponent() {
             —— 表现为底部横向滚动条、且各页面宽度不一。加上它以后，过宽的内容被限制在**卡片内部**
             滚动（Table 自带 overflow-x-auto），页面宽度在所有页面上保持一致。
             页面级宽度约定见 components/page-container.tsx。 */}
-        <main className="flex min-w-0 flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+        <main className="flex min-w-0 flex-1 flex-col gap-4 p-2 md:gap-8 md:p-4">
           {/* 跨团队页面（/users、/teams、/permissions、/profile、/config/smtp、/help）的准入在此统一兜住；
               团队作用域页面（/t/{slug}/...）的准入在 routes/t.$teamSlug.tsx：
               那里必须先判「团队是否存在 / 是否成员」，否则会把「不是成员」显示成「无权限」 */}

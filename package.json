@@ -1,8 +1,8 @@
 {
   "name": "shadcn-admin-cn",
   "private": true,
-  "version": "0.11.0",
-  "packageManager": "pnpm@11.28.2",
+  "version": "0.11.1",
+  "packageManager": "pnpm@12.9.1",
   "type": "module",
   "description": "基于 shadcn/ui + Tailwind CSS v4 + Radix UI 构建的管理后台模板（当前仅英文，后续扩展多语言）",
   "scripts": {

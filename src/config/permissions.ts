@@ -221,6 +221,18 @@ export const ROUTE_CATALOG = [
     defaultRoles: ['member'],
   },
   {
+    // 组件总览页（/components）：公共件清单 + 实时预览 + App shell 规格 + 主题 token。
+    // 与帮助页同为「说明书」性质、不属于管理面，因此默认授权给 member（fail-closed 的口子留给 SMTP / 权限页）。
+    // ⚠️ 老浏览器（已有 localStorage 授权矩阵）看不到它 —— 新键不在既有矩阵里即为未授权，
+    //    在 /permissions 点一次「补齐默认授权」即可。
+    key: 'page.components',
+    to: '/components',
+    scope: 'global',
+    group: 'config',
+    labelKey: 'nav.components',
+    defaultRoles: ['member'],
+  },
+  {
     // 权限页自身：新页面按 fail-closed 原则默认**只有系统管理员**可见
     key: 'page.permissions',
     to: '/permissions',

@@ -20,8 +20,11 @@ jobs:
           GITHUB_EVENT_BEFORE: ${{ github.event.before }}
       - uses: pnpm/action-setup@v4
         with:
-          # 与 package.json 的 packageManager 字段保持一致（本地 corepack 用同一版本），改一处要改两处
-          version: 11.28.2
+          # 与 package.json 的 packageManager 字段保持一致（本地用同一版本），改一处要改两处
+          # 2026-10-05：11.28.2 → 12.9.1。⚠️ pnpm 12 会在 lock 头部追加一个 packageManagerDependencies
+          # 文档（+158 行，含 pnpm 自身各平台 @pnpm/exe.*）；不提交该 lock 则 --frozen-lockfile 直接失败。
+          # 迁移后已实测 12.6.0 / 12.9.1 的 --frozen-lockfile 通过（这是仓库唯一的 CI 安装门）
+          version: 12.9.1
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -60,7 +63,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
         with:
-          version: 11.28.2
+          version: 12.9.1
       - uses: actions/setup-node@v4
         with:
           node-version: 24

@@ -4,13 +4,37 @@
 
 ## 项目概况
 
-- **目标**：从零构建管理后台模板（React 19 + TypeScript 7 + Vite 8 + Tailwind CSS v4 + shadcn/ui(Radix) + TanStack Router），包含 shadcn-admin 的全部基础功能，**含 Tableau 页面**（favorites / recents / workbooks / views —— 浏览器内签发 Connected App JWT 嵌入真实视图，凭据见 README「凭据配置」），**不含 AI 功能**；也不含内部流程页（flows / amro / clean-layer / sql-icon-map，那些只存在于本地开发线），v0.4.0 起含**多团队 + 全局用户**（参照 pg-explorer，无部门管理），v0.5.0 起**团队身份进入 URL**（`/t/{slug}/...`，对齐 pg-explorer 的 `/t/{slug}` + `/admin/*` 划分），v0.6.0 起**页面级权限**（角色 × 路由，权限页勾选；按钮级权限仅预留命名空间），v0.7.0 起**个人资料归位**（`/settings` → `/profile`，入口在左下角用户菜单）+ **Config 分组与 SMTP 配置页** + **帮助页** + **前端通用件**，v0.9.0 起**团队冻结 + 用户冻结 + 用户必须归属团队**，v0.10.0 起**列表筛选栏公共件**（`/users` 先行）；i18n 当前仅 **en-US**，中文/日文后期扩展。
+- **目标**：从零构建管理后台模板（React 19 + TypeScript 7 + Vite 8 + Tailwind CSS v4 + shadcn/ui(Radix) + TanStack Router），包含 shadcn-admin 的全部基础功能，**含 Tableau 页面**（favorites / recents / workbooks / views —— 浏览器内签发 Connected App JWT 嵌入真实视图，凭据见 README「凭据配置」），**不含 AI 功能**；也不含内部流程页（flows / amro / clean-layer / sql-icon-map，那些只存在于本地开发线），v0.4.0 起含**多团队 + 全局用户**（参照 pg-explorer，无部门管理），v0.5.0 起**团队身份进入 URL**（`/t/{slug}/...`，对齐 pg-explorer 的 `/t/{slug}` + `/admin/*` 划分），v0.6.0 起**页面级权限**（角色 × 路由，权限页勾选；按钮级权限仅预留命名空间），v0.7.0 起**个人资料归位**（`/settings` → `/profile`，入口在左下角用户菜单）+ **Config 分组与 SMTP 配置页** + **帮助页** + **前端通用件**，v0.9.0 起**团队冻结 + 用户冻结 + 用户必须归属团队**，v0.10.0 起**列表筛选栏公共件**（`/users` 先行），v0.11.1 起**组件总览页**（`/components`：公共件清单 + 实时预览）；i18n 当前仅 **en-US**，中文/日文后期扩展。
 - **关键决策**：跳过 shadcn-admin 模板（无 Sat Naing 署名义务）、TypeScript 7.1.0-dev（next 开发版，验证未来升级，正式版发布后直接升级；**现锁 7.1.0-dev.20260930.4**）、Vite 8 最新稳定、i18n 当前仅 en-US（zh-CN / zh-TW / ja-JP 后期扩展）。
-- **工具链锁定**：pnpm **11.28.2**（`package.json` 的 `packageManager` 字段，CI 同版本）、Node **24**（本地与 CI 一致，`@types/node` 对齐 **24 线**——类型线高于运行时会写出跑不起来的代码）。
+- **工具链锁定**：pnpm **12.9.1**（`package.json` 的 `packageManager` 字段，CI 同版本）、Node **24**（本地与 CI 一致，`@types/node` 对齐 **24 线**——类型线高于运行时会写出跑不起来的代码）。⚠️ 2026-10-05 pnpm 由 11.28.2 升级到 12.9.1：pnpm 12 要求 lock 头部带 `packageManagerDependencies` 文档（+158 行，含 pnpm 自身各平台 `@pnpm/exe.*`），**不提交这份 lock，CI 的 `--frozen-lockfile` 会直接失败**；迁移后已实测 12.6.0 / 12.9.1 的 `--frozen-lockfile` 通过。
 - **注意**：用户原指定路径 `/Users/xilejun/ds_Harness/shadcn_admin_cn` 不存在，实际目录在 `/Users/xilejun/WorkBuddy/ds_Harness/shadcn_admin_cn`。
-- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.11.0**）。
+- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.11.1**）。
 
 ---
+
+## ✅ v0.11.1（2026-10-08）— 组件总览页（/components）+ 窄屏侧栏宽度修复 + 内容 padding 收紧
+
+- ✅ **组件总览页 `/components`**（`page.components`，跨团队、默认授权给 member；侧边栏 Config → Components）：
+  公共件清单 + 实时预览，10 章 / 36 条 —— App shell 规格与主题 token 两章讲"每个页面都要遵守的数值与颜色"，
+  其余八章（布局 / 操作 / 表单 / 数据 / 筛选 / 浮层 / 反馈 / 配套 hook）逐条给出 import 路径、一句话用途与
+  **可交互预览**（筛选栏含计数与重置、表单失焦才报错、弹窗/抽屉/toast 可点开），关键件附用法片段
+- ✅ **`src/config/component-catalog.ts`（唯一数据源）**：纯数据模块、node 脚本可直接 import；
+  加一个公共件 = 加一行 +（可选）一个预览组件，章节与顺序由目录驱动
+- ✅ **`src/config/component-catalog.test.ts`**：目录不变量进 `pnpm test`（CI 第一段）—— id 唯一、
+  每个 `descKey` 都在词典里、`importPath` 指向真实模块、`src/components/ui/*` 原语全部已登记（外壳件白名单写明理由）
+- ✅ **规格数值单一来源**：`SIDEBAR_WIDTH` / `SIDEBAR_WIDTH_ICON` / `MOBILE_BREAKPOINT` 改为导出，组件页直接 import
+- ✅ **修：窄屏抽屉比桌面侧栏还宽** —— 移动端 `w-(--sidebar-width)` 被 `SheetContent` 自带的
+  `data-[side=left]:w-3/4`（特异度 0,2,0 > 0,1,0）盖掉，实际宽度变成 75vw（≥640px 再被 `sm:max-w-sm` 截到 384px），
+  而桌面端只有 11rem。修法：宽度类加 `!` + 移动端与桌面共用同一常量（删掉 `SIDEBAR_WIDTH_MOBILE`）；
+  无头 Chrome 实测 767px 视口 **384px → 176px**
+- ✅ **修：`/teams` 描述列把页面顶宽** —— 补 `whitespace-normal` + `break-words`（1152px 视口实测溢出 35px）
+- ✅ **改：主体内容 padding 减半** `p-4 md:p-8` → `p-2 md:p-4`（顶栏同步 `px-2 md:px-4`，窄屏左边缘不再错开 8px）
+- ✅ 同时并入：pnpm 11.28.2 → **12.9.1**（CI 同版本，lock 头部新增 `packageManagerDependencies`）、
+  **默认团队不可冻结**（铁律 4 扩展）、移除 `My default` / `Current` 徽章、
+  只读提示文案统一为 "Only System Admin can …"、开发地址统一 `127.0.0.1:5174`
+- ✅ 验证：tsc / lint（0 error）/ build / vitest（53 项）/ check:i18n / check:i18n:keys / check:routes /
+  check:filters / check:permissions（真实 Chrome 15/15）全绿；`/components` 用无头 Chrome 实测渲染 10 章 / 36 条
+- ✅ 版本同步 0.11.1（package.json / `src/config/app.ts` / README / PROGRESS / CHANGELOG）
 
 ## ✅ v0.11.0（2026-10-07）— 依赖版本巡检 + 每周定时检查
 
@@ -356,7 +380,7 @@
 ```bash
 cd /Users/xilejun/WorkBuddy/ds_Harness/shadcn_admin_cn
 
-pnpm dev          # 开发服务器（http://localhost:5173）
+pnpm dev          # 开发服务器（http://127.0.0.1:5174）
 pnpm build        # 类型检查（tsc -b）+ 生产构建
 pnpm check:i18n   # 校验语言词典 key 对齐（当前 en-US）
 pnpm check:filters # 列表筛选栏（静态自检 + 7 项页面用例；需先 pnpm build）

@@ -94,6 +94,9 @@ const handleSave = () => {
 | `Badge` | 状态、角色、服务商等短标记；技术栈这类列表用徽章流比表格更省空间 |
 | `GuardCard`（route-guard） | 无权 / 未找到等兜底页的统一外壳 |
 
+> **上面这些通用件（连同 UI 原语、App shell 规格与主题 token）的清单、import 路径与实时预览都在 `/components` 页** ——
+> 数据源是 `src/config/component-catalog.ts`：新增通用件时在那里登记一行，页面与预览自动多一条。
+
 ## 5. 列表筛选栏（v0.10.0 起）
 
 列表页要「按关键词搜、按字段筛」时**不要自己拼搜索框和下拉** —— 用

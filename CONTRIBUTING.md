@@ -7,8 +7,8 @@ feature ship?".
 ## Getting started
 
 ```bash
-pnpm install          # pnpm 11.28.2 is pinned via packageManager
-pnpm dev              # http://localhost:5173
+pnpm install          # pnpm 12.9.1 is pinned via packageManager
+pnpm dev              # http://127.0.0.1:5174
 ```
 
 No environment variables are required: without a `.env` the app runs against a built-in **demo**

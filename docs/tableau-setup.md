@@ -36,7 +36,7 @@ pnpm dev                  # 打开 /help 核对 Environment check 卡片
 1. 登录 Tableau Cloud → 右上头像 → **设置（Settings）** → **已连接应用（Connected Apps）** → **新建连接的应用**。
 2. 记下 **Client ID** 与 **Secret ID**；**Secret Value 只显示一次**，当场复制。
 3. **访问级别**：选"仅限特定项目"或"所有项目"。⚠️ 该限制**只作用于嵌入工作流**，对 REST API 无效（官方文档：REST 授权时可忽略访问级别与域允许列表）—— 所以模板里还有一层应用侧的项目过滤 `VITE_TABLEAU_PROJECT`，它**也只是前端过滤，不是安全边界**。
-4. **域名白名单（Trusted Sites）**：把应用部署的域名（以及本地开发的 `http://localhost:5173`）加进去，否则嵌入会被拒。
+4. **域名白名单（Trusted Sites）**：把应用部署的域名（以及本地开发的 `http://127.0.0.1:5174`）加进去，否则嵌入会被拒。
 5. 嵌入用户（`VITE_TABLEAU_EMBED_USER`）：JWT 里会带上它，嵌入内容以该用户的权限呈现。
 
 ## 为什么要有 `/tableau-proxy`

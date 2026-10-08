@@ -1,6 +1,7 @@
 import * as React from "react"
 
-const MOBILE_BREAKPOINT = 768
+/** 移动端断点：与 Tailwind 的 `md`（768px）必须一致 —— 组件总览页会展示该值 */
+export const MOBILE_BREAKPOINT = 768
 const MOBILE_QUERY = `(max-width: ${MOBILE_BREAKPOINT - 1}px)`
 
 function subscribe(onStoreChange: () => void) {

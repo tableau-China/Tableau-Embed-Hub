@@ -6,6 +6,7 @@
 
 | 版本 | package.json | 侧边栏显示 | PROGRESS.md | CHANGELOG 条目 | 日期 |
 | --- | --- | --- | --- | --- | --- |
+| 0.11.1 | ✅ `0.11.1` | ✅ `v0.11.1`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0111---2026-10-08) | 2026-10-08 |
 | 0.11.0 | ✅ `0.11.0` | ✅ `v0.11.0`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0110---2026-10-07) | 2026-10-07 |
 | 0.10.1 | ✅ `0.10.1` | ✅ `v0.10.1`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0101---2026-10-04) | 2026-10-04 |
 | 0.10.0 | ✅ `0.10.0` | ✅ `v0.10.0`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0100---2026-09-23) | 2026-09-23 |
@@ -23,6 +24,58 @@
 | 0.1.0 | ✅ `0.1.0` | ✅ `v0.1.0` | ✅ 已同步 | ✅ [本节](#010---2026-08-16) | 2026-08-16 |
 
 > 约定：新版本发布时，先升 `package.json` 的 `version`，再更新本表与下方条目。
+
+## [0.11.1] - 2026-10-08
+
+### 组件总览页（`/components`）+ 窄屏侧栏宽度修复 + 内容 padding 收紧
+
+#### Added（新增）
+
+- **组件总览页 `/components`**（权限键 `page.components`，跨团队、默认授权给 member，入口在侧边栏 Config 分组 →
+  Components）：动手写之前先看一眼的**公共件清单 + 实时预览**。共 10 章 / 36 条 ——
+  App shell 规格与主题 token 两章讲"每个页面都要遵守的数值与颜色"；其余八章（布局 / 操作 / 表单 / 数据 / 筛选 /
+  浮层 / 反馈 / 配套 hook）逐条给出 import 路径、一句话用途与**可交互预览**（筛选栏带结果计数与重置、
+  表单失焦才报错、弹窗/抽屉/toast 可直接点开），关键件附用法片段。
+- **`src/config/component-catalog.ts`（组件目录，唯一数据源）**：纯数据模块，不依赖 React / zustand / window
+  （同 `src/config/permissions.ts` 的做法），因此 node 脚本可直接 import 做静态校验；加一个公共件 =
+  加一行 +（可选）一个预览组件，章节与条目顺序由目录驱动，版面不用改。
+- **`src/config/component-catalog.test.ts`**：目录不变量随 `pnpm test`（CI 第一段）一起跑 —— id 唯一、
+  每个 `descKey` 都在词典里（`descKey` 是动态拼接的，`check:i18n:keys` 看不到）、`importPath` 指向真实存在的模块、
+  `src/components/ui/*` 原语**全部已登记**（外壳件走白名单并写明理由）。防止"加了公共件忘了登记"让页面越用越不准。
+- **规格数值单一来源**：`SIDEBAR_WIDTH` / `SIDEBAR_WIDTH_ICON`（`src/components/ui/sidebar.tsx`）、
+  `MOBILE_BREAKPOINT`（`src/hooks/use-mobile.ts`）改为导出，组件页直接 import 展示 —— 文档与实现不再各写一份。
+
+#### Fixed（修复）
+
+- **窄屏抽屉比桌面侧栏还宽**：移动端分支的 `w-(--sidebar-width)` 被 `SheetContent` 自带的
+  `data-[side=left]:w-3/4`（特异度 0,2,0 > 0,1,0）盖掉，宽度实际变成 **75vw**（≥640px 时再被
+  `data-[side=left]:sm:max-w-sm` 截到 384px），而桌面端只有 11rem —— 于是窗口一缩小，侧栏反而更宽。
+  修法两处：宽度类加 `!` 提升优先级；删除 `SIDEBAR_WIDTH_MOBILE`，移动端与桌面**共用同一个宽度常量**。
+  实测（无头 Chrome + 构建产物 CSS）：767px 视口 **384px → 176px**。
+- **`/teams` 团队描述列把整页顶宽**：该列补 `whitespace-normal` + `break-words`
+  （`TableCell` 默认 `whitespace-nowrap`，1152px 视口实测溢出 35px、底部冒出横向滚动条）。
+
+#### Changed（变更）
+
+- **页面与顶栏 padding 减半**：`<main>` `p-4 md:p-8` → `p-2 md:p-4`；顶栏 `px-4` → `px-2 md:px-4`
+  （两处必须同步改，否则窄屏下标题与卡片左边缘会错开 8px）。
+- **默认团队不可冻结**（`docs/org-rules.md` 铁律 4 扩展）：`setTeamSuspended()` 加护栏，`/teams` 行内与
+  编辑弹窗的冻结开关一并禁用并说明原因；**只拦冻结方向**——老数据里已冻结的默认团队仍可解冻。
+- **移除 `My default` / `Current` 徽章**（`/teams` 表格与侧栏 TeamSwitcher）：与系统级 `Default` 徽章并列
+  容易被误读为同一个东西；侧栏 TeamSwitcher 下拉里的 `My default` 保留（那是"切身份后落到哪个团队"，含义不同）。
+- **工具链：pnpm 11.28.2 → 12.9.1**（`package.json` / CI / 各文档同版本）。⚠️ pnpm 12 会在 lock 头部写入
+  `packageManagerDependencies`（含 pnpm 自身各平台 `@pnpm/exe.*`，+158 行）：**不提交这份 lock，
+  CI 的 `--frozen-lockfile` 会直接失败**。
+- **开发地址统一** `http://127.0.0.1:5174`（README / README.en / CONTRIBUTING / docs/tableau-setup.md）。
+- **只读提示文案统一**为 "Only System Admin can …"，`check:filters` / `check:permissions` 的断言同步更新。
+- 版本 0.11.0 → 0.11.1（package.json / `src/config/app.ts` / README / PROGRESS.md / CHANGELOG.md）
+
+#### Verified（验证）
+
+- tsc / lint（0 error，16 warning 为既有 fast-refresh 提示）/ build / vitest（53 项）/
+  check:i18n（713 key）/ check:i18n:keys / check:routes / check:filters /
+  check:permissions（真实 Chrome，15/15）**全绿**
+- `/components` 用无头 Chrome 实测：10 个章节、36 个条目、侧边栏入口全部渲染，无横向滚动条
 
 ## [0.11.0] - 2026-10-07
 

@@ -436,7 +436,7 @@ const CASES = [
         failures.push(`矩阵行数应为 ${ROUTE_CATALOG.length}，实际 ${rows}`)
       }
       const note = await page.evaluate(
-        `document.body.innerText.includes('New pages default to system-administrator-only')`,
+        `document.body.innerText.includes('New pages default to System-Admin-only')`,
       )
       if (!note) failures.push('缺少「新页面 fail-closed」说明')
 

@@ -40,7 +40,7 @@ body:
     attributes:
       label: Environment
       description: OS, Node version, pnpm version (`pnpm --version`), browser.
-      placeholder: macOS 15 · Node 24.18 · pnpm 11.28.2 · Chrome 141
+      placeholder: macOS 15 · Node 24.18 · pnpm 12.9.1 · Chrome 141
     validations:
       required: true
   - type: checkboxes

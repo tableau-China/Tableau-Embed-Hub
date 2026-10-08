@@ -14,7 +14,7 @@ point for Tableau developers and for AI-enabled apps**, not a fork of another te
 
 ## Version
 
-Current version: **0.10.0** — see [CHANGELOG.md](./CHANGELOG.md) (Chinese) for changes and known
+Current version: **0.11.1** — see [CHANGELOG.md](./CHANGELOG.md) (Chinese) for changes and known
 issues. Checked across `package.json` / the sidebar / `PROGRESS.md`.
 
 ## Tech stack
@@ -29,7 +29,7 @@ issues. Checked across `package.json` / the sidebar / `PROGRESS.md`.
 | Routing | TanStack Router (file-based) | 1.x |
 | Data | TanStack Query | 5.x |
 | i18n | i18next + react-i18next | 26.x (en-US only for now) |
-| Package manager | pnpm | 11.28.2 (pinned via `packageManager`, same in CI) |
+| Package manager | pnpm | 12.9.1 (pinned via `packageManager`, same in CI) |
 | Runtime | Node.js | 24 (`@types/node` tracks the 24 line) |
 
 > **Why TypeScript is installed twice**: `@typescript/native` → `npm:typescript@7.1.0-dev…` provides

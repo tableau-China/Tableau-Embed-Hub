@@ -9,7 +9,6 @@ import {
   Pencil,
   Play,
   Plus,
-  Star,
   Trash2,
   Users,
 } from 'lucide-react'
@@ -65,7 +64,6 @@ function TeamsPage() {
   const { t } = useTranslation()
   const teams = useOrgStore((s) => s.teams)
   const members = useOrgStore((s) => s.members)
-  const activeTeamId = useOrgStore((s) => s.activeTeamId)
   const deleteTeam = useOrgStore((s) => s.deleteTeam)
   const setTeamSuspended = useOrgStore((s) => s.setTeamSuspended)
   const currentUser = useOrgStore((s) =>
@@ -86,11 +84,8 @@ function TeamsPage() {
     }
   }
 
-  // 当前用户的默认团队（成员关系 isDefault）；表格按创建次序（id 升序）展示
+  // 表格按创建次序（id 升序）展示
   const orderedTeams = sortTeamsById(teams)
-  const defaultTeamId = members.find(
-    (m) => m.userId === currentUser?.id && m.isDefault,
-  )?.teamId
 
   const handleDelete = () => {
     if (!deletingTeam) return
@@ -111,7 +106,11 @@ function TeamsPage() {
   /** 冻结 / 解冻团队：冻结后除系统管理员外都进不来（成员自动回落到自己的其它团队） */
   const handleToggleSuspend = (team: OrgTeam) => {
     const next = !team.suspended
-    setTeamSuspended(team.id, next)
+    // store 拒绝时（默认团队不可冻结）给出明确原因，不静默失败
+    if (!setTeamSuspended(team.id, next)) {
+      toast.error(t('teams.suspendDefaultBlocked'))
+      return
+    }
     toast.success(
       next
         ? t('teams.suspendedToast', { name: team.name })
@@ -176,7 +175,8 @@ function TeamsPage() {
               {orderedTeams.map((team) => {
                 const stats = statsOf(team.id)
                 const isSystemDefaultTeam = isDefaultTeam(teams, team.id)
-                const isDefault = team.id === defaultTeamId
+                // 默认团队不可冻结；老数据里已被冻结的默认团队仍允许解冻
+                const suspendLocked = isSystemDefaultTeam && !team.suspended
                 return (
                   <TableRow key={team.id}>
                     <TableCell>
@@ -206,26 +206,13 @@ function TeamsPage() {
                               {t('teams.defaultLabel')}
                             </Badge>
                           )}
-                          {isDefault && (
-                            <Badge
-                              variant="outline"
-                              className="gap-1 border-amber-400/50 bg-amber-400/10 text-amber-700 dark:text-amber-400"
-                              title={t('teams.defaultTeam')}
-                            >
-                              <Star className="size-3 fill-amber-400 text-amber-400" />
-                              {t('teams.myDefaultLabel')}
-                            </Badge>
-                          )}
-                          {team.id === activeTeamId && (
-                            <Badge variant="secondary">
-                              {t('teams.currentLabel')}
-                            </Badge>
-                          )}
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <span className="line-clamp-2 max-w-md text-sm text-muted-foreground">
+                    {/* 必须覆盖 TableCell 默认的 whitespace-nowrap：描述不换行会把表格撑出容器，
+                        在 1152px 视口下实测溢出 35px（出现横向滚动条）。break-words 兜住超长单词 */}
+                    <TableCell className="min-w-56 whitespace-normal">
+                      <span className="block break-words text-sm text-muted-foreground">
                         {team.description || '—'}
                       </span>
                     </TableCell>
@@ -266,11 +253,20 @@ function TeamsPage() {
                                 : 'size-8 text-muted-foreground'
                             }
                             aria-label={
-                              team.suspended ? t('teams.resume') : t('teams.suspend')
+                              suspendLocked
+                                ? t('teams.suspendDefaultBlocked')
+                                : team.suspended
+                                  ? t('teams.resume')
+                                  : t('teams.suspend')
                             }
                             title={
-                              team.suspended ? t('teams.resume') : t('teams.suspend')
+                              suspendLocked
+                                ? t('teams.suspendDefaultBlocked')
+                                : team.suspended
+                                  ? t('teams.resume')
+                                  : t('teams.suspend')
                             }
+                            disabled={suspendLocked}
                             onClick={() => handleToggleSuspend(team)}
                           >
                             {team.suspended ? (

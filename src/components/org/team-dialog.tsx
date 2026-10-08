@@ -16,7 +16,13 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { TEAM_LOGO_OPTIONS } from '@/components/org/team-logo'
-import { sanitizeTeamSlug, teamSlugIssue, useOrgStore, type OrgTeam } from '@/stores/org-store'
+import {
+  isDefaultTeam,
+  sanitizeTeamSlug,
+  teamSlugIssue,
+  useOrgStore,
+  type OrgTeam,
+} from '@/stores/org-store'
 import { cn } from '@/lib/utils'
 
 interface TeamDialogProps {
@@ -65,6 +71,8 @@ export function TeamDialog({ team, open, onOpenChange }: TeamDialogProps) {
 
   /** 新建时的 slug 校验结果（编辑态 slug 不可改，无需校验） */
   const slugIssue = editing ? null : teamSlugIssue(slug, teams)
+  /** 默认团队不可冻结：开关置灰并说明原因（store 同样兜底；已冻结的老数据仍可解冻） */
+  const suspendLocked = editing && team ? isDefaultTeam(teams, team.id) && !suspended : false
   /** 仅在用户已输入（非空）且与既有团队重复时标红，避免一打开弹窗就报错 */
   const slugTaken = slug !== '' && slugIssue === 'taken'
 
@@ -187,14 +195,20 @@ export function TeamDialog({ team, open, onOpenChange }: TeamDialogProps) {
             </div>
           </div>
           {editing && (
-            <div className="flex items-center justify-between rounded-lg border p-3">
+            <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
               <div className="min-w-0">
                 <div className="text-sm font-medium">{t('teams.suspendField')}</div>
                 <div className="text-xs text-muted-foreground">
-                  {t('teams.suspendFieldHint')}
+                  {suspendLocked
+                    ? t('teams.suspendDefaultBlockedHint')
+                    : t('teams.suspendFieldHint')}
                 </div>
               </div>
-              <Switch checked={suspended} onCheckedChange={setSuspended} />
+              <Switch
+                checked={suspended}
+                onCheckedChange={setSuspended}
+                disabled={suspendLocked}
+              />
             </div>
           )}
         </div>

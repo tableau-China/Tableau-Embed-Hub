@@ -1,6 +1,7 @@
 import { Link, useLocation } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
+  Blocks,
   BookOpen,
   Building2,
   CircleHelp,
@@ -98,6 +99,7 @@ const ICONS: Record<RouteKey, LucideIcon> = {
   'page.teams': Building2,
   'page.profile': UserRound,
   'page.help': CircleHelp,
+  'page.components': Blocks,
   'page.config.smtp': Mail,
   'page.permissions': ShieldCheck,
 }

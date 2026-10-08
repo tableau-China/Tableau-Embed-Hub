@@ -14,6 +14,7 @@ const SEGMENT_TITLE_KEYS: Record<string, string> = {
   teams: 'nav.teams',
   profile: 'nav.profile',
   help: 'nav.help',
+  components: 'nav.components',
   config: 'nav.config',
   permissions: 'nav.permissions',
   favorites: 'nav.favorites',
@@ -29,6 +30,7 @@ const SEGMENT_SUBTITLE_KEYS: Record<string, string> = {
   teams: 'teams.subtitle',
   profile: 'profile.subtitle',
   help: 'help.subtitle',
+  components: 'components.subtitle',
   config: 'config.subtitle',
   permissions: 'permissions.subtitle',
   favorites: 'favorites.subtitle',
@@ -49,7 +51,7 @@ export function Header() {
   const subtitleKey = SEGMENT_SUBTITLE_KEYS[segment]
 
   return (
-    <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+    <header className="flex h-16 shrink-0 items-center gap-2 border-b px-2 md:px-4">
       <SidebarTrigger className="-ml-1" />
       <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
       <span className="truncate text-base font-medium">{t(titleKey)}</span>

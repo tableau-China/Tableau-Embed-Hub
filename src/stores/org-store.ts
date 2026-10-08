@@ -473,8 +473,11 @@ interface OrgState {
    */
   createTeam: (data: { name: string; slug: string; description: string; logo: string }) => OrgTeam
   updateTeam: (id: number, patch: Partial<Pick<OrgTeam, 'name' | 'description' | 'logo' | 'suspended'>>) => void
-  /** 冻结 / 解冻团队：冻结后仅系统管理员可进入（见 `canEnterTeam`） */
-  setTeamSuspended: (id: number, suspended: boolean) => void
+  /**
+   * 冻结 / 解冻团队：冻结后仅系统管理员可进入（见 `canEnterTeam`）。
+   * 返回 `false` = 被护栏拒绝（默认团队不可冻结，见 docs/org-rules.md 铁律 4）。
+   */
+  setTeamSuspended: (id: number, suspended: boolean) => boolean
   /**
    * 删除团队。返回 false = 被护栏拦下：该团队里有成员**只属于它**，
    * 删掉会让这些人失去全部团队（违反「每个用户必须属于某个团队」）。
@@ -738,6 +741,10 @@ export const useOrgStore = create<OrgState>()(
       },
 
       setTeamSuspended: (id, suspended) => {
+        // 护栏：默认团队（创建最早的那个）不可冻结 —— 它是所有账号的兜底落点，
+        // 冻结后非管理员就再没有任何「必然可进入」的团队了（见 docs/org-rules.md 铁律 4）。
+        // 只拦「冻结」方向：老数据里若已存在被冻结的默认团队，仍要允许解冻。
+        if (suspended && isDefaultTeam(get().teams, id)) return false
         set((s) => {
           const teams = s.teams.map((t) => (t.id === id ? { ...t, suspended } : t))
           return {
@@ -756,6 +763,7 @@ export const useOrgStore = create<OrgState>()(
                 : s.activeTeamId,
           }
         })
+        return true
       },
 
       deleteTeam: (id) => {

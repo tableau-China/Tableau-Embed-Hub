@@ -24,8 +24,8 @@ import { PanelLeftIcon } from "lucide-react"
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
+/** 侧栏宽度：桌面侧栏与移动端抽屉共用同一个值 —— 只留一个来源，窄屏就不可能比桌面还宽 */
 const SIDEBAR_WIDTH = "11rem"
-const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 
@@ -179,15 +179,21 @@ function Sidebar({
   if (isMobile) {
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
+        {/* 两个都别删：
+            · `w-(--sidebar-width)!` 的 `!` 必须有 —— SheetContent 自带的
+              `data-[side=left]:w-3/4`（特异度 0,2,0）会盖掉普通的 `w-(--sidebar-width)`（0,1,0），
+              实测窄屏下抽屉宽度因此变成 75vw（≥640px 时再被 sm:max-w-sm 截到 384px）；
+            · 内联的 `--sidebar-width` 也必须有 —— Sheet 走 Radix Portal 渲染到 body，
+              拿不到 SidebarProvider 上声明的那份 CSS 变量。 */}
         <SheetContent
           dir={dir}
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+          className="w-(--sidebar-width)! bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
           style={
             {
-              "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
+              "--sidebar-width": SIDEBAR_WIDTH,
             } as React.CSSProperties
           }
           side={side}
@@ -673,6 +679,9 @@ function SidebarMenuSubButton({
 }
 
 export {
+  // 宽度常量导出给「组件总览」页（/components）展示规格：数值只此一处，避免文档与实现各写一份
+  SIDEBAR_WIDTH,
+  SIDEBAR_WIDTH_ICON,
   Sidebar,
   SidebarContent,
   SidebarFooter,

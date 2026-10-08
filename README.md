@@ -9,7 +9,7 @@
 
 ## 版本
 
-当前版本：**0.11.0** ｜ 变更记录见 [CHANGELOG.md](./CHANGELOG.md)（含遗留问题与待办，跨文件核对：package.json / 侧边栏 / PROGRESS.md）
+当前版本：**0.11.1** ｜ 变更记录见 [CHANGELOG.md](./CHANGELOG.md)（含遗留问题与待办，跨文件核对：package.json / 侧边栏 / PROGRESS.md）
 
 ## 技术栈
 
@@ -23,7 +23,7 @@
 | 路由 | TanStack Router（文件路由） | 1.x |
 | 数据请求 | TanStack Query | 5.x |
 | 国际化 | i18next + react-i18next | 26.x（当前仅 en-US，后期扩展） |
-| 包管理 | pnpm | 11.28.2（`package.json` 的 `packageManager` 锁定，CI 同版本） |
+| 包管理 | pnpm | 12.9.1（`package.json` 的 `packageManager` 锁定，CI 同版本） |
 | 运行时 | Node.js | 24（本地与 CI 一致，`@types/node` 对齐 24 线） |
 
 > **TypeScript 为什么装了两份**：`@typescript/native` → `npm:typescript@7.1.0-dev…` 提供 `tsc`，

@@ -455,7 +455,7 @@ const CASES = [
         out.push('空态文案应为「No users match the current filters.」')
       }
       if (text.includes('No users yet')) out.push('「被筛掉」不应复用「还没有用户」的文案（含义不同）')
-      if (text.includes('Only system administrators can manage users.')) {
+      if (text.includes('Only System Admin can manage users.')) {
         out.push('系统管理员不应看到「无权限」文案')
       }
       // 空态里的重置按钮（与工具栏的重置文案相同，用 data 钩子区分，别点到另一个）
@@ -540,7 +540,7 @@ const CASES = [
       if (bar !== 1) out.push(`非管理员也应看到筛选栏，实际 ${bar} 个`)
       out.push(expectRows(await rowUsernames(page), ['carol.white', 'eve.torres'], '非管理员筛 Frozen 应同样剩两行') ?? '')
       const text = await bodyText(page)
-      if (!text.includes('Only system administrators can add, edit or delete users.')) {
+      if (!text.includes('Only System Admin can add, edit or delete users.')) {
         out.push('非管理员应看到只读提示')
       }
       const buttons = await page.evaluate(
