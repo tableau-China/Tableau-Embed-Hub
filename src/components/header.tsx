@@ -21,6 +21,9 @@ const SEGMENT_TITLE_KEYS: Record<string, string> = {
   recents: 'nav.recents',
   workbooks: 'nav.workbooks',
   views: 'nav.views',
+  // 团队作用域下的两级路径（/t/{slug}/tableau/users）用 "父/子" 作键，见下方 segment 计算
+  'tableau/users': 'nav.tableauUsers',
+  'tableau/schedules': 'nav.tableauSchedules',
 }
 
 /** 一级路由段 → 页面描述 i18n key（紧随标题右侧，小字展示） */
@@ -37,16 +40,20 @@ const SEGMENT_SUBTITLE_KEYS: Record<string, string> = {
   recents: 'recents.subtitle',
   workbooks: 'workbooks.subtitle',
   views: 'views.subtitle',
+  'tableau/users': 'tableauUsers.subtitle',
+  'tableau/schedules': 'tableauSchedules.subtitle',
 }
 
 export function Header() {
   const { t } = useTranslation()
   const { pathname } = useRouterState().location
-  // 团队作用域路径形如 /t/{slug}/workbooks：跳过 't' 与 slug 两段后再取一级路由段；
-  // 跨团队页面（/users、/teams、/permissions、/profile、/config/smtp 无 slug）取第一段。
+  // 团队作用域路径形如 /t/{slug}/workbooks：跳过 't' 与 slug 两段后取**余下全部段**
+  // （'tableau/users' 这类两级页面需要整段作键；一级页面与团队首页的结果不变）。
+  // 跨团队页面（/users、/teams、/permissions、/profile、/config/smtp 无 slug）仍只取第一段，
+  // 因此 /config/smtp 依旧映射到 'config'。
   const segments = pathname.split('/').filter(Boolean)
   const segment =
-    segments[0] === TEAM_PATH_SEGMENT ? segments[2] ?? '' : segments[0] ?? ''
+    segments[0] === TEAM_PATH_SEGMENT ? segments.slice(2).join('/') : segments[0] ?? ''
   const titleKey = SEGMENT_TITLE_KEYS[segment] ?? 'notFound.title'
   const subtitleKey = SEGMENT_SUBTITLE_KEYS[segment]
 

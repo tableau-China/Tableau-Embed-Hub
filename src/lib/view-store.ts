@@ -1,12 +1,13 @@
 import { useSyncExternalStore } from 'react'
 
+import { LEGACY_STORAGE_PREFIX, STORAGE_PREFIX } from '@/lib/storage-migration'
 import { parseTeamSlugFromPath } from '@/lib/team-context'
 import { useOrgStore } from '@/stores/org-store'
 
 /**
  * 收藏 / 最近浏览 store —— 按 Team 隔离（对齐 pg-explorer 的团队作用域语义）。
  *
- * - localStorage key 带当前团队后缀（如 shadcn-admin-cn:favorites:team-1）
+ * - localStorage key 带当前团队后缀（如 tableau-embed-hub:favorites:team-1）
  * - 团队身份以 **URL 中的 /t/{slug}** 为准（v0.5.0 起团队进入路由），
  *   管理页等无 slug 路径回退 org store 的 activeTeamId
  * - 切换团队时（URL slug 变化或 activeTeamId 变化）自动失效缓存并触发订阅方重渲染
@@ -34,12 +35,12 @@ export interface ViewIds {
   viewId?: string
 }
 
-const KEY_PREFIX = 'shadcn-admin-cn'
-/** v0.3.x 及以前的无后缀全局 key（用于一次性迁移） */
-const LEGACY_FAVORITES_KEY = `${KEY_PREFIX}:favorites`
-const LEGACY_RECENTS_KEY = `${KEY_PREFIX}:recents`
-const FAV_EVENT = 'shadcn-admin-cn:favorites-changed'
-const RECENT_EVENT = 'shadcn-admin-cn:recents-changed'
+const KEY_PREFIX = STORAGE_PREFIX
+/** v0.3.x 及以前的无后缀全局 key（用于一次性迁移）—— 落在**更名前**的命名空间下 */
+const LEGACY_FAVORITES_KEY = `${LEGACY_STORAGE_PREFIX}:favorites`
+const LEGACY_RECENTS_KEY = `${LEGACY_STORAGE_PREFIX}:recents`
+const FAV_EVENT = `${KEY_PREFIX}:favorites-changed`
+const RECENT_EVENT = `${KEY_PREFIX}:recents-changed`
 const MAX_RECENTS = 30
 
 /**

@@ -275,7 +275,7 @@ const CASES = [
     path: '/t/acme_analytics/favorites',
     before: async (page) => {
       await page.evaluate(
-        `localStorage.setItem('shadcn-admin-cn:favorites:team-1', JSON.stringify([{workbook:'W1',view:'V1',accessedAt:'2026-01-01T00:00:00.000Z'}]))`,
+        `localStorage.setItem('tableau-embed-hub:favorites:team-1', JSON.stringify([{workbook:'W1',view:'V1',accessedAt:'2026-01-01T00:00:00.000Z'}]))`,
       )
     },
     expectPath: '/t/acme_analytics/favorites',
@@ -286,7 +286,7 @@ const CASES = [
     path: '/t/acme_hq/favorites',
     before: async (page) => {
       await page.evaluate(
-        `localStorage.setItem('shadcn-admin-cn:favorites:team-1', JSON.stringify([{workbook:'W1',view:'V1',accessedAt:'2026-01-01T00:00:00.000Z'}]))`,
+        `localStorage.setItem('tableau-embed-hub:favorites:team-1', JSON.stringify([{workbook:'W1',view:'V1',accessedAt:'2026-01-01T00:00:00.000Z'}]))`,
       )
     },
     expectPath: '/t/acme_hq/favorites',

@@ -6,6 +6,8 @@
 
 | 版本 | package.json | 侧边栏显示 | PROGRESS.md | CHANGELOG 条目 | 日期 |
 | --- | --- | --- | --- | --- | --- |
+| 0.13.0 | ✅ `0.13.0` | ✅ `v0.13.0`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0130---2026-10-09) | 2026-10-09 |
+| 0.12.0 | ⚠️ 未单独发布（并入 0.13.0） | — | ✅ 已同步 | ✅ [本节](#0120---2026-10-09) | 2026-10-09 |
 | 0.11.1 | ✅ `0.11.1` | ✅ `v0.11.1`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0111---2026-10-08) | 2026-10-08 |
 | 0.11.0 | ✅ `0.11.0` | ✅ `v0.11.0`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0110---2026-10-07) | 2026-10-07 |
 | 0.10.1 | ✅ `0.10.1` | ✅ `v0.10.1`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0101---2026-10-04) | 2026-10-04 |
@@ -24,6 +26,113 @@
 | 0.1.0 | ✅ `0.1.0` | ✅ `v0.1.0` | ✅ 已同步 | ✅ [本节](#010---2026-08-16) | 2026-08-16 |
 
 > 约定：新版本发布时，先升 `package.json` 的 `version`，再更新本表与下方条目。
+
+> ⚠️ **0.12.0（登录页模板）与 0.13.0 在同一次提交里一起发布**：0.12.0 的内容线先完成但未单独发布，
+> 线上版本号因此直接从 `0.11.1` 跳到 `0.13.0`。两条记录都留在本文件里以便追溯。
+
+## [0.13.0] - 2026-10-09
+
+### Added（新增：Tableau 站点用户与角色 / 定时计划运行情况）
+
+- **两个新页面（团队工作区，导航与 workbooks/views 同组）**：
+  - `/t/{slug}/tableau/users` —— **Tableau 站点用户与角色**：直接读 `GET /sites/{id}/users`（自动翻页），
+    可按"关键词 / 站点角色"筛选，并对任意用户执行 `PUT /sites/{id}/users/{user-id}` 改站点角色（**本应用唯一的写操作**，二次确认弹窗 + 失败按 Tableau 错误码给文案）。
+  - `/t/{slug}/tableau/schedules` —— **定时计划运行情况**：提取刷新任务（`/tasks/extractRefreshes`，含频率 / 下次运行 / 连续失败次数）、
+    后台作业（`/jobs`，状态 / 类型 / 耗时，作业对象名按需展开时取 `/jobs/{id}`）、订阅计划（`/subscriptions`）。
+- **REST 传输层按能力域拆 scope**：新增 `src/lib/tableau-rest.ts`（从 `tableau-api.ts` 抽出 signin / 令牌 Query 缓存 / 请求 / 错误分类 / 翻页 / 重试策略），
+  三个能力域各自一条认证 Query：content（既有，scope 未动）、site-users（`tableau:users:*`）、site-tasks（`tableau:tasks:read` + `tableau:jobs:read`）。
+  依据：Connected App 的 JWT scope 是 Tableau 侧真正的授权边界（实测 `users:read` 只能读、写必须通配 `users:*`；`tasks:read` 与 `jobs:read` 各管一半）。
+- **新通用件 `ListState`**（加载 / 失败 / 空三态外壳，两种页面共用），已登记进组件目录 `src/config/component-catalog.ts` 并带 /components 实时预览；
+  `COMPONENT_CATALOG` 的 `workbookRefQueryOptions` / `workbooksQueryOptions` 让"内容名解析"与 workbooks 页共用同一份缓存。
+- **权限目录**：`page.tableau.users`（**fail-closed，默认仅系统管理员** —— 它会写站点级权限）、`page.tableau.schedules`（只读监控，默认给三个团队岗位）；
+  header 的段映射支持团队作用域下的两级路径（`tableau/users`、`tableau/schedules`）。
+- **测试**：`src/lib/tableau-site-roles.test.ts`、`src/lib/tableau-tasks.test.ts`（夹具用**实测响应**与官方示例），vitest 用例 75 → 108；
+  另用无头 Chrome 对两页做了真实数据核对（见 PROGRESS 的验证段）。
+- **文档**：`docs/tableau-setup.md` 增补「站点管理页需要哪些 scope」与边界说明；README 页面表补两行。
+
+### Changed（变更）
+
+- **`/views` 的落点改为"上次打开的视图 → 固定兜底视图"**：不带参数打开 `/t/{slug}/views`
+  （侧边栏 Views、书签、旧路径 `/views` 重定向都会走到这里）时，先落到**上次打开的视图**（recents 第一条，团队作用域），
+  找不到就落到固定兜底视图 `VITE_TABLEAU_FALLBACK_VIEW`（新增站点绑定项，缺省是演示站点上的 `Superstore/Overview`，
+  即 `5959968c-c18b-4ada-bff1-99ac36af1dc1`）。规则只接管「完全没参数」与「只给了视图 UUID」两种入口：
+  带 `?workbook=` 或旧式名称参数的链接保持原有解析（`check:team-routes` 的 `/views?view=abc` 用例不受影响）。
+  落点解析抽成纯函数 `src/lib/view-entry.ts` + 5 项单测（含"UUID 优先于名称""没有最近记录就用兜底"）。
+- **views 页版面收紧与交互补齐**：① 视图名与工作簿名**同一行**（都可截断，不再各占一行）；
+  ② 收藏星标从右上角按钮组**移到工作簿名右侧**（离标题更近，点起来不用横跨整行）；
+  ③ info 弹层里的 Tableau URL 改为**换行显示**（原来单行 truncate，长 URL 会顶出下边框）并且**本身是链接** ——
+  点击在新标签页打开该视图（外链图标提示可点，复制按钮仍在右侧）。
+- **删除 views 页的空态提示**"Select a workbook and view above, or paste a view URL to embed."（含词典里的死键 `views.embedEmpty`）：
+  页面现在总会先解析出目标视图再嵌入，"请选择视图"这句话在兜底也打不开时只会变成一条误导性死文案。
+
+- **项目更名**：`shadcn-admin-cn` → **`tableau-embed-hub`**，显示名 **`Tableau Embed Hub`**（品牌唯一来源仍是 `src/config/app.ts` 的 `APP_NAME`）。同步更新：`package.json` name/description、`index.html` `<title>` + `<meta name="description">`、README ×2（H1 与定位句）、LICENSE 署名、侧边栏注脚、AI 默认系统提示词、i18n 关于正文与 SMTP 发件人占位、nginx 样例、PROGRESS.md。
+  - `package.json` 的 `description` 一并改写为「Tableau 嵌入可视化」定位（原文只写"管理后台模板"，搜索面为零）。
+  - 侧边栏注脚原先**写死** `shadcn-admin`（与 `APP_NAME` 并不一致），本版改为读 `APP_NAME`：以后再改名只需动一个常量。
+- **持久化 key 前缀**：`shadcn-admin-cn:` → `tableau-embed-hub:`（favorites / recents / org / permissions / config 五处，外加两个自定义事件名）。
+  - 新增 `src/lib/storage-migration.ts`：应用启动时一次性把旧前缀 key 复制到新前缀，**旧 key 保留不删**（回滚安全、已有用户不丢收藏与配置）。顺序敏感：必须在 store 模块加载前执行（见 `src/main.tsx` 首行 import 与文件内注释）。
+  - 四个 CDP 用例里硬编码的 key 同步更新（check:team-routes / check:permissions / check:smtp / check:login）。
+- **Help 页位置与内容**：侧边栏 Config 分组里 `/help` 从「紧跟 SMTP」挪到**分组最末（Components 之后）**——顺序由 `src/config/permissions.ts` 的目录顺序决定，`check:permissions` 的顺序断言与 README ×2 的说明同步更新。
+  - Help 页新增**「第三方版权与商标」**卡片：直接依赖的「组件 / 许可 / 版权所有者」一览（21 项，数据源 `src/config/third-party.ts`，与 `THIRD-PARTY.md` 同源同改）、非开源的 `@tableau/embedding-api` 高亮警示、Salesforce 商标归属声明。**说明随发行物一起走**：使用者拿到的是构建产物，看不到仓库里的 `THIRD-PARTY.md`。
+- **合规与文档**：新增 `THIRD-PARTY.md`（标注 `@tableau/embedding-api` 适用 Salesforce 二进制许可、使用者需自行接受其条款）；README ×2 首屏增加「非官方 / 无担保 / 凭据自负」声明与商标归属声明。
+
+### Known issues（已知问题）
+
+- 构建产物仍**内联打包** `@tableau/embedding-api`（Salesforce Binary Code License，非开源；实测 `dist/assets/t._teamSlug.views-*.js` 约 337 KB 含其代码）。计划改为运行时从使用者自己的 Tableau 站点加载 `javascripts/api/tableau.embedding.3.latest.min.js`，届时仓库不再分发 Salesforce 代码；**脚本 URL 与版本策略（latest / 固定版本）待定**。
+- 0.12.0 与 0.13.0 在同一次提交发布（见版本对照表下方的说明），因此线上历史里没有单独的 0.12.0 发布点。
+
+## [0.12.0] - 2026-10-09
+
+### 登录页模板（3 种样式）+ 第三方联合登录配置（`/login`、`/config/login`）
+
+#### Added（新增）
+
+- **登录页 `/login`（裸布局：不套 App shell、也不经过权限门禁）**，三种样式可在 `/config/login` 切换：
+  - `centered-card`（默认）：品牌标识 + 登录框（用户名 / 密码 / 验证码）+ 第三方入口，不放宣传图；
+  - `split-hero`：左侧 **2/3** 宣传图 + 右侧 **1/3** 登录面板；窄屏（< lg）收起宣传图、表单居中
+    （手机上一张 2/3 宽的图只会把登录框挤出屏幕）；
+  - `fullscreen-card`：全屏背景图 + 居中卡片，图上压一层遮罩保证卡片对比度（遮罩不是装饰）。
+- **样式注册表** `src/features/login/templates/`：**登录内容只有一份**（`login-form.tsx`），模板只负责摆放。
+  新增样式 = 一个模板文件 + 注册表一行 + `LOGIN_TEMPLATES` 一条（`Record<LoginTemplateId, …>` 漏登记 tsc 报错）。
+- **路由级版面开关**：`__root.tsx` 扩展 TanStack Router 的 `StaticDataRouteOption`，路由用
+  `staticData: { layout: 'bare' }` 声明「跳出 App shell」——版面归属是路由自己的元信息，
+  root 不需要认识任何一条具体路径（也就不会退化成一张路径白名单）。
+- **系统配置 → 登录页 `/config/login`**（权限键 `page.config.login`，fail-closed：默认只有系统管理员）：
+  样式选择（带**线框缩略图**，不是真截图）、宣传图 URL + 实时缩略图、GitHub / Google 的公开参数
+  （启用开关 / Client ID / 授权端点 / 回调地址 / scope）、实时预检清单、恢复默认二次确认、新标签页预览。
+- **`src/lib/login.ts`（领域层：纯函数 + 常量，不依赖 React / zustand / window）**：模板目录、provider 目录、
+  `normalizeLoginConfig`（脏数据收敛：未知键丢弃、类型不对退回家底值）、`validateLoginConfig`（error 拦保存 /
+  warning 放行）、`loginStatus`、`sameLoginConfig`、`resolveHeroImageUrl`。
+- **内置宣传图 `public/login-hero.svg`**：本地、离线可用、浅色深色都不糊；配置页可填 URL 覆盖，
+  **远程图加载失败自动退回内置图**（登录页是访客看到的第一屏，不该因为一张图失败而破相）。
+- **品牌标识 `src/features/login/brand-icons.tsx`**：GitHub mark 与 Google 四色 G 内联 SVG
+  （lucide-react 已不提供品牌图标，而联合登录按钮的品牌识别性是功能的一部分）。
+- **`src/lib/login.test.ts`**（22 项）：目录不变量、脏数据归一化、预检规则逐条、状态推导，
+  以及**安全不变量**——配置结构与归一化结果里不得出现 `secret` / `password` / `token` 字段。
+- **`scripts/check-login.mjs`（`pnpm check:login`）**：领域层规则断言 + **7 项真实 Chrome 用例**
+  （保存 → 整页刷新 → `/login` 真的换版面；provider 开关与宣传图一路传到模板；校验不通过**不写盘**；
+  点第三方入口只提示不跳转；恢复默认回出厂值；`/login` 确实没有侧边栏/头部；并直接检查 localStorage 无 secret）。
+- **`docs/login-setup.md`**：三种样式、配置项、预检规则表、新增样式 / provider 的步骤，
+  以及**接后端的完整契约**（会话接口、验证码接口、OAuth 授权码流程——换 token 只能在服务端）。
+
+#### Changed（变更）
+
+- `src/stores/config-store.ts`：新增 `login` / `loginUpdatedAt` 与 `saveLogin` / `resetLogin`；
+  `partialize` 把登录配置落盘（**全是非敏感字段**），`merge` 统一走 `normalizeLoginConfig`。
+  **persist version 保持 1**：加字段能用 normalize 兜住就不要升 version —— 升了却不写 migrate
+  会让 zustand 判定「无法迁移」而丢弃整份持久化数据，老用户已填好的 SMTP 配置会一起消失。
+- `/config` 根路径的落点链改为 **SMTP → 登录页 → 团队首页**（配置页可以分别授权，写死跳某一页
+  会让只被授权另一页的用户一进 /config 就撞上无权页）。
+- `scripts/check-route-catalog.mjs`：白名单判定标准新增第 ④ 类「**登录前页面**」，
+  并显式登记 `/login` 的豁免理由（该脚本存在的意义就是不让页面**静默**脱离权限体系，有意豁免必须留痕）。
+
+#### Notes（边界与取舍）
+
+- **登录页这一版是 UI 模板，不做鉴权**：点「登录」只提示「尚未接入鉴权后端」，不创建会话、不拦截任何页面。
+  纯前端伪造登录态是安全剧场 —— 与「SMTP 密码不落盘」同一条原则。
+- **不收集 Client Secret**：前端存 Secret 等于把它发给所有人，授权码换 token 必须由服务端完成。
+  因此「已启用但没填 Client ID」只是 warning（按钮先做展示）—— 否则只想换版式的用户会被迫先编一个 Client ID 才能保存。
+- **验证码是占位**：不生成、不校验（服务端校验才是唯一有意义的做法）；页面上写明了这一点，避免被误认为已具备校验。
+- **本轮不拼 OAuth 授权链接**：字段先按公开参数存下来供后端使用，点入口只提示尚未接入。
 
 ## [0.11.1] - 2026-10-08
 

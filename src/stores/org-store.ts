@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+import { STORAGE_PREFIX } from '@/lib/storage-migration'
+
 /**
  * 组织数据 store：Users(用户，全局，位于 Team 之上) ⇄ TeamMember(成员/岗位) ⇄ Teams(团队)
  *
@@ -844,7 +846,7 @@ export const useOrgStore = create<OrgState>()(
       },
     }),
     {
-      name: 'shadcn-admin-cn:org',
+      name: `${STORAGE_PREFIX}:org`,
       version: 3,
       migrate: (persisted, version) => {
         const from = version ?? 0

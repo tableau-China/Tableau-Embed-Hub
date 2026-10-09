@@ -117,11 +117,12 @@ export function TableauEmbed({ src, className }: { src?: string; className?: str
         className,
       )}
     >
-      {!src && (
-        <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-sm text-muted-foreground">
-          {t('views.embedEmpty')}
-        </div>
-      )}
+      {/*
+        没有 src 时**不再显示任何文案**（原来那句"Select a workbook and view above…"已删除）：
+        /views 页面会先解析出目标视图再来嵌入 —— 上次打开的视图，解析不到就是固定兜底视图
+        （见 routes/t.$teamSlug.views.tsx 的两个 effect）。真正的失败会由上面的错误条呈现，
+        这里再摆一句"请选择视图"只会在兜底也打不开时留下一条死文案。
+      */}
       {/* 加载中不再叠加自定义遮罩层：iframe 内 Tableau 自带加载指示，
           叠加层会造成"双层 loading"（遮罩 + 原生 spinner 同时可见） */}
       {status === 'error' && (

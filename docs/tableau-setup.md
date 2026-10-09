@@ -28,6 +28,7 @@ pnpm dev                  # 打开 /help 核对 Environment check 卡片
 | `VITE_TABLEAU_EMBED_USER` | 是 | 签发 JWT 用的嵌入用户 | 演示用户 |
 | `VITE_TABLEAU_CLIENT_ID` / `_SECRET_ID` / `_SECRET_VALUE` | 是 | Connected App 凭据 | 内置演示凭据 |
 | `VITE_TABLEAU_PROJECT` | 否 | 只显示某个项目（REST 侧 `filter=projectName:eq:`） | 演示站点默认 `Samples`；**配了自己的站点则默认不过滤** |
+| `VITE_TABLEAU_FALLBACK_VIEW` | 否 | 「点击 Views 且地址里没指定视图」时的固定兜底视图 UUID（优先打开"上次打开的视图"）。**换站点时务必改成自己站点上的视图 UUID** | 演示站点上的 `Superstore/Overview` |
 | `VITE_TABLEAU_API_VERSION` | 否 | REST API 版本 | `3.23` |
 | `VITE_TABLEAU_API_BASE` | 否 | REST 同源代理前缀 | `/tableau-proxy` |
 
@@ -50,6 +51,37 @@ pnpm dev                  # 打开 /help 核对 Environment check 卡片
 
 部署形态：`pnpm build` 产出的 `dist/` 是纯静态资源，丢到任何静态托管 + 一个反代即可。
 
+## 站点管理页与它需要的 scope（0.13 起）
+
+两个页面直接操作**整个 Tableau 站点**（与团队无关，团队只是导航归属）：
+
+| 页面 | 路由 | 能做什么 |
+| --- | --- | --- |
+| 站点用户与角色 | `/t/{slug}/tableau/users` | 读站点全部用户；**改站点角色**（本应用唯一的写操作） |
+| 定时计划运行情况 | `/t/{slug}/tableau/schedules` | 只读：提取刷新任务 / 后台作业 / 订阅计划 |
+
+REST 传输层（`src/lib/tableau-rest.ts`）按**能力域**各申请一条 JWT，而不是一张全权限令牌：
+
+| 能力域 | JWT scope | 用到的方法 |
+| --- | --- | --- |
+| `content` | `tableau:content:read` + `tableau:views:*` + `tableau:workbooks:*`（与 0.7.0 起完全一致） | 工作簿 / 视图 / 预览图 |
+| `site-users` | `tableau:users:*` | `GET /sites/{id}/users`、`PUT /sites/{id}/users/{user-id}` |
+| `site-tasks` | `tableau:tasks:read` + `tableau:jobs:read` | `GET /sites/{id}/tasks/extractRefreshes`、`GET /sites/{id}/jobs`、`GET /sites/{id}/jobs/{job-id}`、`GET /sites/{id}/subscriptions` |
+
+这些取值不是猜的（2026-10 对演示站点实测 + 官方引用页核对）：
+
+- **写角色必须用通配 `tableau:users:*`**：细粒度的 `tableau:users:update` 是 API 3.27（2025-12）才加的，本项目默认 API 版本 3.23。
+  实测：只给 `users:read` 时 `PUT` 返回 `401002`；给通配后鉴权通过（用一个**非法** `siteRole` 探测会得到 `400013` 校验错误，说明已经过了鉴权，且数据不会被改动）。
+- **调用者必须是站点管理员**（Tableau 明文要求）：列用户与改角色都由嵌入用户的站点角色决定。实测演示站点的嵌入用户是 `SiteAdministratorCreator`，所以可用；
+  换成 Viewer 账号后这两页会显示失败原因（不会静默空白）。
+- **不能改自己的许可证角色**：Tableau 固定回 `403/403009`。页面因此把"你"那一行的改角色入口禁掉，避免一次注定失败的往返。
+- **Tableau Cloud 没有 `/schedules`**：实测 `403`（"此站点不支持管理员计划"）。计划信息只能从每个提取刷新任务内联的 `schedule` 节点读。
+- **作业保留期由 Tableau 决定**：官方 REST 引用页没有承诺任何保留期，本应用**不自加时间窗**（少猜一个阈值，就少一次"为什么看不到上周的失败"）。
+- **`/jobs` 的行里没有对象名**：对象名要 `GET /sites/{id}/jobs/{job-id}` 才拿得到，页面按需取（展开某一行时才请求，避免逐行 N+1）。
+
+⚠️ **按域申请 scope 只减少无谓暴露，不是安全边界**：纯前端把 Connected App 密钥内联进 bundle，能拿到产物的人本就能自行签发任意 scope 的 JWT。
+真正的边界仍是 Tableau 后台（域名白名单 / 访问级别 / 密钥轮换）+ 把签发搬到后端（见文末「安全边界」）。
+
 ## 排查表
 
 | 现象 | 原因与处理 |
@@ -61,6 +93,11 @@ pnpm dev                  # 打开 /help 核对 Environment check 卡片
 | **只看到 2 个工作簿** | 还在演示站点（默认过滤 `Samples`）。配了自己的站点后默认不再过滤；若仍要看全，清空 `VITE_TABLEAU_PROJECT` |
 | 429 / 请求排队 | Tableau 限流。模板对 `signin` 失败刻意不重试（避免重试风暴），业务请求 `retry: 1` |
 | 改了 `.env` 没生效 | 没有重新构建；或变量名拼错（`VITE_` 前缀必须保留） |
+| 站点用户/计划页报 401 或"未授权" | 嵌入用户的站点角色不是站点管理员，或（改角色时）scope 不是通配 `tableau:users:*` |
+| 站点用户页显示"Tableau rejects changing your own licence role" | 你改的是自己（JWT 的 `sub`）—— Tableau 固定回 403009，换另一个站点管理员账号操作 |
+| 计划页任务行的内容是 uuid 而不是工作簿名 | 该 workbook 按 id 取不到（已删除 / 无权限）。页面会显示 id 并在悬停提示里说明 |
+| 点 Views 得到一个空白嵌入框 | 兜底视图 UUID（`VITE_TABLEAU_FALLBACK_VIEW`）在你自己的站点上不存在 —— 换成自己站点上真实存在的视图 UUID |
+| 站点上没有任何作业记录 | 保留期由 Tableau 决定，不是本应用的过滤；去 Tableau 后台的"后台作业"页核对 |
 
 ## 安全边界（务必读完）
 

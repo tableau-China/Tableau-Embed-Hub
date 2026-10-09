@@ -1,9 +1,18 @@
-# shadcn-admin-cn
+# Tableau Embed Hub
 
 > 中文版文档：[README.md](./README.md)
 
-An admin dashboard template built from scratch on shadcn/ui + Tailwind CSS v4 + Radix UI — **a starting
-point for Tableau developers and for AI-enabled apps**, not a fork of another template.
+An open-source, multi-team admin console for **embedded Tableau analytics**: drop Tableau Cloud or
+Tableau Server workbooks and views into your own product, with team-scoped routing, page-level
+permissions, i18n, an AI assistant page and a deploy sample already wired up. Built from scratch on
+shadcn/ui + Tailwind CSS v4 + Radix UI — not a fork of another template.
+
+> ⚠️ **Not an official project.** Not affiliated with, endorsed by, or sponsored by Salesforce, Inc.
+> Tableau and Tableau Cloud are trademarks of Salesforce, Inc. See [THIRD-PARTY.md](./THIRD-PARTY.md).
+> The software is provided "as is", without warranty of any kind, and with no support commitment —
+> you are responsible for complying with Salesforce's terms.
+> ⚠️ **Credential boundary**: this is a front-end only app, so `.env` values and the built-in demo
+> credentials are inlined into the build output. Read [SECURITY.md](./SECURITY.md) before deploying.
 
 > Status: Phase 1–2 done — layout, multi-team workspace (with team suspension), global users (with
 > account freezing), page-level permissions, profile, system configuration (SMTP), help page, shared
@@ -14,7 +23,7 @@ point for Tableau developers and for AI-enabled apps**, not a fork of another te
 
 ## Version
 
-Current version: **0.11.1** — see [CHANGELOG.md](./CHANGELOG.md) (Chinese) for changes and known
+Current version: **0.13.0** — see [CHANGELOG.md](./CHANGELOG.md) (Chinese) for changes and known
 issues. Checked across `package.json` / the sidebar / `PROGRESS.md`.
 
 ## Tech stack
@@ -63,6 +72,7 @@ cp .env.example .env
 | Site (URL / site name / site content URL / embed user) | `VITE_TABLEAU_SERVER_URL` / `_SITE_NAME` / `_SITE_CONTENT_URL` / `_EMBED_USER` |
 | Connected App credentials | `VITE_TABLEAU_CLIENT_ID` / `_SECRET_ID` / `_SECRET_VALUE` |
 | Restrict to one project, or lift the restriction | `VITE_TABLEAU_PROJECT` (empty = no restriction) |
+| Fallback view when `/views` is opened without parameters | `VITE_TABLEAU_FALLBACK_VIEW` — a view UUID on **your** site |
 | REST proxy path (must match your gateway) | `VITE_TABLEAU_API_BASE` (default `/tableau-proxy`) |
 | REST API version | `VITE_TABLEAU_API_VERSION` (default `3.23`) |
 | AI provider (proxy path / model / system prompt) | `VITE_AI_PROXY_URL` / `VITE_AI_MODEL` / `VITE_AI_SYSTEM_PROMPT` |
@@ -95,11 +105,13 @@ cp .env.example .env
 | Page | Route | Entry | Default roles |
 | --- | --- | --- | --- |
 | Workspace (Dashboard / Favorites / Recents / Workbooks / Views) | `/t/{slug}/...` | Sidebar → General | Team members (by role) |
+| Tableau site users & roles | `/t/{slug}/tableau/users` | Sidebar → General | **System admins only** (fail-closed; it writes site-wide roles) |
+| Tableau scheduled tasks | `/t/{slug}/tableau/schedules` | Sidebar → General | Team members (by role, read-only) |
 | AI assistant | `/ai` | Sidebar → AI | All members |
 | Users / Teams / Permissions | `/users`, `/teams`, `/permissions` | Sidebar → Settings | Members (permissions page: system admins only) |
 | Profile | `/profile` | Sidebar footer user menu | All members |
 | SMTP | `/config/smtp` | Sidebar → Config | System admins only (fail-closed) |
-| Help / About | `/help` | Sidebar → Config (after SMTP) | All members |
+| Help / About | `/help` | Sidebar → Config (**last in the group, after Components**) | All members (features, version, third-party notices & trademarks) |
 
 ## Scripts
 

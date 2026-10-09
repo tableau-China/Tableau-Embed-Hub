@@ -73,6 +73,7 @@ jobs:
       - run: pnpm build
       - run: pnpm check:team-routes
       - run: pnpm check:smtp
+      - run: pnpm check:login
       - run: pnpm check:filters
       - run: pnpm check:permissions
 

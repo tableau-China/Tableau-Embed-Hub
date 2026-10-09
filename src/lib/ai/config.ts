@@ -12,7 +12,7 @@ import { configured, envOptional, envValue } from '@/lib/env'
 
 /** 默认系统提示词：说明这个模板的定位，便于使用者一眼改成自己的 */
 const DEFAULT_SYSTEM_PROMPT =
-  'You are the built-in assistant of the shadcn-admin-cn template. ' +
+  'You are the built-in assistant of the Tableau Embed Hub template. ' +
   'Answer concisely and concretely. When the user asks about this project, ' +
   'refer to the docs under docs/ (tableau-setup.md, route-permissions.md, ai-integration.md).'
 

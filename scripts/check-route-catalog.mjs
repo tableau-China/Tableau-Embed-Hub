@@ -25,15 +25,17 @@ const ROUTES_DIR = join(ROOT, 'src', 'routes')
 /**
  * 允许「有路由文件但不在权限目录」的路径白名单。
  *
- * 判定标准：**它不是一个有内容的页面** —— 要么只渲染 `<Outlet/>`（布局），
- * 要么 `beforeLoad` 里就 `throw redirect(...)`（重定向桩 / 分支首页），要么是 404 兜底。
- * 新增条目时必须先确认这一点，否则就是把一个页面排除在权限体系之外。
+ * 判定标准：**它不是一个有内容的页面，或者有意脱离权限体系** ——
+ *   ① 只渲染 `<Outlet/>`（布局）；② `beforeLoad` 里就 `throw redirect(...)`（重定向桩 / 分支首页）；
+ *   ③ 404 兜底；④ **登录前页面**（登录页：没有身份时就要能用，「谁能看它」不构成权限问题）。
+ * 新增条目时必须先确认理由属于上面四种，否则就是把一个页面偷偷排除在权限体系之外。
  */
 const ALLOWED_WITHOUT_CATALOG = new Map([
   ['/$', '404 兜底页（未匹配任何路由）'],
   ['/', '重定向到当前团队首页'],
   ['/config', 'Config 分组布局（只渲染 Outlet）'],
   ['/config/', 'Config 分支首页：重定向到第一个有权访问的配置页'],
+  ['/login', '登录页：登录前页面，有意不参与权限体系（见 src/routes/login.tsx 的说明）'],
   ['/favorites', 'v0.5.0 旧路径重定向桩 → /t/{slug}/favorites'],
   ['/recents', 'v0.5.0 旧路径重定向桩 → /t/{slug}/recents'],
   ['/workbooks', 'v0.5.0 旧路径重定向桩 → /t/{slug}/workbooks'],

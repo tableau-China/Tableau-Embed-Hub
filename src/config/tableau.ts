@@ -25,6 +25,8 @@ const DEMO = {
   siteContentUrl: 'xilejunchina',
   embedUser: 'wyp@vizwise.cn',
   restrictedProjectName: 'Samples',
+  /** 「点击 Views 但没有指定视图」时的固定兜底视图 UUID（演示站点上的一个真实视图） */
+  fallbackViewId: '5959968c-c18b-4ada-bff1-99ac36af1dc1',
   // 混淆存储（反转 + base64），解码见下方 decodeCredential
   clientId: '3gDMjRTM5QGOihjYtMzNmlTL5YzN00yYiJjMtEGO2M2M3YmY',
   secretId: 'hZWM4ImYmZTMhFDNtETMilTLjRWY00yYxkjMtMDM2QGO4EmM',
@@ -49,6 +51,7 @@ const raw = {
   siteContentUrl: import.meta.env.VITE_TABLEAU_SITE_CONTENT_URL,
   embedUser: import.meta.env.VITE_TABLEAU_EMBED_USER,
   restrictedProjectName: import.meta.env.VITE_TABLEAU_PROJECT,
+  fallbackViewId: import.meta.env.VITE_TABLEAU_FALLBACK_VIEW,
   apiVersion: import.meta.env.VITE_TABLEAU_API_VERSION,
   apiBaseUrl: import.meta.env.VITE_TABLEAU_API_BASE,
   clientId: import.meta.env.VITE_TABLEAU_CLIENT_ID,
@@ -107,6 +110,14 @@ export const TABLEAU_CONFIG = {
     : ownSite
       ? undefined
       : DEMO.restrictedProjectName,
+  /**
+   * 「无参数打开 /views」时的固定兜底视图（上次打开的视图解析不到时用它）。
+   *
+   * 为什么放在这里而不是写死在页面里：它是**站点内容**（一个视图 UUID），
+   * 与站点绑定同源 —— 换自己的站点时必须换成自己站点上的视图，否则会得到一个空白嵌入框。
+   * 与其它站点绑定一样可用 `VITE_TABLEAU_FALLBACK_VIEW` 覆盖（见 .env.example）。
+   */
+  fallbackViewId: val(raw.fallbackViewId, DEMO.fallbackViewId),
   /**
    * Tableau Cloud REST API 不支持 CORS（实测：无 ACAO 头、OPTIONS 预检 405），
    * REST 请求必须走同源代理：dev = Vite 代理（见 vite.config.ts，与本节同源读取 .env）；

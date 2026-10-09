@@ -327,6 +327,15 @@ export const COMPONENT_CATALOG = [
     section: 'feedback',
     descKey: 'components.desc.thumbnailCard',
   },
+  {
+    id: 'listState',
+    name: 'ListState',
+    importPath: '@/components/list-state',
+    section: 'feedback',
+    descKey: 'components.desc.listState',
+    snippet:
+      '<ListState status={query.status} isEmpty={rows.length === 0}\n           errorTitle="Failed to load" onRetry={refetch}>\n  <Table>…</Table>\n</ListState>',
+  },
 
   /* ------------------------------ 配套 hook ------------------------------ */
   {

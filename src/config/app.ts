@@ -10,10 +10,10 @@
  */
 
 /** 应用名（品牌名，不翻译） */
-export const APP_NAME = 'shadcn-admin-cn'
+export const APP_NAME = 'Tableau Embed Hub'
 
 /** 应用版本（与 package.json 同步） */
-export const APP_VERSION = '0.11.1'
+export const APP_VERSION = '0.13.0'
 
 /** 开发者 */
 export const APP_AUTHOR = 'xilejun'

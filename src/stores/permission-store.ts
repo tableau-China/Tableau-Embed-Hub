@@ -13,6 +13,7 @@ import {
   type RoleGrants,
   type RoleKey,
 } from '@/config/permissions'
+import { STORAGE_PREFIX } from '@/lib/storage-migration'
 
 /**
  * 授权矩阵 store：角色 → 权限键/通配列表（localStorage 持久化）。
@@ -101,7 +102,7 @@ export const usePermissionStore = create<PermissionState>()(
       },
     }),
     {
-      name: 'shadcn-admin-cn:permissions',
+      name: `${STORAGE_PREFIX}:permissions`,
       version: 1,
       partialize: (s) => ({ grants: s.grants }),
       // 反序列化统一走 normalizeGrants：旧数据缺字段、脏数据、新增的底座页面都在此兜住。

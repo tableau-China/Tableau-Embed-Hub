@@ -4,14 +4,17 @@ import {
   Blocks,
   BookOpen,
   Building2,
+  CalendarClock,
   CircleHelp,
   Clock,
+  KeyRound,
   LayoutDashboard,
   Mail,
   MonitorPlay,
   ShieldCheck,
   Sparkles,
   Star,
+  UserCog,
   UserRound,
   Users,
   type LucideIcon,
@@ -32,7 +35,7 @@ import {
 } from '@/components/ui/sidebar'
 import { TeamSwitcher } from '@/components/org/team-switcher'
 import { UserMenu } from '@/components/org/user-menu'
-import { APP_VERSION } from '@/config/app'
+import { APP_NAME, APP_VERSION } from '@/config/app'
 import { ROUTE_CATALOG, ROUTE_ENTRIES, type NavGroup, type RouteKey } from '@/config/permissions'
 import { useTeamSlug } from '@/hooks/use-current-team'
 import { useCan } from '@/hooks/use-permissions'
@@ -94,6 +97,9 @@ const ICONS: Record<RouteKey, LucideIcon> = {
   'page.recents': Clock,
   'page.workbooks': BookOpen,
   'page.views': MonitorPlay,
+  // 站点级管理：用户与角色用「人 + 齿轮」，计划用「日历 + 时钟」——避免与工作簿/视图类图标混淆
+  'page.tableau.users': UserCog,
+  'page.tableau.schedules': CalendarClock,
   'page.ai': Sparkles,
   'page.users': Users,
   'page.teams': Building2,
@@ -101,6 +107,7 @@ const ICONS: Record<RouteKey, LucideIcon> = {
   'page.help': CircleHelp,
   'page.components': Blocks,
   'page.config.smtp': Mail,
+  'page.config.login': KeyRound,
   'page.permissions': ShieldCheck,
 }
 
@@ -194,7 +201,7 @@ export function AppSidebar() {
         {/* 左上角：Team 切换器（点击弹出当前用户可用的团队；系统管理员可新建/管理） */}
         <TeamSwitcher />
         <div className="hidden truncate px-2 pb-1 text-[11px] text-muted-foreground/80 group-data-[collapsible=icon]:hidden">
-          shadcn-admin · v{APP_VERSION}
+          {APP_NAME} · v{APP_VERSION}
         </div>
       </SidebarHeader>
       <SidebarContent>

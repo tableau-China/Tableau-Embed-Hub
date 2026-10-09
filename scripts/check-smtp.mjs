@@ -477,7 +477,7 @@ const CASES = [
       await delay(300)
       const text = await page.evaluate('document.body.innerText')
       if (!text.includes('blocking error')) out.push('点保存应弹出「存在阻断性错误」的提示')
-      const persisted = await page.evaluate(`localStorage.getItem('shadcn-admin-cn:config')`)
+      const persisted = await page.evaluate(`localStorage.getItem('tableau-embed-hub:config')`)
       if (persisted !== null) out.push(`校验未通过时不应写入配置，实际写入：${persisted}`)
 
       const checks = await page.evaluate(`document.querySelectorAll('[data-smtp-checks] li').length`)
@@ -494,7 +494,7 @@ const CASES = [
       await setInput(page, '#smtp-username', 'noreply@163.com')
       await setInput(page, '#smtp-password', 'super-secret-code')
       await setInput(page, '#smtp-from', 'noreply@163.com')
-      await setInput(page, '#smtp-from-name', 'shadcn-admin')
+      await setInput(page, '#smtp-from-name', 'tableau-embed-hub')
       await clickButtonByText(page, 'Save changes')
       await delay(300)
       // 随后的 runCase 会再导航一次（整页重新加载）—— 验证持久化真的写盘、且只写了非敏感字段
@@ -511,11 +511,11 @@ const CASES = [
       if (port !== '465') out.push(`刷新后 port 应为 465，实际 ${port}`)
       if (username !== 'noreply@163.com') out.push(`刷新后 username 未回读：${username}`)
       if (from !== 'noreply@163.com') out.push(`刷新后发件人未回读：${from}`)
-      if (fromName !== 'shadcn-admin') out.push(`刷新后发件人名称未回读：${fromName}`)
+      if (fromName !== 'tableau-embed-hub') out.push(`刷新后发件人名称未回读：${fromName}`)
       if (password !== '') out.push('刷新后密码输入框应为空（密码不落盘）')
 
-      const raw = await page.evaluate(`localStorage.getItem('shadcn-admin-cn:config')`)
-      if (raw === null) out.push('localStorage 里没有 shadcn-admin-cn:config')
+      const raw = await page.evaluate(`localStorage.getItem('tableau-embed-hub:config')`)
+      if (raw === null) out.push('localStorage 里没有 tableau-embed-hub:config')
       else {
         if (/password/i.test(raw)) out.push(`持久化数据里出现了 password 字段：${raw}`)
         if (!raw.includes('smtp.163.com')) out.push(`持久化数据里缺少主机名：${raw}`)
@@ -577,7 +577,7 @@ const CASES = [
       const port = await inputValue(page, '#smtp-port')
       if (host !== '') out.push(`重置后 host 应为空，实际 ${host}`)
       if (port !== String(SMTP_ENCRYPTION_PORTS.starttls)) out.push(`重置后 port 应为 587，实际 ${port}`)
-      const raw = await page.evaluate(`localStorage.getItem('shadcn-admin-cn:config')`)
+      const raw = await page.evaluate(`localStorage.getItem('tableau-embed-hub:config')`)
       if (raw !== null && raw.includes('smtp.office365.com')) {
         out.push(`重置后持久化数据仍保留旧主机名：${raw}`)
       }

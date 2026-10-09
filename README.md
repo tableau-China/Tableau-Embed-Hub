@@ -1,15 +1,20 @@
-# shadcn-admin-cn
+# Tableau Embed Hub
 
 > English version: [README.en.md](./README.en.md)
 
-基于 shadcn/ui + Tailwind CSS v4 + Radix UI 从零构建的管理后台模板 —— **面向 Tableau 开发者与 AI 应用的起点**（不是别的模板的 fork）。
+开源的多团队管理后台 + **Tableau 嵌入可视化**起点：把 Tableau Cloud / Tableau Server 的工作簿与视图嵌进你自己的产品 ——
+团队作用域路由、页面级权限、i18n、AI 对话页与部署样例都已在位。基于 shadcn/ui + Tailwind CSS v4 + Radix UI 从零构建（不是别的模板的 fork）。
+
+> ⚠️ **非官方项目**：与 Salesforce, Inc. 无隶属、授权或赞助关系；Tableau 与 Tableau Cloud 是 Salesforce, Inc. 的商标（详见 [THIRD-PARTY.md](./THIRD-PARTY.md)）。
+> 软件按「现状」提供，不附带任何担保，也不提供支持承诺 —— 使用者需自行遵守 Salesforce 的相关条款。
+> ⚠️ **凭据边界**：纯前端应用，`.env` 与内置演示凭据**都会被内联进构建产物**，部署前请先读 [SECURITY.md](./SECURITY.md)。
 
 > 当前状态：Phase 1–2 已完成；**Phase 3「通用起点」**（站点绑定全部走 `.env` + 部署样例 + 环境自检）与
 > **Phase 4「AI 起点」**（`/ai` 页面 + 零配置演示 provider + 代理契约）已就绪；i18n 当前仅 en-US。
 
 ## 版本
 
-当前版本：**0.11.1** ｜ 变更记录见 [CHANGELOG.md](./CHANGELOG.md)（含遗留问题与待办，跨文件核对：package.json / 侧边栏 / PROGRESS.md）
+当前版本：**0.13.0** ｜ 变更记录见 [CHANGELOG.md](./CHANGELOG.md)（含遗留问题与待办，跨文件核对：package.json / 侧边栏 / PROGRESS.md）
 
 ## 技术栈
 
@@ -78,11 +83,19 @@ cp .env.example .env      # .env 已被 .gitignore 排除
 | 页面 | 路由 | 入口 | 默认可见角色 |
 | --- | --- | --- | --- |
 | 工作区（Dashboard / Favorites / Recents / Workbooks / Views） | `/t/{slug}/...` | 侧边栏 General | 团队成员（按岗位） |
+| Tableau 站点用户与角色 | `/t/{slug}/tableau/users` | 侧边栏 General | **仅系统管理员**（fail-closed；它写的是站点级角色） |
+| Tableau 定时计划运行情况 | `/t/{slug}/tableau/schedules` | 侧边栏 General | 团队成员（按岗位，只读） |
+
+> 点侧边栏 **Views**、或直接打开 `/t/{slug}/views`（不带参数）时的落点：**上次打开的视图** →
+> 解析不到就用固定兜底视图（`VITE_TABLEAU_FALLBACK_VIEW`，缺省是演示站点上的 `Superstore/Overview`）。
+> 带 `?workbook=` / `?view=` 参数的链接仍按参数打开（旧链接行为不变）。
 | AI 对话 | `/ai` | 侧边栏 AI | 全体成员（未配代理时走内置演示 provider） |
 | 用户 / 团队 / 权限 | `/users`、`/teams`、`/permissions` | 侧边栏 Settings | 成员（权限页仅系统管理员） |
 | 个人资料 | `/profile` | **左下角用户菜单** | 全体成员（v0.7.0 起由 `/settings` 改名） |
 | SMTP 邮件服务 | `/config/smtp` | 侧边栏 Config | 仅系统管理员（fail-closed） |
-| 帮助 / 关于 | `/help` | 侧边栏 Config（排在 SMTP 之后） | 全体成员（核心功能、开发者、版本号） |
+| 登录页 | `/login` | 直达 / 配置页的「Open preview」 | **无需权限**（登录前页面，裸布局） |
+| 登录页配置 | `/config/login` | 侧边栏 Config | 仅系统管理员（fail-closed） |
+| 帮助 / 关于 | `/help` | 侧边栏 Config（**分组最末，排在 Components 之后**） | 全体成员（核心功能、开发者、版本号、第三方版权与商标） |
 
 ## 脚本
 
@@ -99,6 +112,7 @@ cp .env.example .env      # .env 已被 .gitignore 排除
 | `pnpm check:permissions` | 页面权限校验（目录静态自检 + 用例；需先 `pnpm build`） |
 | `pnpm check:filters` | 列表筛选栏校验（i18n/选项来源静态自检 + 7 项页面用例，含宽窄屏几何断言；需先 `pnpm build`） |
 | `pnpm check:smtp` | SMTP 配置校验（规则断言 + 6 项页面用例；需先 `pnpm build`） |
+| `pnpm check:login` | 登录页校验（领域层规则断言 + 7 项页面用例：换样式 / provider 开关 / 校验拦截 / 恢复默认；需先 `pnpm build`） |
 
 ## 前端开发约定（v0.7.0 起）
 
@@ -143,6 +157,15 @@ cp .env.example .env      # .env 已被 .gitignore 排除
 > ⚠️ **密码不落盘**：本模板是纯前端，浏览器侧「加密后存 localStorage」的密钥必然随 bundle 一起发出，等于安全剧场 —— 因此只持久化非敏感字段，密码仅存内存（刷新需重填）。接入后端后应改为服务端加密存储、接口只回 `hasPassword`。
 >
 > ⚠️ **预检 ≠ 真实连通性**：浏览器开不了 SMTP 套接字，真实握手（EHLO → STARTTLS → AUTH）必须服务端执行（`nodemailer` 的 `transporter.verify()`）。
+
+## 登录页（v0.12.0 起）
+
+`/config/login` 选登录样式（`centered-card` / `split-hero` / `fullscreen-card`）、配宣传图，
+并管理 GitHub / Google 第三方入口的**公开参数**；`/login` 按配置渲染，可直达、可预览。
+
+> ⚠️ **登录页这一版是 UI 模板**：`/login` **不拦截**任何页面、不创建会话（纯前端伪造登录态是安全剧场）；
+> 验证码是占位；**不收集 Client Secret**（前端存 Secret 等于公开）。接后端的完整契约
+>（会话 / 验证码 / OAuth 回调）见 [docs/login-setup.md](./docs/login-setup.md)。
 
 ## 路线图
 

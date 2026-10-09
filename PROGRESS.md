@@ -1,16 +1,108 @@
-# shadcn-admin-cn 项目进度（PROGRESS）
+# Tableau Embed Hub 项目进度（PROGRESS）
 
-> 更新于 2026-10-01 ｜ 项目根目录：`/Users/xilejun/WorkBuddy/ds_Harness/shadcn_admin_cn`
+> 更新于 2026-10-09 ｜ 项目根目录：`/Users/xilejun/dsh-projects/shadcn-admin-cn`
 
 ## 项目概况
 
-- **目标**：从零构建管理后台模板（React 19 + TypeScript 7 + Vite 8 + Tailwind CSS v4 + shadcn/ui(Radix) + TanStack Router），包含 shadcn-admin 的全部基础功能，**含 Tableau 页面**（favorites / recents / workbooks / views —— 浏览器内签发 Connected App JWT 嵌入真实视图，凭据见 README「凭据配置」），**不含 AI 功能**；也不含内部流程页（flows / amro / clean-layer / sql-icon-map，那些只存在于本地开发线），v0.4.0 起含**多团队 + 全局用户**（参照 pg-explorer，无部门管理），v0.5.0 起**团队身份进入 URL**（`/t/{slug}/...`，对齐 pg-explorer 的 `/t/{slug}` + `/admin/*` 划分），v0.6.0 起**页面级权限**（角色 × 路由，权限页勾选；按钮级权限仅预留命名空间），v0.7.0 起**个人资料归位**（`/settings` → `/profile`，入口在左下角用户菜单）+ **Config 分组与 SMTP 配置页** + **帮助页** + **前端通用件**，v0.9.0 起**团队冻结 + 用户冻结 + 用户必须归属团队**，v0.10.0 起**列表筛选栏公共件**（`/users` 先行），v0.11.1 起**组件总览页**（`/components`：公共件清单 + 实时预览）；i18n 当前仅 **en-US**，中文/日文后期扩展。
+- **目标**：从零构建管理后台模板（React 19 + TypeScript 7 + Vite 8 + Tailwind CSS v4 + shadcn/ui(Radix) + TanStack Router），包含 shadcn-admin 的全部基础功能，**含 Tableau 页面**（favorites / recents / workbooks / views —— 浏览器内签发 Connected App JWT 嵌入真实视图，凭据见 README「凭据配置」），**不含 AI 功能**；也不含内部流程页（flows / amro / clean-layer / sql-icon-map，那些只存在于本地开发线），v0.4.0 起含**多团队 + 全局用户**（参照 pg-explorer，无部门管理），v0.5.0 起**团队身份进入 URL**（`/t/{slug}/...`，对齐 pg-explorer 的 `/t/{slug}` + `/admin/*` 划分），v0.6.0 起**页面级权限**（角色 × 路由，权限页勾选；按钮级权限仅预留命名空间），v0.7.0 起**个人资料归位**（`/settings` → `/profile`，入口在左下角用户菜单）+ **Config 分组与 SMTP 配置页** + **帮助页** + **前端通用件**，v0.9.0 起**团队冻结 + 用户冻结 + 用户必须归属团队**，v0.10.0 起**列表筛选栏公共件**（`/users` 先行），v0.11.1 起**组件总览页**（`/components`：公共件清单 + 实时预览），v0.12.0 起**登录页模板**（`/login`：三种样式 + 第三方联合登录入口；`/config/login` 配置样式与 provider 公开参数），v0.13.0 起**更名为 tableau-embed-hub**（显示名 Tableau Embed Hub）+ **Tableau 站点用户与角色 / 定时计划运行情况**两页 + **Help 页第三方版权与商标说明**（Help 同时挪到 Config 分组最末）；i18n 当前仅 **en-US**，中文/日文后期扩展。
 - **关键决策**：跳过 shadcn-admin 模板（无 Sat Naing 署名义务）、TypeScript 7.1.0-dev（next 开发版，验证未来升级，正式版发布后直接升级；**现锁 7.1.0-dev.20260930.4**）、Vite 8 最新稳定、i18n 当前仅 en-US（zh-CN / zh-TW / ja-JP 后期扩展）。
 - **工具链锁定**：pnpm **12.9.1**（`package.json` 的 `packageManager` 字段，CI 同版本）、Node **24**（本地与 CI 一致，`@types/node` 对齐 **24 线**——类型线高于运行时会写出跑不起来的代码）。⚠️ 2026-10-05 pnpm 由 11.28.2 升级到 12.9.1：pnpm 12 要求 lock 头部带 `packageManagerDependencies` 文档（+158 行，含 pnpm 自身各平台 `@pnpm/exe.*`），**不提交这份 lock，CI 的 `--frozen-lockfile` 会直接失败**；迁移后已实测 12.6.0 / 12.9.1 的 `--frozen-lockfile` 通过。
-- **注意**：用户原指定路径 `/Users/xilejun/ds_Harness/shadcn_admin_cn` 不存在，实际目录在 `/Users/xilejun/WorkBuddy/ds_Harness/shadcn_admin_cn`。
-- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.11.1**）。
+- **注意**：项目目录历经搬迁，当前根目录为 `/Users/xilejun/dsh-projects/shadcn-admin-cn`（更早记录中的 `WorkBuddy/ds_Harness/shadcn_admin_cn` 已失效）。
+- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.13.0**）。
+- **项目更名**（2026-10-09）：`shadcn-admin-cn` → 仓库/包名 **`tableau-embed-hub`**、显示名 **`Tableau Embed Hub`**（主打「Tableau 嵌入可视化」，品牌唯一来源仍是 `src/config/app.ts`）。localStorage 前缀同步改为 `tableau-embed-hub`，旧 key 保留并由 `src/lib/storage-migration.ts` 一次性迁移；细节见 CHANGELOG「未发布」节。
 
 ---
+
+## ✅ v0.13.0 — 项目更名 tableau-embed-hub + Help 页第三方版权说明（2026-10-09）
+
+- ✅ **改名落地**：`shadcn-admin-cn` → 仓库/包名 `tableau-embed-hub`、显示名 **Tableau Embed Hub**（`src/config/app.ts` 仍是唯一品牌来源）。
+  同步：`package.json` name/description、`index.html` `<title>` + `<meta name="description">`、README ×2、LICENSE 署名、侧边栏注脚、
+  AI 默认提示词、i18n 关于正文与 SMTP 发件人占位、nginx 样例。顺手修掉侧边栏**写死** `shadcn-admin`（与 `APP_NAME` 不一致）的历史问题 —— 以后改名只动一个常量。
+- ✅ **持久化前缀迁移**：`shadcn-admin-cn:` → `tableau-embed-hub:`（favorites / recents / org / permissions / config 五处 + 两个自定义事件名）。
+  `src/lib/storage-migration.ts` 启动时一次性复制、**旧 key 保留不删**（可回滚、已有数据不丢）；四个读写持久化的 store 都 import 它，
+  结构上保证「先迁移、后 hydrate」。另有 6 项单测（幂等 / 不覆盖新数据 / 非匹配前缀不动）。
+- ✅ **Help 页**：① 侧边栏位置由「紧跟 SMTP」挪到 **Config 分组最末（Components 之后）**；② 新增**「第三方版权与商标」**卡片 ——
+  21 项直接依赖的「组件 / 许可 / 版权所有者」表（数据源 `src/config/third-party.ts`，版权字段逐个核对 node_modules 里的 LICENSE）、
+  非开源 `@tableau/embedding-api` 的高亮警示、Salesforce 商标归属声明。**说明随发行物走**：使用者拿到的是构建产物，看不到仓库里的 THIRD-PARTY.md。
+- ✅ **合规文档**：新增 `THIRD-PARTY.md`（含 embedding API 许可限制与「改为运行时从使用者自己站点加载」的迁移计划）；
+  README ×2 首屏加「非官方 / 无担保 / 凭据自负」声明与商标归属。
+- ✅ 验证：tsc / eslint（0 error）/ vitest / check:i18n / check:i18n:keys / check:routes / build 全绿；
+  `check:permissions` 真实 Chrome **15/15**（含新增三条断言：侧边栏顺序、版权表行数、商标归属文案）。
+- ✅ 版本同步 **0.13.0**（package.json / `src/config/app.ts` / README / README.en / PROGRESS / CHANGELOG）；
+  0.12.0 内容线与本版合并在同一次提交发布，见 CHANGELOG 版本对照表下方的说明。
+
+## ✅ v0.13.0 — /views 落点：上次打开的视图 → 固定兜底视图（2026-10-09）
+
+- ✅ **点侧边栏 Views（或直接打开 `/t/{slug}/views` 不带参数）**：先落到**上次打开的视图**（recents 第一条，团队作用域），
+  找不到就落到固定兜底视图 `VITE_TABLEAU_FALLBACK_VIEW`（新增站点绑定项；缺省 = 演示站点 `Superstore/Overview` = `5959968c-c18b-4ada-bff1-99ac36af1dc1`）。
+- ✅ **规则只接管两种入口**：完全没参数、只给了视图 UUID。带 `?workbook=` 或旧式名称参数的链接保持原有解析
+  （否则 `check:team-routes` 的「`/views?view=abc` 保留 search 参数」用例会被兜底抢走）。
+- ✅ 规则放在**页面**而不是侧边栏链接上：直接输 URL、书签、旧路径 `/views` 重定向、浏览器前进后退都走同一条规则。
+- ✅ **删除**空态提示 "Select a workbook and view above, or paste a view URL to embed."（连带词典里的死键 `views.embedEmpty`）——
+  页面现在总会先解析出目标视图再嵌入，那句话在兜底也打不开时只会变成误导性死文案。
+- ✅ 落点解析抽成纯函数 `src/lib/view-entry.ts`（5 项单测：UUID 优先、取第一条、旧数据退名称、无最近记录用兜底、都没配则不跳）。
+- 🎯 决策：兜底视图是**站点内容**，因此与站点绑定同源（`.env.example` / `docs/tableau-setup.md` 都写清"换自己的站点必须改成自己站点上的视图 UUID"）；
+  团队前缀用**当前团队**而不是写死 `acme_hq`（在别的团队下也能正常打开，不会跳到别的团队去）。
+- ✅ **版面收紧与交互补齐（同日追加）**：① 视图名 + 工作簿名**同一行**（`min-w-0 truncate` 各自截断，标题区从两行变一行）；
+  ② 收藏星标从右上角按钮组**移到工作簿名右侧**（改为 ghost 图标按钮，不参与压缩）；
+  ③ info 弹层里的 Tableau URL **换行显示**（去掉 `truncate`，改 `break-all`，长 URL 不再顶出下边框）且**可点击跳转**
+  （`target="_blank" rel="noreferrer"` + 外链图标，复制按钮保留）；用无头 Chrome 截图逐项目视核对。
+- ✅ 验证：tsc / eslint（0 error）/ vitest / check:i18n / check:i18n:keys / check:routes / build 全绿；
+  另用无头 Chrome 对四种入口做了**真实站点**核对 —— ①无参数且无最近记录 → `Overview`（兜底，嵌入 src = `…/views/Superstore/Overview`）；
+  ②同一浏览器先打开 Product 再进无参数 → `Product`（上次打开）；③不存在的 UUID → `Overview`（兜底）；④`?view=abc` → **不跳转**（旧链接兼容）；且页面上不再出现那句提示。
+
+## ✅ v0.13.0 — Tableau 站点用户与角色 / 定时计划运行情况（2026-10-09）
+
+- ✅ **`/t/{slug}/tableau/users`（站点用户与角色）**：读 `GET /sites/{id}/users`（自动翻页、pageSize=100），
+  关键词（登录名/展示名/邮箱）与站点角色筛选、三种空态；对每个用户可用**二次确认弹窗**改站点角色
+  （`PUT /sites/{id}/users/{user-id}`，只带 `siteRole` 一个字段）。7 个可分配角色收在一处常量表
+  （`lib/tableau-site-roles.ts`，刻意不含 Server 专有的 `ServerAdministrator`；保留旧站点仍在用的 `ExplorerCanPublish`），
+  失败按 Tableau 错误码（409014 席位不足 / 400012 组内最低角色 / 400013 无效角色 / 403009 改自己或 Guest / 401002 未授权）给专属文案。
+- ✅ **`/t/{slug}/tableau/schedules`（定时计划运行情况，只读）**：三块数据 —— 提取刷新任务（频率人话化 + 下次运行 + 连续失败次数徽章）、
+  后台作业（状态/类型/耗时，**对象名按需展开才取** `GET /jobs/{id}`，避免逐行 N+1）、订阅计划（空态正常显示）。
+  筛选栏：任务按 id 搜；作业按状态/类型筛（选项由数据里出现过的取值生成，不预置 Tableau 没说过的词汇表）。
+- 🎯 **关键决策（都留了理由在代码注释里）**：
+  1. **Tableau 是唯一数据源**：站点用户**不镜像**进本地 `org-store`（那是模板的演示账号），「同步」= 重新取一次 REST；
+  2. **按能力域申请 JWT scope**（content / site-users / site-tasks），而不是一张全权限令牌 —— 减少无谓暴露，且各域 401/限流互不拖累；
+     但**这不是安全边界**：纯前端把密钥内联进 bundle，能拿到产物的人本就能自签任意 scope；
+  3. **写入不做乐观更新**：站点角色是许可证属性，服务端可能因席位拒绝，"先显示成功再回滚"会让管理员误以为已改好；
+  4. **不自加时间窗、不截断条数**：作业保留期由 Tableau 决定（官方 REST 引用页未承诺任何保留期）；
+  5. **固定阈值只有分页 pageSize=100**（Tableau 默认值，已与用户确认）；不轮询，只有手动「同步」+ 5 分钟 staleTime。
+- 🔬 **对线上实测（只读 + 一次不改变数据的探测）**：演示站点用户 2 个（`wyp@vizwise.cn` = SiteAdministratorCreator、`dong@vizwise.cn` = Viewer）；
+  `/tasks/extractRefreshes` 1 条（每日 23:30、连续失败 5 次）；`/jobs` 4 条 run_flow；`/subscriptions` 0 条；
+  **`/schedules` 在 Tableau Cloud 不可用**（403 "此站点不支持管理员计划"），故计划信息一律从任务内联的 schedule 读。
+  写通路只做过**授权探测**（以非法 `siteRole` 提交，回 400013 = 鉴权已过、校验失败、数据未变），**未做任何真实写入**（用户明确要求不动线上数据）。
+- ✅ **验证**：tsc / eslint（0 error，未新增告警）/ build / vitest（108 项）/ check:i18n / check:i18n:keys / check:routes 全绿；
+  另用无头 Chrome（`--dump-dom --virtual-time-budget`）对两页做了**真实数据**核对：用户页 2 行 + 角色原文 + 「You」行禁用改角色 + 筛选/重置；
+  计划页 1 条任务（内容名解析为真实工作簿名、`Daily at 23:30`、`5 failures in a row`）、4 条作业（`Flow run`）、订阅空态、
+  表头标题取自权限目录、两页均无未翻译 key；改角色弹窗（默认角色、角色说明、Apply role、自身警告）与作业详情（对象名 / 进度 / 完成码）已渲染核对。
+- ⚠️ **已知边界**：改角色入口只管"站点角色"，不改姓名/邮箱/口令（站点管理员通过 REST 本就改不了这些）；
+  `page.tableau.users` 默认 fail-closed，团队岗位需要时在 `/permissions` 勾选。
+
+## ✅ v0.12.0（2026-10-09）— 登录页模板（3 种样式）+ 联合登录配置（/login、/config/login）
+
+- ✅ **登录页 `/login`（裸布局：不套 App shell、不走权限门禁）**，三种样式可在配置页切换：
+  `centered-card`（默认：品牌标识 + 用户名/密码/验证码 + 第三方入口）/ `split-hero`（左 2/3 宣传图 + 右 1/3 面板，
+  窄屏收起宣传图）/ `fullscreen-card`（全屏背景图 + 居中卡片 + 遮罩）
+- ✅ **登录内容只有一份**（`features/login/login-form.tsx`），模板只负责摆版面；注册表 `templates/registry.tsx` +
+  `LOGIN_TEMPLATES` 目录，**新增样式 = 一个文件 + 两行登记**（漏登记 tsc 报错）
+- ✅ **路由级版面开关**：`__root.tsx` 扩展 TanStack Router 的 `StaticDataRouteOption`，路由用
+  `staticData: { layout: 'bare' }` 声明跳出 shell —— 版面归属是路由元信息，root 不认识具体路径
+- ✅ **`/config/login`（`page.config.login`，fail-closed 仅系统管理员）**：样式选择（线框缩略图）、宣传图 URL + 实时缩略图、
+  GitHub / Google 公开参数（开关 / Client ID / 授权端点 / 回调 / scope）、实时预检、恢复默认二次确认、新标签页预览
+- ✅ **领域层 `src/lib/login.ts`**（纯函数，不依赖 React）：模板目录、provider 目录、脏数据归一化、预检规则
+  （error 拦保存 / warning 放行）、状态推导、宣传图解析；`src/lib/login.test.ts` 22 项（含「配置里不含 secret」的安全不变量）
+- ✅ **内置宣传图 `public/login-hero.svg`**（离线可用）+ 远程图**加载失败自动退回内置图**
+- ✅ **`pnpm check:login`**（`scripts/check-login.mjs`）：规则断言 + **7 项真实 Chrome 用例**（保存→整页刷新→登录页换版面、
+  provider 开关与宣传图传到模板、校验不通过不写盘、点第三方入口只提示不跳转、恢复默认回出厂值、`/login` 无侧栏/头部、
+  localStorage 无 secret 字段），已接入 CI 的 ui-checks
+- ✅ **边界（有意为之）**：不做鉴权（纯前端伪造登录态是安全剧场）、不拦截任何页面、验证码只占位不校验、
+  **不收集 Client Secret**（前端存 Secret 等于公开）、本轮不拼 OAuth 跳转链接；接后端契约见 `docs/login-setup.md`
+- ✅ 同时并入：`/config` 落点链改为 SMTP → 登录页 → 团队首页；`check-route-catalog` 白名单新增
+  「登录前页面」判定与 `/login` 的豁免留痕
+- ✅ 验证：tsc / lint（0 error）/ build / vitest（75 项）/ check:i18n / check:i18n:keys / check:routes /
+  **check:login（规则断言 + 7/7 页面用例）** 全绿；三种样式与配置页用无头 Chrome 截图逐张核对（含 390px 窄屏）
+- ✅ 版本同步 0.12.0（package.json / `src/config/app.ts` / README / PROGRESS / CHANGELOG）
 
 ## ✅ v0.11.1（2026-10-08）— 组件总览页（/components）+ 窄屏侧栏宽度修复 + 内容 padding 收紧
 
@@ -378,7 +470,7 @@
 ## 日常开发命令
 
 ```bash
-cd /Users/xilejun/WorkBuddy/ds_Harness/shadcn_admin_cn
+cd /Users/xilejun/dsh-projects/shadcn-admin-cn
 
 pnpm dev          # 开发服务器（http://127.0.0.1:5174）
 pnpm build        # 类型检查（tsc -b）+ 生产构建

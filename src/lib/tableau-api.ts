@@ -1,8 +1,24 @@
 import { queryOptions } from '@tanstack/react-query'
 
 import { TABLEAU_CONFIG } from '@/config/tableau'
-import { createTableauJwt } from '@/lib/tableau-jwt'
-import { queryClient } from '@/lib/query-client'
+import {
+  apiGet,
+  apiRequest,
+  getAccessToken,
+  tableauRetry,
+  TableauApiError,
+  TableauAuthError,
+} from '@/lib/tableau-rest'
+
+/**
+ * 本模块固定使用传输层的 **content 能力域**（工作簿/视图/预览图；scope 与 0.7.0 起完全一致）。
+ * 站点用户与定时计划的 REST 调用分别在 lib/tableau-users-api.ts / lib/tableau-tasks-api.ts，
+ * 各自用自己的能力域令牌 —— 理由见 lib/tableau-rest.ts 顶部。
+ */
+const SCOPE = 'content' as const
+
+// 错误类型 0.13 迁到传输层：这里转出以保持既有引用（route 层曾直接 import 这两个名字）
+export { TableauApiError, TableauAuthError }
 
 export interface TableauWorkbook {
   id: string
@@ -21,143 +37,13 @@ export interface TableauView {
   contentUrl: string
 }
 
-interface CachedAuth {
-  token: string
-  siteId: string
-}
-
-/** Tableau REST 错误（带 HTTP 状态码，供调用方按状态分类处理） */
-export class TableauApiError extends Error {
-  readonly status: number
-
-  constructor(message: string, status: number) {
-    super(message)
-    this.name = 'TableauApiError'
-    this.status = status
-  }
-}
-
-/**
- * 认证（signin）阶段错误：与业务请求错误区分开。
- * 认证是共享资源——signin 失败（限流/凭据问题）时，任何业务查询的重试
- * 都只会放大对 signin 端点的压力（重试风暴），因此业务层对这类错误一律不重试。
- */
-export class TableauAuthError extends TableauApiError {}
-
-async function safeText(res: Response): Promise<string> {
-  try {
-    return await res.text()
-  } catch {
-    return ''
-  }
-}
-
-/* ==================== 认证：REST 令牌即一条 Query ==================== */
-
-const authQueryKey = ['tableau', 'auth'] as const
-
-/** 用 JWT 换取 REST API access token（POST /auth/signin）—— 认证查询的 queryFn */
-async function signIn(): Promise<CachedAuth> {
-  const jwt = await createTableauJwt(['tableau:content:read', 'tableau:views:*', 'tableau:workbooks:*'])
-  const res = await fetch(
-    `${TABLEAU_CONFIG.apiBaseUrl}/api/${TABLEAU_CONFIG.apiVersion}/auth/signin`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({
-        credentials: {
-          jwt,
-          site: { contentUrl: TABLEAU_CONFIG.siteContentUrl },
-        },
-      }),
-    },
-  )
-  if (!res.ok) {
-    throw new TableauAuthError(
-      `Tableau signin failed: ${res.status} ${(await safeText(res)).slice(0, 200)}`,
-      res.status,
-    )
-  }
-  const data = (await res.json()) as {
-    credentials?: { token?: string; site?: { id?: string } }
-  }
-  const token = data.credentials?.token
-  const siteId = data.credentials?.site?.id
-  if (!token || !siteId) {
-    throw new TableauAuthError('Tableau signin response missing token/siteId', res.status)
-  }
-  return { token, siteId }
-}
-
-/**
- * 获取 REST 访问令牌 —— 统一走 Query 缓存层（替代旧模块级 authCache）：
- * - staleTime = 令牌有效期(5 分钟) − 1 分钟余量：窗口内并发调用共享同一令牌（single-flight）
- * - gcTime = Infinity：应用存活期间不回收
- * - 令牌意外提前失效由 apiRequest 的 401 → invalidate → 重试 闭环兜底，
- *   不再依赖「掐时间判断过期」。
- */
-export async function getAccessToken(): Promise<CachedAuth> {
-  try {
-    return await queryClient.fetchQuery({
-      queryKey: authQueryKey,
-      queryFn: signIn,
-      staleTime: TABLEAU_CONFIG.tokenTtlSeconds * 1000 - 60_000,
-      gcTime: Infinity,
-      // signin 失败不自动重试：失败原因（限流/凭据）不会因立即重试而消失，
-      // 且业务查询的 retry 会经 getAccessToken 再次触发 signin（single-flight 共享一次尝试），
-      // 这里重试只会让「一次失败」变成「N 次对 signin 端点的冲击」。
-      retry: false,
-    })
-  } catch (err) {
-    // signin 失败：移除错误态缓存，让下一次调用（业务层重试 / 用户刷新）能重新发起登录，
-    // 而不是让失败结果停留在缓存里阻塞所有后续请求。
-    if (err instanceof TableauAuthError) {
-      void queryClient.removeQueries({ queryKey: authQueryKey })
-    }
-    throw err
-  }
-}
-
-/** 作废认证缓存：令牌 401 后调用，下一次 getAccessToken 会重新登录 */
-function invalidateAuth(): Promise<void> {
-  return queryClient.invalidateQueries({ queryKey: authQueryKey })
-}
-
-/**
- * 带认证头的 REST 请求：401 → 作废认证缓存 → 重新登录 → 重试一次。
- * 比「提前 30 秒判断过期」更可靠：即使时钟偏差或密钥轮换导致令牌提前失效也能自愈。
- */
-async function apiRequest<T>(
-  path: string,
-  headers: Record<string, string>,
-  parse: (res: Response) => Promise<T>,
-  attempt = 0,
-): Promise<T> {
-  const { token } = await getAccessToken()
-  const res = await fetch(
-    `${TABLEAU_CONFIG.apiBaseUrl}/api/${TABLEAU_CONFIG.apiVersion}${path}`,
-    { headers: { ...headers, 'X-Tableau-Auth': token } },
-  )
-  if (res.status === 401 && attempt === 0) {
-    await invalidateAuth()
-    return apiRequest(path, headers, parse, attempt + 1)
-  }
-  if (!res.ok) {
-    throw new TableauApiError(
-      `Tableau API ${path} failed: ${res.status} ${(await safeText(res)).slice(0, 200)}`,
-      res.status,
-    )
-  }
-  return parse(res)
-}
-
-function apiGet<T>(path: string): Promise<T> {
-  return apiRequest(path, { Accept: 'application/json' }, (res) => res.json() as Promise<T>)
-}
+/* ==================== 认证与请求：统一在传输层 ==================== */
+/* signIn / getAccessToken / apiRequest / 分页都搬到了 lib/tableau-rest.ts，
+   本模块只保留内容域的业务方法（下面每个 apiGet/apiRequest 调用都带 SCOPE = 'content'）。 */
 
 /** 站点内 workbooks 列表 */
 export async function fetchWorkbooks(): Promise<TableauWorkbook[]> {
-  const { siteId } = await getAccessToken()
+  const { siteId } = await getAccessToken(SCOPE)
   // ⚠️ fields 参数不能用 projectName（Tableau 会 400 拒绝整个请求，error 409004）；
   // 项目名在响应里以 location.name（部分版本 project.name）返回。
   // 项目限制：REST API 不受已连接应用"访问级别"约束（该限制仅作用于嵌入），
@@ -168,6 +54,7 @@ export async function fetchWorkbooks(): Promise<TableauWorkbook[]> {
   const data = await apiGet<{
     workbooks?: { workbook?: Array<Record<string, unknown>> }
   }>(
+    SCOPE,
     `/sites/${siteId}/workbooks?fields=id,name,contentUrl,updatedAt,showTabs,defaultViewId${filter}`,
   )
   const rows = data.workbooks?.workbook ?? []
@@ -186,10 +73,79 @@ export async function fetchWorkbooks(): Promise<TableauWorkbook[]> {
   })
 }
 
+/**
+ * workbooks 列表查询选项。
+ *
+ * 0.13 起从 workbooks 页内联的 useQuery 抽出来：定时计划页要用同一份列表把
+ * workbookId 解析成名字，两处若各写一个 queryKey，就会出现"同一份数据缓存两份"
+ * （而且两边的 retry / staleTime 迟早不一致）—— 共用这个 queryOptions 即同一份缓存。
+ */
+export function workbooksQueryOptions() {
+  return queryOptions({
+    queryKey: ['tableau', 'workbooks'] as const,
+    queryFn: fetchWorkbooks,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  })
+}
+
+/** 单个 workbook 的引用（把 id 解析成名字时用） */
+export interface TableauWorkbookRef {
+  id: string
+  name: string
+  projectName?: string
+}
+
+/**
+ * 按 id 取单个 workbook（名字 + 所属项目）。
+ *
+ * 为什么不用 workbooks 列表来解析名字：列表带**项目过滤**（VITE_TABLEAU_PROJECT，
+ * 那是内容页的浏览偏好），而提取刷新任务可以指向任意项目的内容 ——
+ * 实测演示站点上的第一个任务指向的 workbook 就在 Samples 之外，
+ * 拿过滤后的列表去查必然查不到（页面只能退化成显示 uuid）。
+ * 按 id 逐个取还顺带把请求量绑在"本页显示多少行"上，而不是站点内容总量上。
+ *
+ * 404（已删除 / 无权访问）返回 null：页面回落到显示 id，而不是整页报错。
+ */
+export async function fetchWorkbookRef(workbookId: string): Promise<TableauWorkbookRef | null> {
+  const { siteId } = await getAccessToken(SCOPE)
+  try {
+    const data = await apiGet<{ workbook?: Record<string, unknown> }>(
+      SCOPE,
+      `/sites/${siteId}/workbooks/${workbookId}`,
+    )
+    const workbook = data.workbook
+    if (!workbook?.id) return null
+    const project = (workbook.project ?? workbook.location ?? {}) as Record<string, unknown>
+    return {
+      id: String(workbook.id),
+      name: String(workbook.name ?? ''),
+      projectName: project.name ? String(project.name) : undefined,
+    }
+  } catch (err) {
+    if (err instanceof TableauApiError && err.status === 404) return null
+    throw err
+  }
+}
+
+/**
+ * 单个 workbook 查询（queryKey 按 id 分开）：
+ * 同一个 workbook 出现在多个任务里时只请求一次，缓存 10 分钟。
+ */
+export function workbookRefQueryOptions(workbookId: string) {
+  return queryOptions({
+    queryKey: ['tableau', 'workbook-ref', workbookId] as const,
+    queryFn: () => fetchWorkbookRef(workbookId),
+    staleTime: 10 * 60_000,
+    retry: tableauRetry,
+  })
+}
+
 /** 某个 workbook 的 views 列表 */
 export async function fetchWorkbookViews(workbookId: string): Promise<TableauView[]> {
-  const { siteId } = await getAccessToken()
+  const { siteId } = await getAccessToken(SCOPE)
   const data = await apiGet<{ views?: { view?: Array<Record<string, unknown>> } }>(
+    SCOPE,
     `/sites/${siteId}/workbooks/${workbookId}/views?fields=id,name,contentUrl`,
   )
   const rows = data.views?.view ?? []
@@ -219,10 +175,11 @@ export interface TableauViewDetail {
  * 无需前端再传 workbook id。
  */
 export async function fetchViewDetail(viewId: string): Promise<TableauViewDetail | null> {
-  const { siteId } = await getAccessToken()
+  const { siteId } = await getAccessToken(SCOPE)
   try {
     // 不带 fields：需同时取 workbook / viewUrlName / contentUrl（fields 白名单不含全部所需字段）
     const data = await apiGet<{ view?: Record<string, unknown> }>(
+      SCOPE,
       `/sites/${siteId}/views/${viewId}`,
     )
     const v = data.view
@@ -291,7 +248,7 @@ async function fetchPreviewImageBlob(
   kind: 'workbook' | 'view',
   id: string,
 ): Promise<Blob | null> {
-  const { siteId } = await getAccessToken()
+  const { siteId } = await getAccessToken(SCOPE)
   const path =
     kind === 'workbook'
       ? `/sites/${siteId}/workbooks/${id}/previewImage?maxAge=60`
@@ -321,7 +278,7 @@ async function fetchPreviewImageBlob(
     }
 
     try {
-      const blob = await apiRequest(path, {}, (res) => res.blob())
+      const blob = await apiRequest(SCOPE, path, {}, (res) => res.blob())
       if (cache) {
         try {
           // 写入不阻塞返回；缓存键带 siteId，天然按站点隔离
@@ -348,25 +305,8 @@ async function fetchPreviewImageBlob(
   })
 }
 
-/**
- * 预览图重试策略：仅瞬时故障（网络错误 / 5xx / 429）重试 1 次，固定短延迟；
- * 4xx 属确定性失败（404 已在 queryFn 内转 null），重试只会放大服务端压力。
- */
-function previewRetry(failureCount: number, error: unknown): boolean {
-  if (failureCount >= 1) return false
-  // 认证错误：signin 是共享资源，业务查询重试只会放大 signin 压力 → 不重试
-  if (error instanceof TableauAuthError) return false
-  // 4xx（除 429）确定性失败 → 不重试；仅瞬时故障（网络 / 5xx / 429）重试 1 次
-  if (
-    error instanceof TableauApiError &&
-    error.status >= 400 &&
-    error.status < 500 &&
-    error.status !== 429
-  ) {
-    return false
-  }
-  return true
-}
+/* 重试策略 0.13 起统一到传输层（tableauRetry）：原先只有预览图查询带策略，
+   现在三个能力域共用一份，避免各写一遍再各自漂移。预览图仍多一个固定 1.5s 延迟。 */
 
 /**
  * 预览图查询选项：blob 视为不可变资源（staleTime Infinity）；
@@ -378,7 +318,7 @@ export function previewImageQueryOptions(kind: 'workbook' | 'view', id: string) 
     queryFn: () => fetchPreviewImageBlob(kind, id),
     staleTime: Infinity,
     gcTime: 10 * 60_000,
-    retry: previewRetry,
+    retry: tableauRetry,
     retryDelay: 1500,
   })
 }
@@ -402,7 +342,7 @@ export function resolvedViewPreviewQueryOptions(workbookName: string, viewName: 
     },
     staleTime: Infinity,
     gcTime: 10 * 60_000,
-    retry: previewRetry,
+    retry: tableauRetry,
     retryDelay: 1500,
   })
 }

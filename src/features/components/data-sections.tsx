@@ -7,6 +7,7 @@ import { ConfigStatusCard } from '@/components/config-status-card'
 import { DescriptionList } from '@/components/description-list'
 import { FilterBar, FilterSearch, FilterSelect, type FilterOption } from '@/components/filter-bar'
 import { NoteCallout } from '@/components/note-callout'
+import { ListState } from '@/components/list-state'
 import { GuardCard } from '@/components/route-guard'
 import { Avatar, AvatarFallback, AvatarGroup, AvatarGroupCount } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -421,6 +422,33 @@ function ToastDemo() {
   )
 }
 
+function ListStateDemo() {
+  const { t } = useTranslation()
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="rounded-lg border">
+        <ListState status="pending" />
+      </div>
+      <div className="rounded-lg border">
+        <ListState status="success" isEmpty emptyMessage={t('components.demo.listStateEmpty')} />
+      </div>
+      <div className="rounded-lg border">
+        <ListState
+          status="error"
+          errorTitle={t('components.demo.listStateError')}
+          errorHint={t('components.demo.listStateErrorHint')}
+          onRetry={() => toast(t('components.demo.toastInfoBody'))}
+        />
+      </div>
+      <div className="rounded-lg border p-3">
+        <ListState status="success">
+          <p className="text-muted-foreground text-sm">{t('components.demo.listStateBody')}</p>
+        </ListState>
+      </div>
+    </div>
+  )
+}
+
 function GuardCardDemo() {
   const { t } = useTranslation()
   return (
@@ -462,6 +490,7 @@ const FEEDBACK_DEMOS: DemoMap = {
   toast: ToastDemo,
   guardCard: GuardCardDemo,
   configStatusCard: ConfigStatusCard,
+  listState: ListStateDemo,
 }
 
 const HOOK_DEMOS: DemoMap = {}

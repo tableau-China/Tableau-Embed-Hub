@@ -1,15 +1,43 @@
-import { createRootRoute, Outlet } from '@tanstack/react-router'
+import { createRootRoute, Outlet, useRouterState } from '@tanstack/react-router'
 
 import { AppSidebar } from '@/components/app-sidebar'
 import { Header } from '@/components/header'
 import { GlobalRouteGate } from '@/components/route-guard'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 
+/**
+ * 路由级版面开关：某条路由要**跳出 App shell** 时，在自己的路由选项里声明
+ * `staticData: { layout: 'bare' }`（登录页 `/login` 是第一个使用者）。
+ *
+ * 为什么用 staticData 而不是在 root 里判路径：版面归属是**路由自己的元信息** ——
+ * 新增一个登录前页面时，改动只发生在那个路由文件里，root 不需要认识任何一条具体路径。
+ *
+ * 裸布局 = 既没有侧边栏/头部，也**不经过 GlobalRouteGate 的权限门禁** ——
+ * 登录页必须在「还没有身份」的状态下可用，这是它存在的意义。
+ */
+declare module '@tanstack/react-router' {
+  interface StaticDataRouteOption {
+    layout?: 'shell' | 'bare'
+  }
+}
+
 export const Route = createRootRoute({
   component: RootComponent,
 })
 
 function RootComponent() {
+  const bare = useRouterState({
+    select: (s) => s.matches.some((m) => m.staticData?.layout === 'bare'),
+  })
+
+  if (bare) {
+    return (
+      <div className="min-h-svh">
+        <Outlet />
+      </div>
+    )
+  }
+
   return (
     <SidebarProvider>
       <AppSidebar />

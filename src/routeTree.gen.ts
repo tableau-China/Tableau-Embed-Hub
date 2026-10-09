@@ -16,6 +16,7 @@ import { Route as ComponentsRouteImport } from './routes/components'
 import { Route as ConfigRouteImport } from './routes/config'
 import { Route as FavoritesRouteImport } from './routes/favorites'
 import { Route as HelpRouteImport } from './routes/help'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as PermissionsRouteImport } from './routes/permissions'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as RecentsRouteImport } from './routes/recents'
@@ -24,6 +25,7 @@ import { Route as UsersRouteImport } from './routes/users'
 import { Route as ViewsRouteImport } from './routes/views'
 import { Route as WorkbooksRouteImport } from './routes/workbooks'
 import { Route as ConfigIndexRouteImport } from './routes/config.index'
+import { Route as ConfigLoginRouteImport } from './routes/config.login'
 import { Route as ConfigSmtpRouteImport } from './routes/config.smtp'
 import { Route as TTeamSlugRouteImport } from './routes/t.$teamSlug'
 import { Route as TTeamSlugIndexRouteImport } from './routes/t.$teamSlug.index'
@@ -31,6 +33,8 @@ import { Route as TTeamSlugFavoritesRouteImport } from './routes/t.$teamSlug.fav
 import { Route as TTeamSlugRecentsRouteImport } from './routes/t.$teamSlug.recents'
 import { Route as TTeamSlugViewsRouteImport } from './routes/t.$teamSlug.views'
 import { Route as TTeamSlugWorkbooksRouteImport } from './routes/t.$teamSlug.workbooks'
+import { Route as TTeamSlugTableauSchedulesRouteImport } from './routes/t.$teamSlug.tableau.schedules'
+import { Route as TTeamSlugTableauUsersRouteImport } from './routes/t.$teamSlug.tableau.users'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -65,6 +69,11 @@ const FavoritesRoute = FavoritesRouteImport.update({
 const HelpRoute = HelpRouteImport.update({
   id: '/help',
   path: '/help',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PermissionsRoute = PermissionsRouteImport.update({
@@ -107,6 +116,11 @@ const ConfigIndexRoute = ConfigIndexRouteImport.update({
   path: '/',
   getParentRoute: () => ConfigRoute,
 } as any)
+const ConfigLoginRoute = ConfigLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => ConfigRoute,
+} as any)
 const ConfigSmtpRoute = ConfigSmtpRouteImport.update({
   id: '/smtp',
   path: '/smtp',
@@ -142,6 +156,17 @@ const TTeamSlugWorkbooksRoute = TTeamSlugWorkbooksRouteImport.update({
   path: '/workbooks',
   getParentRoute: () => TTeamSlugRoute,
 } as any)
+const TTeamSlugTableauSchedulesRoute =
+  TTeamSlugTableauSchedulesRouteImport.update({
+    id: '/tableau/schedules',
+    path: '/tableau/schedules',
+    getParentRoute: () => TTeamSlugRoute,
+  } as any)
+const TTeamSlugTableauUsersRoute = TTeamSlugTableauUsersRouteImport.update({
+  id: '/tableau/users',
+  path: '/tableau/users',
+  getParentRoute: () => TTeamSlugRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -151,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/config': typeof ConfigRouteWithChildren
   '/favorites': typeof FavoritesRoute
   '/help': typeof HelpRoute
+  '/login': typeof LoginRoute
   '/permissions': typeof PermissionsRoute
   '/profile': typeof ProfileRoute
   '/recents': typeof RecentsRoute
@@ -158,6 +184,7 @@ export interface FileRoutesByFullPath {
   '/users': typeof UsersRoute
   '/views': typeof ViewsRoute
   '/workbooks': typeof WorkbooksRoute
+  '/config/login': typeof ConfigLoginRoute
   '/config/smtp': typeof ConfigSmtpRoute
   '/t/$teamSlug': typeof TTeamSlugRouteWithChildren
   '/config/': typeof ConfigIndexRoute
@@ -166,6 +193,8 @@ export interface FileRoutesByFullPath {
   '/t/$teamSlug/views': typeof TTeamSlugViewsRoute
   '/t/$teamSlug/workbooks': typeof TTeamSlugWorkbooksRoute
   '/t/$teamSlug/': typeof TTeamSlugIndexRoute
+  '/t/$teamSlug/tableau/schedules': typeof TTeamSlugTableauSchedulesRoute
+  '/t/$teamSlug/tableau/users': typeof TTeamSlugTableauUsersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -174,6 +203,7 @@ export interface FileRoutesByTo {
   '/components': typeof ComponentsRoute
   '/favorites': typeof FavoritesRoute
   '/help': typeof HelpRoute
+  '/login': typeof LoginRoute
   '/permissions': typeof PermissionsRoute
   '/profile': typeof ProfileRoute
   '/recents': typeof RecentsRoute
@@ -181,6 +211,7 @@ export interface FileRoutesByTo {
   '/users': typeof UsersRoute
   '/views': typeof ViewsRoute
   '/workbooks': typeof WorkbooksRoute
+  '/config/login': typeof ConfigLoginRoute
   '/config/smtp': typeof ConfigSmtpRoute
   '/config': typeof ConfigIndexRoute
   '/t/$teamSlug/favorites': typeof TTeamSlugFavoritesRoute
@@ -188,6 +219,8 @@ export interface FileRoutesByTo {
   '/t/$teamSlug/views': typeof TTeamSlugViewsRoute
   '/t/$teamSlug/workbooks': typeof TTeamSlugWorkbooksRoute
   '/t/$teamSlug': typeof TTeamSlugIndexRoute
+  '/t/$teamSlug/tableau/schedules': typeof TTeamSlugTableauSchedulesRoute
+  '/t/$teamSlug/tableau/users': typeof TTeamSlugTableauUsersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -198,6 +231,7 @@ export interface FileRoutesById {
   '/config': typeof ConfigRouteWithChildren
   '/favorites': typeof FavoritesRoute
   '/help': typeof HelpRoute
+  '/login': typeof LoginRoute
   '/permissions': typeof PermissionsRoute
   '/profile': typeof ProfileRoute
   '/recents': typeof RecentsRoute
@@ -205,6 +239,7 @@ export interface FileRoutesById {
   '/users': typeof UsersRoute
   '/views': typeof ViewsRoute
   '/workbooks': typeof WorkbooksRoute
+  '/config/login': typeof ConfigLoginRoute
   '/config/smtp': typeof ConfigSmtpRoute
   '/t/$teamSlug': typeof TTeamSlugRouteWithChildren
   '/config/': typeof ConfigIndexRoute
@@ -213,6 +248,8 @@ export interface FileRoutesById {
   '/t/$teamSlug/views': typeof TTeamSlugViewsRoute
   '/t/$teamSlug/workbooks': typeof TTeamSlugWorkbooksRoute
   '/t/$teamSlug/': typeof TTeamSlugIndexRoute
+  '/t/$teamSlug/tableau/schedules': typeof TTeamSlugTableauSchedulesRoute
+  '/t/$teamSlug/tableau/users': typeof TTeamSlugTableauUsersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -224,6 +261,7 @@ export interface FileRouteTypes {
     | '/config'
     | '/favorites'
     | '/help'
+    | '/login'
     | '/permissions'
     | '/profile'
     | '/recents'
@@ -231,6 +269,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/views'
     | '/workbooks'
+    | '/config/login'
     | '/config/smtp'
     | '/t/$teamSlug'
     | '/config/'
@@ -239,6 +278,8 @@ export interface FileRouteTypes {
     | '/t/$teamSlug/views'
     | '/t/$teamSlug/workbooks'
     | '/t/$teamSlug/'
+    | '/t/$teamSlug/tableau/schedules'
+    | '/t/$teamSlug/tableau/users'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -247,6 +288,7 @@ export interface FileRouteTypes {
     | '/components'
     | '/favorites'
     | '/help'
+    | '/login'
     | '/permissions'
     | '/profile'
     | '/recents'
@@ -254,6 +296,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/views'
     | '/workbooks'
+    | '/config/login'
     | '/config/smtp'
     | '/config'
     | '/t/$teamSlug/favorites'
@@ -261,6 +304,8 @@ export interface FileRouteTypes {
     | '/t/$teamSlug/views'
     | '/t/$teamSlug/workbooks'
     | '/t/$teamSlug'
+    | '/t/$teamSlug/tableau/schedules'
+    | '/t/$teamSlug/tableau/users'
   id:
     | '__root__'
     | '/'
@@ -270,6 +315,7 @@ export interface FileRouteTypes {
     | '/config'
     | '/favorites'
     | '/help'
+    | '/login'
     | '/permissions'
     | '/profile'
     | '/recents'
@@ -277,6 +323,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/views'
     | '/workbooks'
+    | '/config/login'
     | '/config/smtp'
     | '/t/$teamSlug'
     | '/config/'
@@ -285,6 +332,8 @@ export interface FileRouteTypes {
     | '/t/$teamSlug/views'
     | '/t/$teamSlug/workbooks'
     | '/t/$teamSlug/'
+    | '/t/$teamSlug/tableau/schedules'
+    | '/t/$teamSlug/tableau/users'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -295,6 +344,7 @@ export interface RootRouteChildren {
   ConfigRoute: typeof ConfigRouteWithChildren
   FavoritesRoute: typeof FavoritesRoute
   HelpRoute: typeof HelpRoute
+  LoginRoute: typeof LoginRoute
   PermissionsRoute: typeof PermissionsRoute
   ProfileRoute: typeof ProfileRoute
   RecentsRoute: typeof RecentsRoute
@@ -356,6 +406,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HelpRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/permissions': {
       id: '/permissions'
       path: '/permissions'
@@ -412,6 +469,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConfigIndexRouteImport
       parentRoute: typeof ConfigRoute
     }
+    '/config/login': {
+      id: '/config/login'
+      path: '/login'
+      fullPath: '/config/login'
+      preLoaderRoute: typeof ConfigLoginRouteImport
+      parentRoute: typeof ConfigRoute
+    }
     '/config/smtp': {
       id: '/config/smtp'
       path: '/smtp'
@@ -461,15 +525,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TTeamSlugWorkbooksRouteImport
       parentRoute: typeof TTeamSlugRoute
     }
+    '/t/$teamSlug/tableau/schedules': {
+      id: '/t/$teamSlug/tableau/schedules'
+      path: '/tableau/schedules'
+      fullPath: '/t/$teamSlug/tableau/schedules'
+      preLoaderRoute: typeof TTeamSlugTableauSchedulesRouteImport
+      parentRoute: typeof TTeamSlugRoute
+    }
+    '/t/$teamSlug/tableau/users': {
+      id: '/t/$teamSlug/tableau/users'
+      path: '/tableau/users'
+      fullPath: '/t/$teamSlug/tableau/users'
+      preLoaderRoute: typeof TTeamSlugTableauUsersRouteImport
+      parentRoute: typeof TTeamSlugRoute
+    }
   }
 }
 
 interface ConfigRouteChildren {
+  ConfigLoginRoute: typeof ConfigLoginRoute
   ConfigSmtpRoute: typeof ConfigSmtpRoute
   ConfigIndexRoute: typeof ConfigIndexRoute
 }
 
 const ConfigRouteChildren: ConfigRouteChildren = {
+  ConfigLoginRoute: ConfigLoginRoute,
   ConfigSmtpRoute: ConfigSmtpRoute,
   ConfigIndexRoute: ConfigIndexRoute,
 }
@@ -483,6 +563,8 @@ interface TTeamSlugRouteChildren {
   TTeamSlugViewsRoute: typeof TTeamSlugViewsRoute
   TTeamSlugWorkbooksRoute: typeof TTeamSlugWorkbooksRoute
   TTeamSlugIndexRoute: typeof TTeamSlugIndexRoute
+  TTeamSlugTableauSchedulesRoute: typeof TTeamSlugTableauSchedulesRoute
+  TTeamSlugTableauUsersRoute: typeof TTeamSlugTableauUsersRoute
 }
 
 const TTeamSlugRouteChildren: TTeamSlugRouteChildren = {
@@ -491,6 +573,8 @@ const TTeamSlugRouteChildren: TTeamSlugRouteChildren = {
   TTeamSlugViewsRoute: TTeamSlugViewsRoute,
   TTeamSlugWorkbooksRoute: TTeamSlugWorkbooksRoute,
   TTeamSlugIndexRoute: TTeamSlugIndexRoute,
+  TTeamSlugTableauSchedulesRoute: TTeamSlugTableauSchedulesRoute,
+  TTeamSlugTableauUsersRoute: TTeamSlugTableauUsersRoute,
 }
 
 const TTeamSlugRouteWithChildren = TTeamSlugRoute._addFileChildren(
@@ -505,6 +589,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConfigRoute: ConfigRouteWithChildren,
   FavoritesRoute: FavoritesRoute,
   HelpRoute: HelpRoute,
+  LoginRoute: LoginRoute,
   PermissionsRoute: PermissionsRoute,
   ProfileRoute: ProfileRoute,
   RecentsRoute: RecentsRoute,

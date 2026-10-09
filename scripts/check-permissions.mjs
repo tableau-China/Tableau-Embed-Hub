@@ -562,7 +562,7 @@ const CASES = [
           ),
       ).length
 
-      await page.evaluate(`localStorage.setItem('shadcn-admin-cn:permissions', JSON.stringify({
+      await page.evaluate(`localStorage.setItem('tableau-embed-hub:permissions', JSON.stringify({
         state: { grants: ${JSON.stringify(INJECTED)} },
         version: 1,
       }))`)
@@ -614,7 +614,7 @@ const CASES = [
       await navigate(page, '/t/acme_hq', { expectPath: '/t/acme_hq' })
       await switchUser(page, 'Alice Chen')
     },
-    contains: [APP_NAME, 'Core features', APP_AUTHOR, APP_WEBSITE_LABEL, 'v'],
+    contains: [APP_NAME, 'Core features', APP_AUTHOR, APP_WEBSITE_LABEL, 'v', 'Third-party notices', 'Salesforce'],
     linkPresent: '/help',
     custom: async (page) => {
       const failures = []
@@ -639,6 +639,25 @@ const CASES = [
         `document.querySelector('[data-config-card]') ? 'yes' : 'no'`,
       )
       if (configCard !== 'yes') failures.push('Help 页应有「环境自检」卡片（data-config-card）')
+      // 第三方版权说明：必须是**页面自带**的 —— 别人拿到的是构建产物，看不到仓库里的 THIRD-PARTY.md
+      const noticeRows = await page.evaluate(
+        `document.querySelectorAll('[data-help-third-party] tbody tr').length`,
+      )
+      if (noticeRows < 20) {
+        failures.push(`第三方版权表应列出直接依赖（见 src/config/third-party.ts），实际 ${noticeRows} 行`)
+      }
+      const embeddingRow = await page.evaluate(
+        `document.querySelector('[data-help-third-party-row="@tableau/embedding-api"]')?.textContent ?? ''`,
+      )
+      if (!/Binary Code License/.test(embeddingRow)) {
+        failures.push(`非开源的 @tableau/embedding-api 必须标出许可名称（Salesforce Binary Code License），实际：${embeddingRow}`)
+      }
+      const trademark = await page.evaluate(
+        `document.querySelector('[data-help-trademark]')?.textContent?.trim() ?? ''`,
+      )
+      if (!/trademarks? of Salesforce/.test(trademark)) {
+        failures.push(`第三方版权说明必须包含 Salesforce, Inc. 的商标归属声明，实际：${trademark}`)
+      }
       const siteSource = await page.evaluate(
         `document.querySelector('[data-config-tableau-site-source]')?.getAttribute('data-config-tableau-site-source')`,
       )
@@ -724,8 +743,12 @@ const CASES = [
     linkPresent: '/config/smtp',
   },
   {
-    // 侧边栏顺序属于「产品决定」而非样式细节，用用例钉住：Config 分组内 Help 必须在 SMTP 之后
-    name: '侧边栏 Config 分组内 Help 排在 SMTP 之后',
+    // 侧边栏顺序属于「产品决定」而非样式细节，用用例钉住整个 Config 分组：
+    // **系统配置在前（SMTP → 登录页）、说明书在后（Components → Help）**。
+    // 顺序沿革：v0.12.0 加入登录页；2026-10-09 起 Help 从「紧跟 SMTP」挪到分组最末
+    //（Help 是收尾页：核心功能 / 版本 / 第三方版权，排在 Components 之后读起来更顺）。
+    // 组内其它条目（将来新增的）不影响结论，但顺序错位会立刻报出来。
+    name: '侧边栏 Config 分组顺序：SMTP → 登录页 → Components → Help',
     path: '/t/acme_hq',
     custom: async (page) => {
       const order = await page.evaluate(`(() => {
@@ -737,11 +760,10 @@ const CASES = [
         return [...target.querySelectorAll('a[href]')].map((a) => a.getAttribute('href'))
       })()`)
       if (order === null) return ['侧边栏里未找到 Config 分组']
-      if (order.indexOf('/config/smtp') === -1 || order.indexOf('/help') === -1) {
-        return [`Config 分组应同时含 /config/smtp 与 /help，实际：${JSON.stringify(order)}`]
-      }
-      if (order.indexOf('/help') !== order.indexOf('/config/smtp') + 1) {
-        return [`Help 应紧跟 SMTP 之后，实际顺序：${JSON.stringify(order)}`]
+      const expected = ['/config/smtp', '/config/login', '/components', '/help']
+      const picked = order.filter((href) => expected.includes(href))
+      if (JSON.stringify(picked) !== JSON.stringify(expected)) {
+        return [`Config 分组顺序应为 ${JSON.stringify(expected)}，实际：${JSON.stringify(order)}`]
       }
       return []
     },

@@ -1,3 +1,8 @@
+// ⚠️ 必须是第一个 import：存储前缀迁移（shadcn-admin-cn: → tableau-embed-hub:）要在任何 store
+// 模块被求值之前跑完 —— zustand persist 在模块加载时就 hydrate，晚一步读到的就是空数据。
+// 该模块自身带副作用，理由与取舍见 src/lib/storage-migration.ts。ESM 依赖按声明顺序求值。
+import '@/lib/storage-migration'
+
 import { lazy, StrictMode, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClientProvider } from '@tanstack/react-query'

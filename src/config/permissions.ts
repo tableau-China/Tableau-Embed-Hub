@@ -160,6 +160,29 @@ export const ROUTE_CATALOG = [
     labelKey: 'nav.views',
     defaultRoles: ['team-admin', 'analyst', 'viewer'],
   },
+  {
+    // Tableau 站点用户与角色（0.13）：**唯一能改 Tableau 的页面**。
+    // 导航上属于团队工作区（与 workbooks/views 同组），但数据是站点级的 —— 不随团队切换而变。
+    // 默认 **fail-closed（defaultRoles 为空 = 仅系统管理员可见）**：团队岗位是本应用的分组概念，
+    // 不该让某个团队的管理员顺带拿到整个 Tableau 站点的用户管理权（那会改到别的团队的人）。
+    // 需要放开时在 /permissions 的团队岗位列显式勾选。
+    key: 'page.tableau.users',
+    to: '/t/$teamSlug/tableau/users',
+    scope: 'team',
+    group: 'general',
+    labelKey: 'nav.tableauUsers',
+    defaultRoles: [],
+  },
+  {
+    // 定时计划与运行情况（0.13）：只读监控，默认与 workbooks/views 一样给三个团队岗位。
+    // 与上一行的差别是有意的：看"提取有没有跑失败"是日常工作，改别人的站点角色是管理动作。
+    key: 'page.tableau.schedules',
+    to: '/t/$teamSlug/tableau/schedules',
+    scope: 'team',
+    group: 'general',
+    labelKey: 'nav.tableauSchedules',
+    defaultRoles: ['team-admin', 'analyst', 'viewer'],
+  },
   /* —— 跨团队页面（无 slug）：按全局身份求值 —— */
   {
     // AI 对话页：模板作为「AI 应用起点」的样板页。
@@ -210,15 +233,15 @@ export const ROUTE_CATALOG = [
     defaultRoles: [],
   },
   {
-    // 帮助页：说明模板的核心功能 / 开发者 / 版本号（侧边栏排在 Config → SMTP 之后）。
-    // 它是给全体成员看的说明书、不属于管理面，因此默认授权给 member
-    //（与同一分组里 fail-closed 只给系统管理员的 SMTP 形成对照）
-    key: 'page.help',
-    to: '/help',
+    // 系统配置 → 登录页：登录样式与第三方联合登录的**公开**参数。
+    // 与 SMTP 同为系统级配置，同样 fail-closed（defaultRoles 为空 = 默认只有系统管理员可见）。
+    // ⚠️ 这里管的是「登录页长什么样」；/login 本身**不登记**（登录前页面，见 scripts/check-route-catalog.mjs 的白名单）。
+    key: 'page.config.login',
+    to: '/config/login',
     scope: 'global',
     group: 'config',
-    labelKey: 'nav.help',
-    defaultRoles: ['member'],
+    labelKey: 'nav.login',
+    defaultRoles: [],
   },
   {
     // 组件总览页（/components）：公共件清单 + 实时预览 + App shell 规格 + 主题 token。
@@ -230,6 +253,19 @@ export const ROUTE_CATALOG = [
     scope: 'global',
     group: 'config',
     labelKey: 'nav.components',
+    defaultRoles: ['member'],
+  },
+  {
+    // 帮助页：说明模板的核心功能 / 开发者 / 版本号 / **第三方版权与商标**。
+    // ⚠️ 侧边栏顺序由本目录顺序决定：Help **排在 Components 之后**（说明书类的收尾页，
+    //    2026-10-09 起由「排在最前」调整为「排在最后」）。
+    // 它是给全体成员看的说明书、不属于管理面，因此默认授权给 member
+    //（与同一分组里 fail-closed 只给系统管理员的 SMTP 形成对照）
+    key: 'page.help',
+    to: '/help',
+    scope: 'global',
+    group: 'config',
+    labelKey: 'nav.help',
     defaultRoles: ['member'],
   },
   {

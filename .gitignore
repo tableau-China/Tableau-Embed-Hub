@@ -39,4 +39,6 @@ temp/
 coverage/
 # 工作区内的临时目录（check-*.mjs 的 Chrome profile、诊断脚本输出等；沙箱下系统 tmpdir 不可写）
 .tmp-*/
+# 诊断/截图脚本的产物（无头 Chrome 截图、临时 profile）
+.probe/
 

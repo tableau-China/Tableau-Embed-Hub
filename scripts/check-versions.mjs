@@ -242,7 +242,7 @@ async function fetchJson(url, attempt = 0) {
     const res = await fetch(url, {
       headers: {
         accept: 'application/vnd.npm.install-v1+json, application/json',
-        'user-agent': 'shadcn-admin-cn/check-versions',
+        'user-agent': 'tableau-embed-hub/check-versions',
       },
       signal: AbortSignal.timeout(TIMEOUT_MS),
     })

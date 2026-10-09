@@ -16,9 +16,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ThumbnailCard } from '@/components/thumbnail-card'
 import {
-  fetchWorkbooks,
   fetchWorkbookViews,
   previewImageQueryOptions,
+  workbooksQueryOptions,
   type TableauWorkbook,
 } from '@/lib/tableau-api'
 import { isFavorite, toggleFavorite, useFavorites } from '@/lib/view-store'
@@ -32,12 +32,8 @@ const DASHBOARDS_PREVIEW_COUNT = 4
 
 function WorkbooksPage() {
   const { t } = useTranslation()
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['tableau', 'workbooks'],
-    queryFn: fetchWorkbooks,
-    retry: 1,
-    refetchOnWindowFocus: false,
-  })
+  // 查询选项与"内容名解析"（定时计划页）共用：同一 queryKey = 同一份缓存
+  const { data, isLoading, error, refetch } = useQuery(workbooksQueryOptions())
 
   return (
     <div className="flex flex-col gap-6">

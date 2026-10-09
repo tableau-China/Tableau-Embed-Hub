@@ -1,5 +1,5 @@
 # =============================================================================
-# nginx 反代样例 —— 让 shadcn-admin-cn 的 REST 请求能走通（生产环境必备）
+# nginx 反代样例 —— 让 Tableau Embed Hub 的 REST 请求能走通（生产环境必备）
 #
 # 为什么需要：Tableau Cloud 的 REST API **不支持 CORS**（实测：无 ACAO 头、OPTIONS 预检 405）。
 # 浏览器直连会被拦，所以 REST 必须经同源反代；应用侧把请求发到 `VITE_TABLEAU_API_BASE`
