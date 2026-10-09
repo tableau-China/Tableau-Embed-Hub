@@ -30,6 +30,28 @@
 > ⚠️ **0.12.0（登录页模板）与 0.13.0 在同一次提交里一起发布**：0.12.0 的内容线先完成但未单独发布，
 > 线上版本号因此直接从 `0.11.1` 跳到 `0.13.0`。两条记录都留在本文件里以便追溯。
 
+## [未发布] - 2026-10-09
+
+### Changed（变更）
+
+- **TS 7 原生编译器刷新**：`@typescript/native` → `npm:typescript@7.1.0-dev.20261009.1`（原 `7.1.0-dev.20260930.4`，next 通道当日构建）。
+  实测 `tsc -v` 正确；typecheck / lint(0 error) / vitest(113) / check:i18n / check:i18n:keys / check:routes / build 全绿，
+  且 **`dist` 产物哈希与升级前完全一致**（换编译器没有改变输出）。
+- **README（中英）排版重做**：
+  - 开头三段提示原本同属一个引用块、渲染时挤成一段 —— 改为「当前状态」段落 + 两个独立告示块
+    （`[!WARNING]` 非官方项目 / `[!CAUTION]` 凭据边界），**凭据边界独立成块、强制换行**；
+  - 「页面与入口」表格中间被插入引用块，被断成两张表（第二张没有表头）—— 引用块移到表下，表格合并为一张；
+    同时补齐漏登记行：中文补 `/components`，英文补 `/login`、`/config/login`、`/components` 与 Views 落点说明；
+  - 订正技术栈表的 shadcn/ui 预设（`new-york` → `radix-nova`，与 `components.json` 对齐）；脚本表补 `check:i18n:keys`、`check:versions` 两行。
+- **TS 升级路线写进 README**：新增「TypeScript 为什么装了两份」小节 + **两阶段计划** —— ① TS 7.1 正式版发布后把第一份换成 stable（仍两份）；
+  ② 等上游支持 TS 7 后再逐步替换掉 TS 6 线，最终只留一份。判据三条与上游 issue 链接一并写明。
+
+### Known issues（已知问题）
+
+- `pnpm check:versions` 只跟 registry 的 `latest` 比对：当前 pin 是 next 通道的 prerelease（语义上高于 `latest` 7.0.2），
+  所以**巡检不会提示 TS dev 有新构建** —— 盯 dev 通道需要另看 `next` dist-tag。
+- typescript-eslint 仍不支持 TS 7（peer `>=4.8.4 <6.1.0`，上游 #10940 仍 open），**两份 TypeScript 暂时无法合并**。
+
 ## [0.13.0] - 2026-10-09
 
 ### Added（新增：Tableau 站点用户与角色 / 定时计划运行情况）

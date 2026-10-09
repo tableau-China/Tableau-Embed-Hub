@@ -5,12 +5,17 @@
 开源的多团队管理后台 + **Tableau 嵌入可视化**起点：把 Tableau Cloud / Tableau Server 的工作簿与视图嵌进你自己的产品 ——
 团队作用域路由、页面级权限、i18n、AI 对话页与部署样例都已在位。基于 shadcn/ui + Tailwind CSS v4 + Radix UI 从零构建（不是别的模板的 fork）。
 
-> ⚠️ **非官方项目**：与 Salesforce, Inc. 无隶属、授权或赞助关系；Tableau 与 Tableau Cloud 是 Salesforce, Inc. 的商标（详见 [THIRD-PARTY.md](./THIRD-PARTY.md)）。
-> 软件按「现状」提供，不附带任何担保，也不提供支持承诺 —— 使用者需自行遵守 Salesforce 的相关条款。
-> ⚠️ **凭据边界**：纯前端应用，`.env` 与内置演示凭据**都会被内联进构建产物**，部署前请先读 [SECURITY.md](./SECURITY.md)。
+**当前状态**：Phase 0–4 已完成 —— 脚手架与 TS 7 工具链、多团队工作区、Tableau 嵌入与站点管理页、页面级权限、
+系统配置、AI 起点、部署样例；i18n 当前仅 en-US，中/日文后期扩展。
 
-> 当前状态：Phase 1–2 已完成；**Phase 3「通用起点」**（站点绑定全部走 `.env` + 部署样例 + 环境自检）与
-> **Phase 4「AI 起点」**（`/ai` 页面 + 零配置演示 provider + 代理契约）已就绪；i18n 当前仅 en-US。
+> [!WARNING]
+> **非官方项目**：与 Salesforce, Inc. 无隶属、授权或赞助关系；Tableau 与 Tableau Cloud 是 Salesforce, Inc. 的商标
+> （详见 [THIRD-PARTY.md](./THIRD-PARTY.md)）。软件按「现状」提供，不附带任何担保，也不提供支持承诺 ——
+> 使用者需自行遵守 Salesforce 的相关条款。
+
+> [!CAUTION]
+> **凭据边界**：纯前端应用，`.env` 与内置演示凭据**都会被内联进构建产物**。
+> 部署前请先读 [SECURITY.md](./SECURITY.md)。
 
 ## 版本
 
@@ -21,9 +26,9 @@
 | 层 | 选型 | 版本 |
 | --- | --- | --- |
 | 框架 | React | 19.x |
-| 语言 | TypeScript | 7.1.0-dev.20260930.4（原生编译器；lint 另走 TS 6 API 别名，见下） |
+| 语言 | TypeScript | 7.1.0-dev.20261009.1（原生编译器，next 通道；lint 另走 TS 6 API 别名，见下） |
 | 构建 | Vite | 8.x |
-| 样式 | Tailwind CSS v4 + shadcn/ui（new-york） | 4.x |
+| 样式 | Tailwind CSS v4 + shadcn/ui（radix-nova 预设） | 4.x |
 | 组件底层 | Radix UI | 最新 |
 | 路由 | TanStack Router（文件路由） | 1.x |
 | 数据请求 | TanStack Query | 5.x |
@@ -31,11 +36,26 @@
 | 包管理 | pnpm | 12.9.1（`package.json` 的 `packageManager` 锁定，CI 同版本） |
 | 运行时 | Node.js | 24（本地与 CI 一致，`@types/node` 对齐 24 线） |
 
-> **TypeScript 为什么装了两份**：`@typescript/native` → `npm:typescript@7.1.0-dev…` 提供 `tsc`，
-> `typecheck` / `build` 用它（TS 7 原生编译器）；`typescript` → `npm:@typescript/typescript6@6.0.2`
-> 提供 `tsc6`，**只**给 typescript-eslint 解析用 —— 其 peer 范围是 `>=4.8.4 <6.1.0`，尚不支持 TS 7
-> （上游 [typescript-eslint#10940](https://github.com/typescript-eslint/typescript-eslint/issues/10940)），
-> 所以**这两条线都要留着**，升级 TS 7 要动 `@typescript/native`，不要动 `typescript`。
+### TypeScript 为什么装了两份
+
+| 包名 | 实际指向 | 谁在用 |
+| --- | --- | --- |
+| `@typescript/native` | `npm:typescript@7.1.0-dev.20261009.1`（next 通道） | `tsc` —— `pnpm typecheck` / `pnpm build` |
+| `typescript` | `npm:@typescript/typescript6@6.0.2` | `tsc6` —— **只**给 typescript-eslint 解析用 |
+
+typescript-eslint 的 peer 范围仍是 `>=4.8.4 <6.1.0`，**不支持 TS 7**
+（上游 [typescript-eslint#10940](https://github.com/typescript-eslint/typescript-eslint/issues/10940) 仍 open）。
+不只是声明问题：TS 7 那个包只导出 `./unstable/*` 的新 API，没有 typescript-eslint 需要的经典 JS API
+（`createSourceFile` / `createProgram`），所以哪怕放宽 peer 也跑不起来。
+
+**后续计划（两阶段）**
+
+1. **TS 7.1 正式版发布后**：把 `@typescript/native` 换成稳定版 `npm:typescript@7.1.x`，不再跟 next 通道 —— 此时**仍是两份**，只是第一份从 dev 换成 stable。
+2. **等上游支持 TS 7 后**：**逐步替换掉 TS 6 这条线**，最终只留一份 TypeScript。判据三条，缺一不可：
+   ① typescript-eslint 的 peer 上限 ≥ 7；② #10940 已合入并随 stable 发布；③ 实测用同一份 TS 跑
+   `pnpm typecheck` + `pnpm lint` 全绿（peer 只是声明，跑得通才算）。
+
+> ⚠️ 在那之前：**升级 TS 7 只动 `@typescript/native`，不要动 `typescript`** —— 后者一动，eslint 立刻挂。
 
 ## 快速开始
 
@@ -65,7 +85,8 @@ cp .env.example .env      # .env 已被 .gitignore 排除
 
 - **开箱即用**：什么都不配也能跑 —— 应用使用内置的**演示站点 + 演示凭据**（仅供演示）。
 - **看当前生效值**：应用内 `/help` → 「Environment check」卡片会显示站点、凭据来源（演示 / `.env`）、项目过滤与代理路径。
-- ⚠️ **安全边界**：纯前端应用，`.env` 与内置凭据**构建后都会内联进 JS bundle**，混淆只防明文扫描、**不构成加密**。真正的访问控制依赖 Tableau Cloud 后台的 Connected App 域名白名单、访问级别限制与密钥轮换；如需彻底隐藏密钥，请把 JWT 签发迁移到后端。
+- ⚠️ **安全边界**：构建产物里的凭据是**明文可读**的（见上方「凭据边界」），混淆只防明文扫描、**不构成加密**。
+  真正的访问控制依赖 Tableau Cloud 后台的 Connected App 域名白名单、访问级别限制与密钥轮换；如需彻底隐藏密钥，请把 JWT 签发迁移到后端。
 
 ## 部署
 
@@ -85,17 +106,18 @@ cp .env.example .env      # .env 已被 .gitignore 排除
 | 工作区（Dashboard / Favorites / Recents / Workbooks / Views） | `/t/{slug}/...` | 侧边栏 General | 团队成员（按岗位） |
 | Tableau 站点用户与角色 | `/t/{slug}/tableau/users` | 侧边栏 General | **仅系统管理员**（fail-closed；它写的是站点级角色） |
 | Tableau 定时计划运行情况 | `/t/{slug}/tableau/schedules` | 侧边栏 General | 团队成员（按岗位，只读） |
-
-> 点侧边栏 **Views**、或直接打开 `/t/{slug}/views`（不带参数）时的落点：**上次打开的视图** →
-> 解析不到就用固定兜底视图（`VITE_TABLEAU_FALLBACK_VIEW`，缺省是演示站点上的 `Superstore/Overview`）。
-> 带 `?workbook=` / `?view=` 参数的链接仍按参数打开（旧链接行为不变）。
 | AI 对话 | `/ai` | 侧边栏 AI | 全体成员（未配代理时走内置演示 provider） |
 | 用户 / 团队 / 权限 | `/users`、`/teams`、`/permissions` | 侧边栏 Settings | 成员（权限页仅系统管理员） |
 | 个人资料 | `/profile` | **左下角用户菜单** | 全体成员（v0.7.0 起由 `/settings` 改名） |
 | SMTP 邮件服务 | `/config/smtp` | 侧边栏 Config | 仅系统管理员（fail-closed） |
 | 登录页 | `/login` | 直达 / 配置页的「Open preview」 | **无需权限**（登录前页面，裸布局） |
 | 登录页配置 | `/config/login` | 侧边栏 Config | 仅系统管理员（fail-closed） |
-| 帮助 / 关于 | `/help` | 侧边栏 Config（**分组最末，排在 Components 之后**） | 全体成员（核心功能、开发者、版本号、第三方版权与商标） |
+| 组件总览 | `/components` | 侧边栏 Config | 全体成员（公共件清单 + 实时预览） |
+| 帮助 / 关于 | `/help` | 侧边栏 Config（**分组最末**） | 全体成员（核心功能、开发者、版本号、第三方版权与商标） |
+
+> **Views 的落点**：点侧边栏 **Views**、或直接打开 `/t/{slug}/views`（不带参数）时，先落到**上次打开的视图**；
+> 解析不到就用固定兜底视图 `VITE_TABLEAU_FALLBACK_VIEW`（缺省是演示站点上的 `Superstore/Overview`）。
+> 带 `?workbook=` / `?view=` 参数的链接仍按参数打开（旧链接行为不变）。
 
 ## 脚本
 
@@ -107,12 +129,14 @@ cp .env.example .env      # .env 已被 .gitignore 排除
 | `pnpm typecheck` | 仅类型检查 |
 | `pnpm test` | 纯函数用例（vitest：权限语义 / 目录不变量 / SMTP 规则 / 环境变量口径，毫秒级、不需要浏览器） |
 | `pnpm check:i18n` | 校验语言词典 key 对齐（当前仅 en-US） |
+| `pnpm check:i18n:keys` | 反向漏键检查：代码里在用的 key 是否都在词典里（`check:i18n` 只比对语言之间的一致性） |
 | `pnpm check:routes` | 路由文件 ↔ 权限目录一致性（路由守卫是 fail-open 的，漏登记 = 权限盲区；纯静态、已进 CI） |
 | `pnpm check:team-routes` | 团队 slug 路由校验（Chrome CDP，16 用例；需先 `pnpm build`） |
 | `pnpm check:permissions` | 页面权限校验（目录静态自检 + 用例；需先 `pnpm build`） |
 | `pnpm check:filters` | 列表筛选栏校验（i18n/选项来源静态自检 + 7 项页面用例，含宽窄屏几何断言；需先 `pnpm build`） |
 | `pnpm check:smtp` | SMTP 配置校验（规则断言 + 6 项页面用例；需先 `pnpm build`） |
 | `pnpm check:login` | 登录页校验（领域层规则断言 + 7 项页面用例：换样式 / provider 开关 / 校验拦截 / 恢复默认；需先 `pnpm build`） |
+| `pnpm check:versions` | 依赖版本巡检：对比 registry 的 latest，区分「`pnpm update` 即可」与「需改 package.json」；支持 `--md` / `--json` / `--strict` |
 
 ## 前端开发约定（v0.7.0 起）
 
@@ -135,9 +159,11 @@ cp .env.example .env      # .env 已被 .gitignore 排除
 
 ## 页面权限（v0.6.0 起）
 
-角色 × 路由的页面级权限：在 `/permissions` 按角色勾选可访问的页面（默认只有系统管理员可见该页），侧边栏入口过滤与 URL 直达拦截同时生效。路由目录集中在 `src/config/permissions.ts`，**新增页面只登记一行**即可进入这套体系（详见 [docs/route-permissions.md](./docs/route-permissions.md)）。按钮级权限本版仅预留 `action.*` 命名空间，未实现。
+角色 × 路由的页面级权限：在 `/permissions` 按角色勾选可访问的页面（默认只有系统管理员可见该页），**侧边栏入口过滤与 URL 直达拦截同时生效**。
 
-入口不在侧边栏的页面（如 Profile：`navHidden: true`）同样登记在目录里并按 `useCan()` 过滤入口 —— 入口换位置不产生权限盲区。
+- 路由目录集中在 `src/config/permissions.ts`，**新增页面只登记一行**即可进入这套体系 —— 侧边栏顺序也由这份目录的顺序决定（详见 [docs/route-permissions.md](./docs/route-permissions.md)）。
+- 入口不在侧边栏的页面（如 Profile：`navHidden: true`）同样登记在目录里并按 `useCan()` 过滤 —— 入口换位置不产生权限盲区。
+- 按钮级权限本版仅预留 `action.*` 命名空间，未实现。
 
 > ⚠️ 前端权限只控制可见性与直达，**不是安全边界**；接入后端后必须由接口再校验一次。
 
@@ -152,7 +178,11 @@ cp .env.example .env      # .env 已被 .gitignore 排除
 
 ## 系统配置（v0.7.0 起）
 
-`/config/smtp` 提供标准的 SMTP 配置：服务商预设（QQ / 163 / Gmail / 阿里企业邮 / 腾讯企业邮 / Microsoft 365）一键回填、7 项实时预检（错误拦保存、提醒放行）、密码留空即保持原密码、重置带二次确认。
+`/config/smtp` 提供标准的 SMTP 配置：
+
+- 服务商预设（QQ / 163 / Gmail / 阿里企业邮 / 腾讯企业邮 / Microsoft 365）一键回填；
+- 7 项实时预检：**错误拦保存、提醒放行**；
+- 密码留空即保持原密码；重置带二次确认。
 
 > ⚠️ **密码不落盘**：本模板是纯前端，浏览器侧「加密后存 localStorage」的密钥必然随 bundle 一起发出，等于安全剧场 —— 因此只持久化非敏感字段，密码仅存内存（刷新需重填）。接入后端后应改为服务端加密存储、接口只回 `hasPassword`。
 >

@@ -7,19 +7,19 @@ Tableau Server workbooks and views into your own product, with team-scoped routi
 permissions, i18n, an AI assistant page and a deploy sample already wired up. Built from scratch on
 shadcn/ui + Tailwind CSS v4 + Radix UI — not a fork of another template.
 
-> ⚠️ **Not an official project.** Not affiliated with, endorsed by, or sponsored by Salesforce, Inc.
+**Status**: Phases 0–4 are done — scaffolding and the TS 7 toolchain, multi-team workspace, Tableau
+embedding plus site-management pages, page-level permissions, system configuration, the AI starting
+point and a deploy sample. UI is English-only for now (i18n keys are ready for more locales).
+
+> [!WARNING]
+> **Not an official project.** Not affiliated with, endorsed by, or sponsored by Salesforce, Inc.
 > Tableau and Tableau Cloud are trademarks of Salesforce, Inc. See [THIRD-PARTY.md](./THIRD-PARTY.md).
 > The software is provided "as is", without warranty of any kind, and with no support commitment —
 > you are responsible for complying with Salesforce's terms.
-> ⚠️ **Credential boundary**: this is a front-end only app, so `.env` values and the built-in demo
-> credentials are inlined into the build output. Read [SECURITY.md](./SECURITY.md) before deploying.
 
-> Status: Phase 1–2 done — layout, multi-team workspace (with team suspension), global users (with
-> account freezing), page-level permissions, profile, system configuration (SMTP), help page, shared
-> front-end components and a list-filter bar. Installable as a **generic Tableau starting point**
-> (site binding fully driven by `.env`) and an **AI starting point** (`/ai` page with a zero-config
-> demo provider and a documented proxy contract). UI is English-only for now (i18n keys are ready
-> for more locales).
+> [!CAUTION]
+> **Credential boundary**: this is a front-end only app, so `.env` values and the built-in demo
+> credentials are inlined into the build output. Read [SECURITY.md](./SECURITY.md) before deploying.
 
 ## Version
 
@@ -31,9 +31,9 @@ issues. Checked across `package.json` / the sidebar / `PROGRESS.md`.
 | Layer | Choice | Version |
 | --- | --- | --- |
 | UI | React | 19.x |
-| Language | TypeScript | 7.1.0-dev.20260930.4 (native compiler; lint uses a TS 6 API alias — see below) |
+| Language | TypeScript | 7.1.0-dev.20261009.1 (native compiler, `next` channel; lint uses a TS 6 API alias — see below) |
 | Build | Vite | 8.x |
-| Styling | Tailwind CSS v4 + shadcn/ui | 4.x |
+| Styling | Tailwind CSS v4 + shadcn/ui (radix-nova preset) | 4.x |
 | Primitives | Radix UI | latest |
 | Routing | TanStack Router (file-based) | 1.x |
 | Data | TanStack Query | 5.x |
@@ -41,11 +41,28 @@ issues. Checked across `package.json` / the sidebar / `PROGRESS.md`.
 | Package manager | pnpm | 12.9.1 (pinned via `packageManager`, same in CI) |
 | Runtime | Node.js | 24 (`@types/node` tracks the 24 line) |
 
-> **Why TypeScript is installed twice**: `@typescript/native` → `npm:typescript@7.1.0-dev…` provides
-> `tsc` (used by `typecheck` / `build`); `typescript` → `npm:@typescript/typescript6@6.0.2` provides
-> `tsc6`, used **only** by typescript-eslint, whose peer range is still `>=4.8.4 <6.1.0`
-> ([upstream #10940](https://github.com/typescript-eslint/typescript-eslint/issues/10940)). Keep both
-> lines: upgrading TS 7 means changing `@typescript/native`, **not** `typescript`.
+### Why TypeScript is installed twice
+
+| Package | Actually points at | Used by |
+| --- | --- | --- |
+| `@typescript/native` | `npm:typescript@7.1.0-dev.20261009.1` (`next` channel) | `tsc` — `pnpm typecheck` / `pnpm build` |
+| `typescript` | `npm:@typescript/typescript6@6.0.2` | `tsc6` — **only** typescript-eslint |
+
+typescript-eslint's peer range is still `>=4.8.4 <6.1.0`, so it **does not support TS 7**
+([upstream #10940](https://github.com/typescript-eslint/typescript-eslint/issues/10940) is still open).
+It is not merely a declaration: the TS 7 package only exports the new `./unstable/*` API and has none
+of the classic JS API typescript-eslint needs (`createSourceFile` / `createProgram`), so widening the
+peer range alone would not make it work.
+
+**Roadmap (two phases)**
+
+1. **Once TypeScript 7.1 stable ships**: point `@typescript/native` at `npm:typescript@7.1.x` and leave
+   the `next` channel — still two installs, only the first moves from dev to stable.
+2. **Once upstream supports TS 7**: retire the TS 6 line, leaving a single TypeScript. Three conditions,
+   all required: ① typescript-eslint's peer upper bound is ≥ 7; ② #10940 has landed in a stable release;
+   ③ verified locally by running `pnpm typecheck` **and** `pnpm lint` on that single TypeScript.
+
+> ⚠️ Until then: **upgrade TS 7 by changing `@typescript/native` only** — touching `typescript` breaks lint.
 
 ## Quick start
 
@@ -111,7 +128,15 @@ cp .env.example .env
 | Users / Teams / Permissions | `/users`, `/teams`, `/permissions` | Sidebar → Settings | Members (permissions page: system admins only) |
 | Profile | `/profile` | Sidebar footer user menu | All members |
 | SMTP | `/config/smtp` | Sidebar → Config | System admins only (fail-closed) |
-| Help / About | `/help` | Sidebar → Config (**last in the group, after Components**) | All members (features, version, third-party notices & trademarks) |
+| Login page | `/login` | Direct / "Open preview" from the config page | **No permission needed** (pre-login, bare layout) |
+| Login page config | `/config/login` | Sidebar → Config | System admins only (fail-closed) |
+| Components gallery | `/components` | Sidebar → Config | All members (shared-component catalog + live preview) |
+| Help / About | `/help` | Sidebar → Config (**last in the group**) | All members (features, version, third-party notices & trademarks) |
+
+> **Where `/t/{slug}/views` lands**: opening the sidebar **Views** entry (or `/t/{slug}/views` with no
+> parameters) first resolves to the **last opened view**; if that cannot be resolved it falls back to the
+> fixed view in `VITE_TABLEAU_FALLBACK_VIEW` (by default `Superstore/Overview` on the demo site).
+> Links carrying `?workbook=` / `?view=` still open that exact view — existing links keep working.
 
 ## Scripts
 
@@ -123,13 +148,17 @@ cp .env.example .env
 | `pnpm typecheck` | Type check only |
 | `pnpm test` | vitest — pure functions (permission semantics, catalog invariants, SMTP rules, env handling) |
 | `pnpm check:i18n` | Locale key alignment |
+| `pnpm check:i18n:keys` | Reverse key check: every literal key used in code exists in the dictionary |
 | `pnpm check:routes` | Route files ↔ permission catalog consistency (catches the fail-open gap) |
 | `pnpm check:team-routes` | Team-slug routing (Chrome CDP, 16 cases; needs `pnpm build`) |
 | `pnpm check:permissions` | Page permissions (static self-check + browser cases; needs `pnpm build`) |
 | `pnpm check:filters` | List filters (static self-check + 7 page cases incl. geometry; needs `pnpm build`) |
 | `pnpm check:smtp` | SMTP configuration (rule assertions + 6 page cases; needs `pnpm build`) |
+| `pnpm check:login` | Login page (domain assertions + 7 page cases: style switch, provider toggles, validation blocking, reset to defaults; needs `pnpm build`) |
+| `pnpm check:versions` | Dependency drift check against the registry `latest` tag (`--md` / `--json` / `--strict`) |
 
 CDP suites locate Chrome automatically (`CHROME_PATH` overrides), so they run on macOS and Linux/CI.
+Suites that drive a browser need a recent `pnpm build` first — they run against `dist/`.
 
 ## Conventions
 

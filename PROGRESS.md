@@ -5,13 +5,29 @@
 ## 项目概况
 
 - **目标**：从零构建管理后台模板（React 19 + TypeScript 7 + Vite 8 + Tailwind CSS v4 + shadcn/ui(Radix) + TanStack Router），包含 shadcn-admin 的全部基础功能，**含 Tableau 页面**（favorites / recents / workbooks / views —— 浏览器内签发 Connected App JWT 嵌入真实视图，凭据见 README「凭据配置」），**不含 AI 功能**；也不含内部流程页（flows / amro / clean-layer / sql-icon-map，那些只存在于本地开发线），v0.4.0 起含**多团队 + 全局用户**（参照 pg-explorer，无部门管理），v0.5.0 起**团队身份进入 URL**（`/t/{slug}/...`，对齐 pg-explorer 的 `/t/{slug}` + `/admin/*` 划分），v0.6.0 起**页面级权限**（角色 × 路由，权限页勾选；按钮级权限仅预留命名空间），v0.7.0 起**个人资料归位**（`/settings` → `/profile`，入口在左下角用户菜单）+ **Config 分组与 SMTP 配置页** + **帮助页** + **前端通用件**，v0.9.0 起**团队冻结 + 用户冻结 + 用户必须归属团队**，v0.10.0 起**列表筛选栏公共件**（`/users` 先行），v0.11.1 起**组件总览页**（`/components`：公共件清单 + 实时预览），v0.12.0 起**登录页模板**（`/login`：三种样式 + 第三方联合登录入口；`/config/login` 配置样式与 provider 公开参数），v0.13.0 起**更名为 tableau-embed-hub**（显示名 Tableau Embed Hub）+ **Tableau 站点用户与角色 / 定时计划运行情况**两页 + **Help 页第三方版权与商标说明**（Help 同时挪到 Config 分组最末）；i18n 当前仅 **en-US**，中文/日文后期扩展。
-- **关键决策**：跳过 shadcn-admin 模板（无 Sat Naing 署名义务）、TypeScript 7.1.0-dev（next 开发版，验证未来升级，正式版发布后直接升级；**现锁 7.1.0-dev.20260930.4**）、Vite 8 最新稳定、i18n 当前仅 en-US（zh-CN / zh-TW / ja-JP 后期扩展）。
+- **关键决策**：跳过 shadcn-admin 模板（无 Sat Naing 署名义务）、TypeScript 7.1.0-dev（next 开发版，验证未来升级，正式版发布后直接升级；**现锁 7.1.0-dev.20261009.1**；**两阶段路线**：先换 7.1 stable，再等上游支持 TS 7 后替换 TS 6 线，见 README「TypeScript 为什么装了两份」）、Vite 8 最新稳定、i18n 当前仅 en-US（zh-CN / zh-TW / ja-JP 后期扩展）。
 - **工具链锁定**：pnpm **12.9.1**（`package.json` 的 `packageManager` 字段，CI 同版本）、Node **24**（本地与 CI 一致，`@types/node` 对齐 **24 线**——类型线高于运行时会写出跑不起来的代码）。⚠️ 2026-10-05 pnpm 由 11.28.2 升级到 12.9.1：pnpm 12 要求 lock 头部带 `packageManagerDependencies` 文档（+158 行，含 pnpm 自身各平台 `@pnpm/exe.*`），**不提交这份 lock，CI 的 `--frozen-lockfile` 会直接失败**；迁移后已实测 12.6.0 / 12.9.1 的 `--frozen-lockfile` 通过。
 - **注意**：项目目录历经搬迁，当前根目录为 `/Users/xilejun/dsh-projects/shadcn-admin-cn`（更早记录中的 `WorkBuddy/ds_Harness/shadcn_admin_cn` 已失效）。
 - **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.13.0**）。
 - **项目更名**（2026-10-09）：`shadcn-admin-cn` → 仓库/包名 **`tableau-embed-hub`**、显示名 **`Tableau Embed Hub`**（主打「Tableau 嵌入可视化」，品牌唯一来源仍是 `src/config/app.ts`）。localStorage 前缀同步改为 `tableau-embed-hub`，旧 key 保留并由 `src/lib/storage-migration.ts` 一次性迁移；细节见 CHANGELOG「未发布」节。
 
 ---
+
+## 🚧 未发布 — TS 7 dev 刷新 + README（中英）排版重做（2026-10-09）
+
+- ✅ **TS 7 原生编译器刷新**：`@typescript/native` → `npm:typescript@7.1.0-dev.20261009.1`（原 `7.1.0-dev.20260930.4`，next 通道当日构建）。
+  验证：`tsc -v` 正确；typecheck / lint(0 error) / vitest(113) / check:i18n / check:i18n:keys / check:routes / build 全绿，
+  且 **`dist` 产物哈希与升级前完全一致**（换编译器没有改变输出）。
+- ✅ **README（中英）排版重做**：
+  ① 开头三段提示原属同一个引用块（渲染时挤成一段）→ 拆为「状态段 + 两个独立告示块」（`[!WARNING]` 非官方项目 / `[!CAUTION]` 凭据边界，**凭据边界独立成块换行**）；
+  ② 「页面与入口」表格被中间插入的引用块断成两截（表头丢失、后续行另起一表）→ 引用块移到表下、表格合并为一张，
+     并补齐漏登记的行：中文补 `/components`，英文补 `/login`、`/config/login`、`/components` 与 Views 落点说明；
+  ③ 订正技术栈表的 shadcn/ui 预设（`new-york` → `radix-nova`，与 `components.json` 对齐）、脚本表补 `check:i18n:keys` 与 `check:versions`。
+- ✅ **TS 升级路线进 README**：新增「TypeScript 为什么装了两份」小节（两条线各自指向什么、谁在用），并写明**两阶段计划** ——
+  ① TS **7.1 正式版**发布后把第一份换成 `npm:typescript@7.1.x` stable（此时仍是两份）；② 等上游 typescript-eslint 支持 TS 7 后**逐步替换 TS 6 线**，
+  最终只留一份；判据三条（peer 上限 ≥ 7 / #10940 合入 stable / 实测 `typecheck`+`lint` 同源全绿）与上游 issue 链接一并写明。
+- 🔎 **记录一个盲区**：`pnpm check:versions` 只跟 registry 的 `latest` 比对，而当前 pin 是 next 通道的 prerelease（高于 `latest` 7.0.2），
+  因此**巡检永远不会提示 TS dev 有新构建** —— 要盯 dev 通道得另看 `next` dist-tag。
 
 ## ✅ v0.13.0 — 项目更名 tableau-embed-hub + Help 页第三方版权说明（2026-10-09）
 
@@ -353,7 +369,7 @@
 | 3 | 依赖安装 | `pnpm install` 成功，关键版本：**typescript 7.1.0-dev.20260815.1（next 标签，自 7.0.2 升级）**、vite 8.2.1、react 19.2.8、tailwindcss 4.3.3、@tanstack/react-router 1.170.29、@tanstack/router-plugin 1.168.32、i18next 26.3.6（**骨架期快照**；各依赖此后已多次升级，TS 现锁 7.1.0-dev.20260930.4，见 v0.10.0 的「工具链与依赖同步」） |
 | 4 | 环境问题修复 | ① npm 缓存目录 root 权限损坏 → 用 `npm_config_cache=/tmp/npmcache` 绕过（后该目录也损坏，npm 查询改用 curl 直查 registry）；② pnpm dlx 缓存被沙箱拦截 → 改为本地安装 shadcn CLI（4.18.0）；③ `pnpm-workspace.yaml` 占位文件修复为 `allowBuilds: '@swc/core': true`，SWC postinstall 正常 |
 | 5 | 定位 shadcn 4.18 变更 | 新版 CLI 的 `-b` 参数从"基础色（slate）"改为"组件库选择"：`radix | base | aria`——需用 `-b radix`；init 另需 `-p nova` 预设（默认交互式弹菜单） |
-| 6 | 版本/范围调整 | TypeScript 切到 **7.1.0-dev.\***（next 标签，**现锁 7.1.0-dev.20260930.4**；升级开发版**只能动 `@typescript/native`**，命令见「日常开发命令」——写 `pnpm add -D typescript@next` 会把 lint 用的 TS 6 API 别名线顶掉）；i18n 范围收敛为**仅 en-US**（zh-CN / zh-TW / ja-JP 后期扩展），index.html lang=en |
+| 6 | 版本/范围调整 | TypeScript 切到 **7.1.0-dev.\***（next 标签，**现锁 7.1.0-dev.20261009.1**；升级开发版**只能动 `@typescript/native`**，命令见「日常开发命令」——写 `pnpm add -D typescript@next` 会把 lint 用的 TS 6 API 别名线顶掉）；i18n 范围收敛为**仅 en-US**（zh-CN / zh-TW / ja-JP 后期扩展），index.html lang=en |
 | 7 | TS7 工具链适配 | ① tsconfig.app.json 删除 TS7 已移除的 `baseUrl`（paths 改相对解析）；② 修复骨架期漏装的 `@tanstack/eslint-plugin-query`；③ 实测 typescript-eslint 8.67.0 与 canary 均硬性拒绝 TS 7（上游 #10940），`pnpm lint` 暂不可用，**CI 已暂缓 lint 步骤**（ci.yml 注释含恢复说明） |
 | 8 | shadcn init + add | `shadcn init -y -b radix -p nova`（radix-nova 预设，neutral 基色）✅；add 21+1 个组件（sidebar/breadcrumb/collapsible/separator/sheet/tooltip/input/label/button/card/dropdown-menu/select/table/dialog/avatar/badge/skeleton/tabs/switch/sonner/command/toggle）✅ |
 | 9 | shadcn 别名 Bug 修复 | shadcn CLI 从**根 tsconfig.json** 解析 `@` 别名；根文件原无 paths → 组件被写入字面 `@/` 目录。修复：根 tsconfig.json 补 `paths` + 迁移 25 个文件到 src/；此后 add 已验证写盘正确 |
