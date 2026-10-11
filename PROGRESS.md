@@ -1,19 +1,88 @@
 # Tableau Embed Hub 项目进度（PROGRESS）
 
-> 更新于 2026-10-09 ｜ 项目根目录：`/Users/xilejun/dsh-projects/shadcn-admin-cn`
+> 更新于 2026-10-11 ｜ **本文档一切命令与路径均以「仓库根目录」为基准**（本仓库在多台 Mac 上各有一份工作副本，
+> 各自绝对路径不同，一律不入库、不写进文档 —— 换机器时照抄这里的命令不会失效）。
 
 ## 项目概况
 
 - **目标**：从零构建管理后台模板（React 19 + TypeScript 7 + Vite 8 + Tailwind CSS v4 + shadcn/ui(Radix) + TanStack Router），包含 shadcn-admin 的全部基础功能，**含 Tableau 页面**（favorites / recents / workbooks / views —— 浏览器内签发 Connected App JWT 嵌入真实视图，凭据见 README「凭据配置」），**不含 AI 功能**；也不含内部流程页（flows / amro / clean-layer / sql-icon-map，那些只存在于本地开发线），v0.4.0 起含**多团队 + 全局用户**（参照 pg-explorer，无部门管理），v0.5.0 起**团队身份进入 URL**（`/t/{slug}/...`，对齐 pg-explorer 的 `/t/{slug}` + `/admin/*` 划分），v0.6.0 起**页面级权限**（角色 × 路由，权限页勾选；按钮级权限仅预留命名空间），v0.7.0 起**个人资料归位**（`/settings` → `/profile`，入口在左下角用户菜单）+ **Config 分组与 SMTP 配置页** + **帮助页** + **前端通用件**，v0.9.0 起**团队冻结 + 用户冻结 + 用户必须归属团队**，v0.10.0 起**列表筛选栏公共件**（`/users` 先行），v0.11.1 起**组件总览页**（`/components`：公共件清单 + 实时预览），v0.12.0 起**登录页模板**（`/login`：三种样式 + 第三方联合登录入口；`/config/login` 配置样式与 provider 公开参数），v0.13.0 起**更名为 tableau-embed-hub**（显示名 Tableau Embed Hub）+ **Tableau 站点用户与角色 / 定时计划运行情况**两页 + **Help 页第三方版权与商标说明**（Help 同时挪到 Config 分组最末）；i18n 当前仅 **en-US**，中文/日文后期扩展。
 - **关键决策**：跳过 shadcn-admin 模板（无 Sat Naing 署名义务）、TypeScript 7.1.0-dev（next 开发版，验证未来升级，正式版发布后直接升级；**现锁 7.1.0-dev.20261009.1**；**两阶段路线**：先换 7.1 stable，再等上游支持 TS 7 后替换 TS 6 线，见 README「TypeScript 为什么装了两份」）、Vite 8 最新稳定、i18n 当前仅 en-US（zh-CN / zh-TW / ja-JP 后期扩展）。
 - **工具链锁定**：pnpm **12.9.1**（`package.json` 的 `packageManager` 字段，CI 同版本）、Node **24**（本地与 CI 一致，`@types/node` 对齐 **24 线**——类型线高于运行时会写出跑不起来的代码）。⚠️ 2026-10-05 pnpm 由 11.28.2 升级到 12.9.1：pnpm 12 要求 lock 头部带 `packageManagerDependencies` 文档（+158 行，含 pnpm 自身各平台 `@pnpm/exe.*`），**不提交这份 lock，CI 的 `--frozen-lockfile` 会直接失败**；迁移后已实测 12.6.0 / 12.9.1 的 `--frozen-lockfile` 通过。
-- **注意**：项目目录历经搬迁，当前根目录为 `/Users/xilejun/dsh-projects/shadcn-admin-cn`（更早记录中的 `WorkBuddy/ds_Harness/shadcn_admin_cn` 已失效）。
-- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.13.0**）。
-- **项目更名**（2026-10-09）：`shadcn-admin-cn` → 仓库/包名 **`tableau-embed-hub`**、显示名 **`Tableau Embed Hub`**（主打「Tableau 嵌入可视化」，品牌唯一来源仍是 `src/config/app.ts`）。localStorage 前缀同步改为 `tableau-embed-hub`，旧 key 保留并由 `src/lib/storage-migration.ts` 一次性迁移；细节见 CHANGELOG「未发布」节。
+- **多机副本**：本仓库在**多台 Mac 上各有一份工作副本**（同一远端 `origin/main`，内容一致），各自的绝对路径不同。
+  文档一律不写机器绝对路径：命令都在**仓库根目录**下执行即可；「上次是在哪台机器改的」这类信息对复现没有价值，
+  写进文档只会让另一台机器上的人误以为目录失效（本节曾踩过这个坑，2026-10-11 订正）。
+- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.13.1**）。
+- **项目更名**（2026-10-09）：`shadcn-admin-cn` → 仓库/包名 **`tableau-embed-hub`**、显示名 **`Tableau Embed Hub`**（主打「Tableau 嵌入可视化」，品牌唯一来源仍是 `src/config/app.ts`）。localStorage 前缀同步改为 `tableau-embed-hub`，旧 key 保留并由 `src/lib/storage-migration.ts` 一次性迁移；细节见 CHANGELOG.md 的 `0.13.0` / `0.13.1` 节。
 
 ---
 
-## 🚧 未发布 — 登录框「纸上语言」换装（2026-10-11）
+## ✅ v0.13.1 — README 宣传向重构 + 截图脚本 + `@/` 别名修复（2026-10-11）
+
+背景：GitHub 仓库已改名为 **`tableau-China/Tableau-Embed-Hub`**（旧名 `tableau-China/shadcn-admin-cn` 现在 301 跳转，
+旧链接不失效）；README 要作为对外推广与公众号文章的模板，故整篇重做结构。
+
+### 落点
+
+| 文件 | 改动 |
+| --- | --- |
+| `README.md` / `README.en.md` | **宣传向重构**：徽章 + 仓库链接 + `git clone` 步骤 + 「能力速览」表 + 「十秒判断它适不适合你」+「核心能力」叙述 + 「文档地图」；技术事实逐条保留 |
+| `docs/images/{dashboard,users,permissions,login}.png` | **新增** 4 张真实页面截图（1440×900 视口 @2x，浅色主题，截的是 `dist/` 构建产物） |
+| `scripts/capture-readme-shots.mjs` | **新增**：一条命令重出这 4 张图（CDP 与其它 check 脚本同构，端口 4336 / 9349 错开） |
+| `scripts/lib/alias-loader.mjs` | **新增**：`registerHooks` 解析 `@/` 别名，修掉 `check:filters` 自 v0.13.0 起的假失败 |
+| `CHANGELOG.md` | 未发布内容并入 `0.13.1` 节（含仓库更名、截图脚本、别名修复与本节） |
+
+### ✅ 验证（2026-10-11 实测）
+
+| 验证 | 命令 | 结果 |
+| --- | --- | --- |
+| 截图 | `node scripts/capture-readme-shots.mjs` | **4/4 通过**；退出后 `pgrep -fl "port 4336"` 无残留 |
+| 相对链接 | 对中英 README 逐条 `existsSync` | **30/30 可达**（含 `docs/images/*.png`） |
+| **筛选栏用例** | `node scripts/check-filters.mjs` | **静态自检 + 7/7 页面用例通过**（修复前：`ERR_MODULE_NOT_FOUND`） |
+| 单测 | `pnpm test` | 113 通过（10 个文件） |
+| Lint | `pnpm lint` | 0 error（17 个 warning 全在 `src/` 既有文件，新增脚本 0 告警） |
+| 路径守卫 | `bash scripts/check-public-paths.sh` | ✅ 新增路径未命中任何内部前缀 |
+| 版本核对 | `package.json` / `APP_VERSION` / CHANGELOG 对照表 | 均为 **0.13.1** |
+
+### 🔧 修复：`@/` 别名在纯 node 脚本里不解析（`check:filters` 的假失败）
+
+`src/stores/org-store.ts` 里有运行时的 `import … from '@/lib/storage-migration'`，而 `node scripts/*.mjs`
+直接导入源模块时**没有别名解析** —— v0.13.0 改名引入 `storage-migration` 后，`check:filters` 就以
+`ERR_MODULE_NOT_FOUND: Cannot find package '@/lib'` 红了一版（应用本身没事，所以最容易被忽略）。
+
+- **修法**：新增 `scripts/lib/alias-loader.mjs`，用 node 的 `registerHooks()` 把 `@/x` 解析到 `src/x`
+  （按 node ESM 的规矩补全候选扩展名，与 `vite.config.ts` 的 `resolve.alias` 同一套规则）；
+  脚本里**先副作用导入**它、再**动态 `import()`** 源模块。
+- **为什么必须动态导入**：ESM 的静态 import 全部先于模块体求值，写在模块体里的 `registerHooks` 拦不住同一文件
+  顶部的静态 import —— 这一点写在 loader 的注释里，避免后人"顺手改回静态导入"又踩一遍。
+- 同类风险自查：其它 check 脚本导入的模块（`lib/login` / `config/permissions` / `lib/smtp`）要么无 `@/` 运行时导入，
+  要么只用了 `import type`（类型导入被 node 类型剥离整句删除），因此当前只有 `check-filters` 会中招。
+
+### 🧹 文档订正：仓库内不再出现机器绝对路径（2026-10-11）
+
+本文件此前把「项目根目录」写成**另一台 Mac** 上的绝对路径，并据此把当前机器的目录标为「已失效」，
+在另一台机器上读会直接误判（实测：该路径在本机不存在，而本机这份才是与 `origin/main` 一致的副本）。
+现已统一：**文档只出现「仓库根目录」这一相对基准**，日常命令照抄即可；`cd` 示例不再写机器路径。
+
+- **加了守卫防复发**：`scripts/check-public-paths.sh` 第二条规则 —— 变更文件里出现 `/Users/<用户名>/` 形式的
+  机器绝对路径即失败（`/usr/bin`、`/Applications` 这类系统路径不受影响）。实测三态：全量自检 ✅ →
+  故意塞一个路径 ❌（打印文件与行号）→ 清理后 ✅。
+- **踩坑记录**：该脚本开着 `set -e` + `pipefail`，`hit="$(grep …)"` 在无匹配时退出码为 1，会被当成脚本失败
+  并在第一个干净文件处静默退出 —— 第一次跑出的「负例通过」其实是假通过。修法是命令替换末尾加 `|| true`，
+  注释里已写明不可省。**教训：给 `set -e` 脚本加规则时，必须同时验「干净应当通过」和「脏应当失败」两侧。**
+
+### ⚠️ 环境坑：undici `setTypeOfService EINVAL` 会留下孤儿 `vite preview`
+
+本机跑截图脚本时 undici 偶发 `setTypeOfService EINVAL`（Node 24 / macOS）。该异常**绕过 `main().catch`** 直接结束进程，
+脚本 spawn 的 `vite preview` 于是变成孤儿占住端口 4336，下一次运行报出「端口已被占用」——
+**与真实原因无关的假故障**（排查上很容易误判成上一轮没清理干净）。
+
+- 绕法：脚本加 `uncaughtException` / `unhandledRejection` 兜底清理（已进代码）；
+- 手工排查：`pgrep -fl "port 4336"` 找到残留后 `kill`。**注意提示文案原先写的 `port=4336` 搜不到任何进程**
+  （vite 的参数是 `--port 4336`），已订正。
+
+---
+
+## ✅ v0.13.1 — 登录框「纸上语言」换装（2026-10-11）
 
 一句话：`/login` 三套样式共用的登录内容，按设计稿 `sandbox/design/order-center-login-breakthrough.html`
 换成**纸上语言** —— 无卡片盒子、下划线输入（聚焦长薄荷线）、薄荷方角主按钮、两根发丝夹的第三方行。
@@ -41,18 +110,19 @@
 
 ### ⚠️ 环境坑 / 既有问题（都不是本次改出来的）
 
-- **`pnpm check:filters` 自 v0.13.0 起失败**：`ERR_MODULE_NOT_FOUND: Cannot find package '@/lib'`
-  （`src/stores/org-store.ts:4` 用 `@/` 别名，纯 node 解析不了）。GitHub CI 里 `check:filters` 是必跑项，
-  所以上游那条改名线（`shadcn-admin-cn` → `tableau-embed-hub`，引入 `lib/storage-migration`）需要给脚本补别名解析
-  （order-center 侧的做法是 `scripts/alias-loader.mjs`）。
+- ~~**`pnpm check:filters` 自 v0.13.0 起失败**（`ERR_MODULE_NOT_FOUND: Cannot find package '@/lib'`）~~ ——
+  **已于 v0.13.1 修复**：`src/stores/org-store.ts:4` 的 `@/` 运行时导入在纯 node 下没有解析器；
+  现由 `scripts/lib/alias-loader.mjs`（`module.registerHooks()`）补齐，脚本先副作用导入它再动态 `import()` 源模块。
+  修复后 `node scripts/check-filters.mjs` = 静态自检 + **7/7 页面用例通过**（详见本文件 v0.13.1 的「修复」小节）。
 - `split-hero` **深色主题**下左下角站点名用 `text-primary-foreground`（深色主题=深色字）压在黑色遮罩上，几乎不可见；左栏本次未动。
 - 上游同步：本地 `main` 从 `d41303f`(v0.11.0) **快进到** `075e301`(v0.13.0 + TS 7 刷新)，`pnpm install` 已跑
   （99 文件 / +9482 行），登录页与 `/config/login` 来自这次同步。
-- 项目根的本地未提交改动：本目录下 `src/features/login/*` 五个文件 + `src/index.css` 为本次换装（**未提交**）。
+- 项目根的改动**已提交**：本目录下 `src/features/login/*` 五个文件 + `src/index.css` 为本次换装，
+  落在 `916a661`；随后并入 **v0.13.1** 发布（CHANGELOG 的 `0.13.1` 节）。
 
 ---
 
-## 🚧 未发布 — TS 7 dev 刷新 + README（中英）排版重做（2026-10-09）
+## ✅ v0.13.1（并入）— TS 7 dev 刷新 + README（中英）排版重做（2026-10-09）
 
 - ✅ **TS 7 原生编译器刷新**：`@typescript/native` → `npm:typescript@7.1.0-dev.20261009.1`（原 `7.1.0-dev.20260930.4`，next 通道当日构建）。
   验证：`tsc -v` 正确；typecheck / lint(0 error) / vitest(113) / check:i18n / check:i18n:keys / check:routes / build 全绿，
@@ -525,7 +595,7 @@
 ## 日常开发命令
 
 ```bash
-cd /Users/xilejun/dsh-projects/shadcn-admin-cn
+cd <仓库根目录>    # 也就是本文件所在目录（多台机器路径不同，故不写死）
 
 pnpm dev          # 开发服务器（http://127.0.0.1:5174）
 pnpm build        # 类型检查（tsc -b）+ 生产构建

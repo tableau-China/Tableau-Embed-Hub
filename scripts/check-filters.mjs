@@ -18,6 +18,10 @@
  *
  * 注：CDP 极简客户端与 check-smtp.mjs / check-permissions.mjs / check-team-routes.mjs
  * 有意重复（各自独立可跑），端口与它们错开，避免并行/残留实例互抢。
+ *
+ * 注：`src/stores/org-store.ts` 内部用了 `@/lib/storage-migration`，而 node 不认 `@/` 别名 ——
+ * 所以先副作用导入 `lib/alias-loader.mjs` 注册解析，再**动态**导入源模块（静态 import 先于模块体求值，
+ * 注册不进那一批）。别名一断，本脚本会以 `ERR_MODULE_NOT_FOUND: Cannot find package '@/lib'` 失败。
  */
 import { spawn } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
@@ -25,7 +29,9 @@ import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 
-import { USER_STATUSES, USER_STATUS_LABEL_KEYS } from '../src/stores/org-store.ts'
+import './lib/alias-loader.mjs'
+
+const { USER_STATUSES, USER_STATUS_LABEL_KEYS } = await import('../src/stores/org-store.ts')
 
 const PORT = 4323
 const DEBUG_PORT = 9336

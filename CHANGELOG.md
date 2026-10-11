@@ -6,6 +6,7 @@
 
 | 版本 | package.json | 侧边栏显示 | PROGRESS.md | CHANGELOG 条目 | 日期 |
 | --- | --- | --- | --- | --- | --- |
+| 0.13.1 | ✅ `0.13.1` | ✅ `v0.13.1`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0131---2026-10-11) | 2026-10-11 |
 | 0.13.0 | ✅ `0.13.0` | ✅ `v0.13.0`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0130---2026-10-09) | 2026-10-09 |
 | 0.12.0 | ⚠️ 未单独发布（并入 0.13.0） | — | ✅ 已同步 | ✅ [本节](#0120---2026-10-09) | 2026-10-09 |
 | 0.11.1 | ✅ `0.11.1` | ✅ `v0.11.1`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0111---2026-10-08) | 2026-10-08 |
@@ -30,7 +31,10 @@
 > ⚠️ **0.12.0（登录页模板）与 0.13.0 在同一次提交里一起发布**：0.12.0 的内容线先完成但未单独发布，
 > 线上版本号因此直接从 `0.11.1` 跳到 `0.13.0`。两条记录都留在本文件里以便追溯。
 
-## [未发布] - 2026-10-11
+> 📌 **0.13.1 的范围**：把 2026-10-09 与 2026-10-11 两条「未发布」内容线**一起收口**（TS 7 dev 刷新、README 排版重做、
+> 登录框「纸上语言」换装），并补上 README 宣传向重构、页面截图、`@/` 别名修复与文档绝对路径订正。
+
+## [0.13.1] - 2026-10-11
 
 ### Changed（变更）：登录框换装「纸上语言」（`/login` 的登录框）
 
@@ -54,13 +58,73 @@
 
 **已知问题（非本次引入）**：
 
-- `pnpm check:filters` 自 v0.13.0 起失败：`ERR_MODULE_NOT_FOUND: Cannot find package '@/lib'`
-  （`src/stores/org-store.ts:4` 用了 `@/` 别名，脚本里没有别名解析）—— 改名那一版漏了这一步，与登录页无关；
 - `split-hero` 深色主题下左下角站点名（`text-primary-foreground`）压在黑色遮罩上几乎读不出来，属未改动的左栏既有问题。
 
-## [未发布] - 2026-10-09
+### Fixed（修复）：`@/` 别名在纯 node 脚本里不解析 —— `check:filters` 的长期假失败
 
-### Changed（变更）
+`src/stores/org-store.ts:4` 有一句**运行时**导入 `@/lib/storage-migration`，而 `node scripts/*.mjs` 直接导入源模块时
+**没有别名解析**：v0.13.0 改名引入 `storage-migration` 后，`check:filters` 就以
+`ERR_MODULE_NOT_FOUND: Cannot find package '@/lib'` 红了一版。应用本身照常运行，所以这类失败最容易被漏掉
+（CI 里它是 `ui-checks` 的 advisory 项，也因此在本地没人看见）。
+
+| 文件 | 改动 |
+| --- | --- |
+| `scripts/lib/alias-loader.mjs` | **新增**：用 node 内置的 `module.registerHooks()` 把 `@/x` 解析到 `src/x`，并按 node ESM 的规矩补全候选扩展名（`x` → `x.ts` → `x.tsx` → `x/index.ts` → `x/index.tsx`），规则与 `vite.config.ts` 的 `resolve.alias` 对齐 |
+| `scripts/check-filters.mjs` | 顶部**副作用导入** loader → 再用**动态 `import()`** 取 `org-store` 的常量 |
+
+**为什么必须动态导入**：ESM 的静态 import 全部先于模块体求值 —— 写在模块体里的 `registerHooks()` 拦不住同一文件顶部的静态
+import，只有动态 `import()` 发生在注册之后。这条写进了 loader 的注释，避免后人「顺手改回静态导入」再踩一遍。
+
+**同类风险自查**：其余 check 脚本引的模块要么没有 `@/` 运行时导入（`lib/login`、`lib/smtp`），要么只有 `import type`
+（`config/permissions` —— 类型导入会被 node 的类型剥离整句删除，不触发解析），所以当前只有 `check:filters` 会中招。
+
+### Added（新增）：README 宣传向重构 + 真实页面截图 + 截图脚本
+
+背景：GitHub 仓库名已改为 **`tableau-China/Tableau-Embed-Hub`**（显示名与 `APP_NAME` 一致；旧名
+`tableau-China/shadcn-admin-cn` 现在 301 跳转，旧链接不失效）。README 要作为对外推广与公众号文章的模板，故重做结构。
+
+| 文件 | 改动 |
+| --- | --- |
+| `README.md` / `README.en.md` | **宣传向重构**：顶部徽章 + 仓库链接 + `git clone` 步骤 + 「能力速览」表 + 「十秒判断它适不适合你」+「核心能力」叙述 + 「文档地图」；原有技术事实（凭据边界、TS 两份的来龙去脉、fail-closed 权限、fail-open 路由守卫、SMTP 不落盘、AI Key 不进前端）**逐条保留**，只做位置与措辞收敛 |
+| `docs/images/{dashboard,users,permissions,login}.png` | **新增**：4 张真实页面截图（1440×900 视口 @2x，浅色主题，构建产物上截取），README 中引用 |
+| `scripts/capture-readme-shots.mjs` | **新增**：CDP 极简客户端与其它 check 脚本同构（端口 4336 / 9349 与之错开）；`pnpm build` 后一条命令重出这 4 张图，避免截图与 UI 版本悄悄脱节 |
+
+截图脚本另含两处健壮性处理：常量 `SHOTS` 与 README 引用的图**一一对应**（多截一张就会让 README 与素材脱节）；
+以及 `uncaughtException` / `unhandledRejection` 兜底清理 —— 实测本机 undici 会抛 `setTypeOfService EINVAL`，
+该异常会**绕过 `main().catch`** 直接结束进程，留下孤儿 `vite preview` 占住端口，让下一次运行报出「端口已被占用」这种
+与真实原因无关的假故障。端口占用的提示文案同时订正为可用的 pkill 关键字（`--port 4336`，原先写的 `port=4336` 搜不到）。
+
+### Docs（文档）：仓库内不再出现机器绝对路径
+
+本仓库在**多台 Mac 上各有一份工作副本**（同一远端，内容一致）。此前 `PROGRESS.md` 把「项目根目录」写成其中**另一台**
+的绝对路径，并据此把本机的目录标成「已失效」—— 在另一台机器上读会直接误判（实测该路径在本机不存在，
+而本机这份才是与 `origin/main` 一致的副本）。
+
+- `PROGRESS.md`：删除全部**机器绝对路径**（家目录前缀 + 用户名的写法）；标题改为「一切命令与路径以**仓库根目录**为基准」，
+  `日常开发命令` 的 `cd` 示例改为 `cd <仓库根目录>`，并补一条「多机副本」说明解释为何不写机器路径。
+- 顺带订正该文件里一处过期状态：登录框换装标注「未提交」，实际已提交在 `916a661`。
+- **加了守卫，防止写回去**：`scripts/check-public-paths.sh` 增加第二条规则 —— 变更文件里出现
+  `/Users/<用户名>/` 形式的机器绝对路径即失败，并给出改法（`/usr/bin`、`/Applications` 等系统路径不受影响）。
+  实测三态：全量自检 ✅ → 故意塞一个路径 ❌（并打印文件与行号）→ 清理后 ✅。
+- 写这条规则时踩了一个坑：脚本开着 `set -e` + `pipefail`，`hit="$(grep …)"` 在**无匹配**时退出码为 1，
+  会被当成脚本失败而在第一个干净文件处静默退出（第一次的「负例通过」其实是假通过）。已在注释里写明 `|| true` 不可省。
+
+### ✅ 验证（0.13.1 发布前实测）
+
+| 验证 | 命令 | 结果 |
+| --- | --- | --- |
+| 构建 | `pnpm build` | ✓ built |
+| 类型 | `pnpm typecheck` | EXIT=0 |
+| 单测 | `pnpm test` | 113 通过（10 个文件） |
+| Lint | `pnpm lint` | 0 error（17 个 warning 全在 `src/` 既有文件） |
+| **筛选栏用例** | `node scripts/check-filters.mjs` | **静态自检 + 7/7 页面用例通过**（修复前：`ERR_MODULE_NOT_FOUND`） |
+| 登录页用例 | `node scripts/check-login.mjs` | 7/7 通过 |
+| 截图 | `node scripts/capture-readme-shots.mjs` | **4/4 通过**，退出后无残留进程 |
+| 中英 README 链接 | 逐条 `existsSync` + 锚点比对标题 | 相对链接 **30/30 可达**、文内锚点全部有效 |
+| 路径守卫 | `bash scripts/check-public-paths.sh` | ✅ 新增路径未命中任何内部前缀 |
+| 版本核对 | `package.json` / `APP_VERSION` / PROGRESS.md / 本表 | 均为 **0.13.1** |
+
+### Changed（变更）：TS 7 dev 刷新 + README 排版重做（2026-10-09 内容线，并入本版）
 
 - **TS 7 原生编译器刷新**：`@typescript/native` → `npm:typescript@7.1.0-dev.20261009.1`（原 `7.1.0-dev.20260930.4`，next 通道当日构建）。
   实测 `tsc -v` 正确；typecheck / lint(0 error) / vitest(113) / check:i18n / check:i18n:keys / check:routes / build 全绿，
@@ -79,6 +143,8 @@
 - `pnpm check:versions` 只跟 registry 的 `latest` 比对：当前 pin 是 next 通道的 prerelease（语义上高于 `latest` 7.0.2），
   所以**巡检不会提示 TS dev 有新构建** —— 盯 dev 通道需要另看 `next` dist-tag。
 - typescript-eslint 仍不支持 TS 7（peer `>=4.8.4 <6.1.0`，上游 #10940 仍 open），**两份 TypeScript 暂时无法合并**。
+- `ui-checks` 在 CI 里仍是 advisory（`check:filters` 的几何断言依赖字体渲染，Linux 侧尚未实测）——
+  `check:filters` 本地已转绿，但**要等它在 CI 上连续跑绿几次**再去掉 `continue-on-error`。
 
 ## [0.13.0] - 2026-10-09
 

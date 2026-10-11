@@ -87,4 +87,27 @@ if [ ${#VIOLATIONS[@]} -gt 0 ]; then
   exit 1
 fi
 
+# ② 机器绝对路径守卫：本项目在**多台 Mac 上各有一份工作副本**，写死某台机器的家目录会在另一台上直接失效，
+#    也会把本机用户名带进公开仓库。只拦「家目录前缀 + 用户名」这种真·绝对路径 ——
+#    `/usr/bin/...`、`/Applications/...` 之类的系统路径不受影响（跨平台探测本来就需要它们）。
+#    要支持别的平台时，往这个正则里追加分支即可（如 Linux 的 /home/<user>/）。
+MACHINE_PATH_RE='(/Users/[A-Za-z0-9._-]+/)'
+PATH_VIOLATIONS=()
+for f in "${CHANGED[@]}"; do
+  # grep -I：二进制（png / ico 等）不参与匹配，避免把图片当文本扫出噪声；
+  # 末尾 `|| true` 不可省 —— grep 无匹配时退出码是 1，而本脚本开着 set -e + pipefail，
+  # 不加就会把「这个文件很干净」当成脚本失败（第一次写这条规则时正是这么栽的）。
+  hit="$(grep -InE "${MACHINE_PATH_RE}" "$f" 2>/dev/null | head -3 | tr '\n' ' ' || true)"
+  if [ -n "${hit}" ]; then
+    PATH_VIOLATIONS+=("$f  ← $hit")
+  fi
+done
+
+if [ ${#PATH_VIOLATIONS[@]} -gt 0 ]; then
+  echo "❌ 检测到机器绝对路径（换一台机器即失效，不该进公开仓库）："
+  printf '   %s\n' "${PATH_VIOLATIONS[@]}"
+  echo "改用相对「仓库根目录」的写法（如 \`cd <仓库根目录>\`）；脚本内需要定位项目时用 import.meta.url。"
+  exit 1
+fi
+
 echo "✅ 变更文件均在公开范围内（$(printf '%s ' "${CHANGED[@]}")）"

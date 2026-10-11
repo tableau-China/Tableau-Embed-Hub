@@ -1,15 +1,34 @@
 # Tableau Embed Hub
 
-> 中文版文档：[README.md](./README.md)
+[![CI](https://github.com/tableau-China/Tableau-Embed-Hub/actions/workflows/ci.yml/badge.svg)](https://github.com/tableau-China/Tableau-Embed-Hub/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+[![Version](https://img.shields.io/badge/version-0.13.1-informational.svg)](./CHANGELOG.md)
+[![React 19](https://img.shields.io/badge/React-19-087ea4.svg)](https://react.dev)
+[![TypeScript 7](https://img.shields.io/badge/TypeScript-7-3178c6.svg)](https://www.typescriptlang.org)
+[![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4-38bdf8.svg)](https://tailwindcss.com)
 
-An open-source, multi-team admin console for **embedded Tableau analytics**: drop Tableau Cloud or
-Tableau Server workbooks and views into your own product, with team-scoped routing, page-level
-permissions, i18n, an AI assistant page and a deploy sample already wired up. Built from scratch on
-shadcn/ui + Tailwind CSS v4 + Radix UI — not a fork of another template.
+> 中文版文档：[README.md](./README.md) ｜ Repository: <https://github.com/tableau-China/Tableau-Embed-Hub>
+> Formerly `shadcn-admin-cn`; renamed to **Tableau-Embed-Hub** (display name **Tableau Embed Hub**) in October 2026.
+> Old links keep working — GitHub redirects them.
+
+## Embed your Tableau analytics in your own product, instead of sending users to Tableau
+
+An open-source **multi-team admin console plus a Tableau embedding starting point**: team-scoped routing
+(`/t/{slug}/...`), page-level permissions, a login-page template, SMTP configuration, an AI assistant page
+and a deploy sample are all wired up — clone it and make it yours. Built **from scratch** on
+shadcn/ui + Tailwind CSS v4 + Radix UI + TanStack — not a fork of another template.
+
+![The multi-team workspace: General / AI / Settings / Config navigation on the left, the current team's dashboard and recent activity on the right](docs/images/dashboard.png)
 
 **Status**: Phases 0–4 are done — scaffolding and the TS 7 toolchain, multi-team workspace, Tableau
 embedding plus site-management pages, page-level permissions, system configuration, the AI starting
-point and a deploy sample. UI is English-only for now (i18n keys are ready for more locales).
+point and a deploy sample. The UI is **en-US only** for now; more locales are planned.
+
+> **Why it looks like this**: this template started as the front-end foundation I reused across my own
+> AI-assisted and enterprise-delivery projects, and was extracted into a public starting point once it
+> settled. So it optimises for *shipping* over *demoing* — permissions default to **fail-closed**, the
+> check scripts run in CI, the deploy sample ships an nginx reverse proxy, and the docs say plainly
+> which parts are security theatre.
 
 > [!WARNING]
 > **Not an official project.** Not affiliated with, endorsed by, or sponsored by Salesforce, Inc.
@@ -21,10 +40,200 @@ point and a deploy sample. UI is English-only for now (i18n keys are ready for m
 > **Credential boundary**: this is a front-end only app, so `.env` values and the built-in demo
 > credentials are inlined into the build output. Read [SECURITY.md](./SECURITY.md) before deploying.
 
-## Version
+## Capabilities at a glance
 
-Current version: **0.13.0** — see [CHANGELOG.md](./CHANGELOG.md) (Chinese) for changes and known
-issues. Checked across `package.json` / the sidebar / `PROGRESS.md`.
+Current version **0.13.1** — see [CHANGELOG.md](./CHANGELOG.md) (Chinese); the version number is
+cross-checked across `package.json`, the sidebar and `PROGRESS.md`.
+
+| Capability | In one line | Since |
+| --- | --- | --- |
+| Multi-team workspace | **Team identity lives in the URL** (`/t/{slug}/...`); favourites, recents and list filters are per team; switch teams from the sidebar | v0.5.0 |
+| Users and roles | Users are **global** (above teams); roles (`team-admin` / `analyst` / `viewer`) belong to the team-membership relation; users and teams can be frozen | v0.4.0 / v0.9.0 |
+| Page-level permissions | A role × route matrix edited on `/permissions`; the sidebar filter and direct-URL blocking both apply, and new pages start admin-only (fail-closed) | v0.6.0 |
+| Tableau embedding | Connected App JWT signed in the browser, workbooks and views embedded; REST goes through a same-origin proxy; tokens and thumbnails cached in TanStack Query | since v0.1.0 |
+| Tableau site management | Site users & roles page, scheduled-task run status page (read-only) | v0.13.0 |
+| Login-page template | Three layouts plus a hero image and the **public** parameters of the GitHub / Google entries, previewable | v0.12.0 |
+| AI assistant page | Provider swappable in one place; zero-config runs a local demo provider, point `VITE_AI_PROXY_URL` at a real model | v0.10.0 |
+| System configuration | SMTP settings with 7 live preflight checks; the **password is never persisted** (memory only) | v0.7.0 |
+| Shared components | `PageContainer` / `FormGrid` / `FilterBar` / `useFormTouch` and friends — **37 shared pieces**, catalogued with live previews on `/components` | v0.7.0 / v0.10.0 |
+| Check scripts | **9 `check:*` commands** + 113 pure-function tests + a two-job GitHub Actions workflow (including a public-repo path guard) | since v0.11.0 |
+| Deploy sample | Pure static output + `deploy/nginx.conf.example` + an in-app environment check on `/help` | v0.10.0 |
+
+## Quick start
+
+```bash
+git clone https://github.com/tableau-China/Tableau-Embed-Hub.git
+cd Tableau-Embed-Hub
+pnpm install
+pnpm dev            # http://127.0.0.1:5174
+```
+
+- **Requirements**: Node.js 24 and pnpm 12.9.1 (`packageManager` pins it; CI uses the same).
+- **No configuration needed**: with nothing set, the app falls back to a built-in **demo Tableau site +
+  demo credentials** and a local **demo AI provider** (streaming, no network requests), so every page is
+  clickable immediately.
+- **Point it at your own site**: `.env` only, no code changes — see
+  [Configure your own Tableau site](#configure-your-own-tableau-site).
+
+## Is this for you?
+
+| A good fit | Not a good fit |
+| --- | --- |
+| Teams that want Tableau views inside **their own product UI** (rather than every user logging into Tableau) | People wanting a ready-made **backend + database**: this is a front-end template, data lives in the browser (store + localStorage) |
+| Teams needing an admin-console skeleton with a **real permission model** (multi-team / roles / page-level grants) | Anyone needing a **Chinese UI today**: the i18n framework is in place but only the en-US dictionary ships |
+| AI-assisted development for **enterprise delivery**, where a forkable starting point beats a blank page | Anyone wanting a Tableau desktop/client replacement: embedding depends on Connected App, and the boundaries are set by Salesforce |
+| Learning how a from-scratch React 19 + TS 7 + Tailwind v4 + TanStack app is wired together | Anyone wanting a component library or design system: the primitives are shadcn/ui (Radix) |
+
+## Pages
+
+| Page | Route | Entry | Default roles |
+| --- | --- | --- | --- |
+| Workspace (Dashboard / Favorites / Recents / Workbooks / Views) | `/t/{slug}/...` | Sidebar → General | Team members (by role) |
+| Tableau site users & roles | `/t/{slug}/tableau/users` | Sidebar → General | **System admins only** (fail-closed; it writes site-wide roles) |
+| Tableau scheduled tasks | `/t/{slug}/tableau/schedules` | Sidebar → General | Team members (by role, read-only) |
+| AI assistant | `/ai` | Sidebar → AI | All members (demo provider when no proxy is configured) |
+| Users / Teams / Permissions | `/users`, `/teams`, `/permissions` | Sidebar → Settings | Members (permissions page: system admins only) |
+| Profile | `/profile` | Sidebar footer user menu | All members (renamed from `/settings` in v0.7.0) |
+| SMTP | `/config/smtp` | Sidebar → Config | System admins only (fail-closed) |
+| Login page | `/login` | Direct / "Open preview" from the config page | **No permission needed** (pre-login, bare layout) |
+| Login page config | `/config/login` | Sidebar → Config | System admins only (fail-closed) |
+| Components gallery | `/components` | Sidebar → Config | All members (shared-component catalog + live preview) |
+| Help / About | `/help` | Sidebar → Config (**last in the group**) | All members (features, version, third-party notices & trademarks) |
+
+> **Where `/t/{slug}/views` lands**: opening the sidebar **Views** entry (or `/t/{slug}/views` with no
+> parameters) first resolves to the **last opened view**; if that cannot be resolved it falls back to the
+> fixed view in `VITE_TABLEAU_FALLBACK_VIEW` (by default `Superstore/Overview` on the demo site).
+> Links carrying `?workbook=` / `?view=` still open that exact view — existing links keep working.
+
+## Core capabilities
+
+### Multi-team workspace with global users
+
+Users are global identities; teams are workspaces. The same person can hold a different **role** in each
+team, and permissions are evaluated against the role in the *current* team — which is how enterprise
+delivery usually works (one analyst is an admin in team A and a viewer in team B).
+
+![User list: status, system-admin flag, and each user's role and default team across teams](docs/images/users.png)
+
+- A user must belong to at least one team; the last system admin and the current user cannot be deleted;
+  exactly one default team per member (v0.4.0 / v0.9.0).
+- A team slug is typed once at creation and **never changes when the team is renamed** (letters, digits
+  and underscores only) — so external mappings keyed by slug cannot silently break.
+- Full rules: [`docs/org-rules.md`](./docs/org-rules.md) (Chinese).
+
+### Page-level permissions (roles × routes)
+
+Grant pages per role on `/permissions`; a new page enters the system by registering **one line**, and the
+sidebar order comes from the same catalog. That catalog is the single source of truth — the sidebar, the
+route guard and the permissions page all read it — so a page cannot be added yet forgotten. A static
+check script backs that up (`pnpm check:routes`).
+
+![Permissions page: the role × page matrix, with team-scoped and global identities and per-role defaults](docs/images/permissions.png)
+
+- **Fail-closed**: a page that is not registered is blocked, not allowed. Pages with no sidebar entry
+  (Profile, for example) are registered too, so moving an entry cannot create a permission blind spot.
+- Button-level permissions ship only as the reserved `action.*` namespace — not implemented yet.
+- Details: [`docs/route-permissions.md`](./docs/route-permissions.md) (Chinese).
+
+> ⚠️ Front-end permissions control visibility and direct access only — they are **not** an authorisation
+> boundary. A backend must re-check every request once you connect one.
+
+### Tableau embedding
+
+A Connected App JWT is signed in the browser, then workbooks and views are embedded. REST calls
+(workbook lists, thumbnails, `auth/signin`) go through a **same-origin proxy**, because Tableau Cloud's
+REST API does not send CORS headers.
+
+- **`.env` only, no code changes**: site URL, site name, site content URL, embed user, Connected App
+  credentials, project filter and API version are all configurable.
+- **In-app self-check**: `/help` → the *Environment check* card shows the resolved site, credential
+  source (demo or `.env`), project filter and proxy path.
+- Pitfalls, trusted-domain allowlisting and a troubleshooting table:
+  [`docs/tableau-setup.md`](./docs/tableau-setup.md) (Chinese).
+
+> ⚠️ Credentials in the build output are **readable in plain text**; obfuscation only defeats naive
+> scanners and is **not encryption**. Real control lives in Tableau Cloud (Connected App trusted-domain
+> allowlist, access-level restrictions, key rotation). To truly hide a secret, move JWT signing to a server.
+
+### Login-page template
+
+`/config/login` picks the layout (`centered-card` / `split-hero` / `fullscreen-card`), sets a hero image
+and manages the **public** parameters of the GitHub / Google entries; `/login` renders from that config
+and can be opened or previewed directly. The form uses a hand-built "paper" language: mono small-caps
+labels, underline inputs, a mint accent line that grows on focus, and square mint primary buttons.
+
+![Login page: third-party entries between two hairlines, underline inputs and a square mint primary button](docs/images/login.png)
+
+> ⚠️ **This login page is a UI template**: `/login` blocks **nothing** and creates no session (faking a
+> front-end session is security theatre); the captcha is a placeholder; **no Client Secret is collected**
+> (storing a secret in the front end is publishing it). The full contract for wiring a backend
+> (session / captcha / OAuth callback): [`docs/login-setup.md`](./docs/login-setup.md) (Chinese).
+
+### AI assistant
+
+`/ai` is a working chat page whose provider is swappable in one place (`src/lib/ai`). With no
+configuration it runs a **local demo provider**; point `VITE_AI_PROXY_URL` at a same-origin gateway that
+speaks the OpenAI-compatible `POST /chat/completions` streaming API (DeepSeek, OpenAI, most gateways) to
+use a real model.
+
+> ⚠️ **API keys never go to the front end.** Anything in `.env` is published in the bundle, so the page
+> sends no key at all — your gateway holds it. Contract, nginx sample and a ~20-line Node gateway:
+> [`docs/ai-integration.md`](./docs/ai-integration.md) (Chinese).
+
+### System configuration (SMTP)
+
+`/config/smtp` offers provider presets (QQ / 163 / Gmail / Aliyun / Tencent Exmail / Microsoft 365) and
+**7 live preflight checks — errors block saving, warnings do not**. Leaving the password blank keeps the
+existing one; resetting asks for confirmation.
+
+> ⚠️ **The password is never persisted.** "Encrypt it and put it in localStorage" is security theatre in a
+> front-end app — the key ships in the bundle. So only non-sensitive fields are persisted and the password
+> lives in memory (re-enter it after a reload). With a backend, store it server-side and return only
+> `hasPassword`.
+>
+> ⚠️ **Preflight ≠ real connectivity**: a browser cannot open an SMTP socket, so the real handshake
+> (EHLO → STARTTLS → AUTH) must run server-side (`nodemailer`'s `transporter.verify()`).
+
+### Shared components and the component gallery
+
+Use the shared components instead of inventing layout per page (details in
+[`docs/ui-conventions.md`](./docs/ui-conventions.md), Chinese):
+
+| Component | Purpose |
+| --- | --- |
+| `PageContainer` | Page root; keeps page width consistent (**do not** add `max-w-*` at page level) |
+| `FormGrid` / `FormField` | Form grid & fields (label / `aria-invalid` / `aria-describedby` / hint row wired once; put a narrow column on the form, not the page) |
+| `useFormTouch` | When validation messages appear (on blur, or all on save; **do not disable the primary action** while invalid) |
+| `FilterBar` / `FilterSearch` / `FilterSelect` + `useListFilters` | List filtering: search, select, result count, one-click reset (**reset appears only when something is filtered**; empty state distinguishes "no data" from "filtered out") |
+| `NoteCallout` | Info / warning callouts |
+| `DescriptionList` | Label + value summaries |
+| `ActionBar` / `ActionButtons` | Action buttons (primary always rightmost, stacked on narrow screens) |
+
+`/components` lists all 37 shared pieces in 8 groups, each with its **real import path, a one-line
+purpose and a live preview**. The catalog's single source is `src/config/component-catalog.ts` — adding a
+shared piece is adding one line.
+
+Two known traps: table cells default to `whitespace-nowrap`, so long text needs `whitespace-normal` plus
+a column width (`SidebarInset` / `main` already apply `min-w-0`, so over-wide content should scroll inside
+a card instead); and composite controls (`Select` / `InputGroup`) do not forward props to the DOM — pass
+`injectProps={false}` to `FormField` and wire `id` / `aria-*` yourself.
+
+### Check scripts
+
+The easiest thing for a template to rot is having the catalog and the code disagree. So the invariants
+here are executable, repeatable commands, and they run in CI:
+
+```bash
+pnpm test           # 113 pure-function tests: permission semantics, catalog invariants, SMTP rules, env handling
+pnpm check:routes   # route files ↔ permission catalog consistency (static, blocking CI step)
+pnpm check:i18n:keys # reverse key check: every key used in code exists in the dictionary
+pnpm build && pnpm check:permissions   # page permissions, driven through real Chrome over CDP
+```
+
+CI runs two jobs: `ci` (path guard, i18n, route catalog, unit tests, lint, build — blocking) and
+`ui-checks` (five browser suites: `check:team-routes` / `smtp` / `login` / `filters` / `permissions`),
+which is still advisory — the reason is written in the workflow comments (geometry assertions depend on
+font rendering and have not been measured on Linux yet).
 
 ## Tech stack
 
@@ -35,9 +244,10 @@ issues. Checked across `package.json` / the sidebar / `PROGRESS.md`.
 | Build | Vite | 8.x |
 | Styling | Tailwind CSS v4 + shadcn/ui (radix-nova preset) | 4.x |
 | Primitives | Radix UI | latest |
-| Routing | TanStack Router (file-based) | 1.x |
+| Routing | TanStack Router (file-based, per-route code splitting) | 1.x |
 | Data | TanStack Query | 5.x |
 | i18n | i18next + react-i18next | 26.x (en-US only for now) |
+| State | zustand (locally persisted) | 5.x |
 | Package manager | pnpm | 12.9.1 (pinned via `packageManager`, same in CI) |
 | Runtime | Node.js | 24 (`@types/node` tracks the 24 line) |
 
@@ -64,24 +274,14 @@ peer range alone would not make it work.
 
 > ⚠️ Until then: **upgrade TS 7 by changing `@typescript/native` only** — touching `typescript` breaks lint.
 
-## Quick start
-
-```bash
-pnpm install
-pnpm dev
-```
-
-No `.env` needed: the app falls back to a built-in **demo Tableau site + demo credentials** and a
-local **demo AI provider**, so every page is clickable immediately.
-
 ## Configure your own Tableau site
 
 **Only `.env` changes — no code changes.** Full walkthrough (Connected App setup, trusted domains,
-troubleshooting table): [`docs/tableau-setup.md`](./docs/tableau-setup.md).
+troubleshooting table): [`docs/tableau-setup.md`](./docs/tableau-setup.md) (Chinese).
 
 ```bash
-cp .env.example .env
-# fill in the site binding + credentials, then rebuild
+cp .env.example .env      # .env is gitignored
+# fill in the three site-binding values + the three credential values, then rebuild
 ```
 
 | You want to change | Where |
@@ -89,18 +289,9 @@ cp .env.example .env
 | Site (URL / site name / site content URL / embed user) | `VITE_TABLEAU_SERVER_URL` / `_SITE_NAME` / `_SITE_CONTENT_URL` / `_EMBED_USER` |
 | Connected App credentials | `VITE_TABLEAU_CLIENT_ID` / `_SECRET_ID` / `_SECRET_VALUE` |
 | Restrict to one project, or lift the restriction | `VITE_TABLEAU_PROJECT` (empty = no restriction) |
-| Fallback view when `/views` is opened without parameters | `VITE_TABLEAU_FALLBACK_VIEW` — a view UUID on **your** site |
 | REST proxy path (must match your gateway) | `VITE_TABLEAU_API_BASE` (default `/tableau-proxy`) |
 | REST API version | `VITE_TABLEAU_API_VERSION` (default `3.23`) |
-| AI provider (proxy path / model / system prompt) | `VITE_AI_PROXY_URL` / `VITE_AI_MODEL` / `VITE_AI_SYSTEM_PROMPT` |
 | Brand name / author / website | `src/config/app.ts` (single source — the tests read it too) |
-
-- **See what is actually in effect**: open `/help` → the *Environment check* card shows the resolved
-  site, credential source (demo or `.env`), project filter, proxy path and AI provider.
-- ⚠️ **Security boundary**: this is a front-end only app, so `.env` values — and the built-in demo
-  credentials — are **inlined into the JS bundle at build time**. Obfuscation only defeats naive
-  scanners. Real control lives in Tableau Cloud (trusted-domain allowlist, access level, key
-  rotation). To truly hide a secret, move JWT signing to a server.
 
 ## Deploy
 
@@ -117,32 +308,11 @@ cp .env.example .env
 > only serves REST (lists, thumbnails, `auth/signin`). Routing is history-based, so the static host
 > needs an "unmatched → `index.html`" fallback.
 
-## Pages
-
-| Page | Route | Entry | Default roles |
-| --- | --- | --- | --- |
-| Workspace (Dashboard / Favorites / Recents / Workbooks / Views) | `/t/{slug}/...` | Sidebar → General | Team members (by role) |
-| Tableau site users & roles | `/t/{slug}/tableau/users` | Sidebar → General | **System admins only** (fail-closed; it writes site-wide roles) |
-| Tableau scheduled tasks | `/t/{slug}/tableau/schedules` | Sidebar → General | Team members (by role, read-only) |
-| AI assistant | `/ai` | Sidebar → AI | All members |
-| Users / Teams / Permissions | `/users`, `/teams`, `/permissions` | Sidebar → Settings | Members (permissions page: system admins only) |
-| Profile | `/profile` | Sidebar footer user menu | All members |
-| SMTP | `/config/smtp` | Sidebar → Config | System admins only (fail-closed) |
-| Login page | `/login` | Direct / "Open preview" from the config page | **No permission needed** (pre-login, bare layout) |
-| Login page config | `/config/login` | Sidebar → Config | System admins only (fail-closed) |
-| Components gallery | `/components` | Sidebar → Config | All members (shared-component catalog + live preview) |
-| Help / About | `/help` | Sidebar → Config (**last in the group**) | All members (features, version, third-party notices & trademarks) |
-
-> **Where `/t/{slug}/views` lands**: opening the sidebar **Views** entry (or `/t/{slug}/views` with no
-> parameters) first resolves to the **last opened view**; if that cannot be resolved it falls back to the
-> fixed view in `VITE_TABLEAU_FALLBACK_VIEW` (by default `Superstore/Overview` on the demo site).
-> Links carrying `?workbook=` / `?view=` still open that exact view — existing links keep working.
-
 ## Scripts
 
 | Command | What it does |
 | --- | --- |
-| `pnpm dev` | Dev server |
+| `pnpm dev` | Dev server (`http://127.0.0.1:5174`; port pinned, IPv4 loopback only) |
 | `pnpm build` | Type check (`tsc -b`) + production build |
 | `pnpm lint` | ESLint |
 | `pnpm typecheck` | Type check only |
@@ -156,53 +326,26 @@ cp .env.example .env
 | `pnpm check:smtp` | SMTP configuration (rule assertions + 6 page cases; needs `pnpm build`) |
 | `pnpm check:login` | Login page (domain assertions + 7 page cases: style switch, provider toggles, validation blocking, reset to defaults; needs `pnpm build`) |
 | `pnpm check:versions` | Dependency drift check against the registry `latest` tag (`--md` / `--json` / `--strict`) |
+| `node scripts/capture-readme-shots.mjs` | Regenerate this README's four screenshots (needs `pnpm build`; writes to `docs/images/`) |
 
 CDP suites locate Chrome automatically (`CHROME_PATH` overrides), so they run on macOS and Linux/CI.
 Suites that drive a browser need a recent `pnpm build` first — they run against `dist/`.
 
-## Conventions
+## Documentation map
 
-Use the shared components instead of inventing layout per page (details in
-[`docs/ui-conventions.md`](./docs/ui-conventions.md), Chinese):
-
-| Component | Purpose |
+| Document | Read it when |
 | --- | --- |
-| `PageContainer` | Page root; keeps page width consistent (**do not** add `max-w-*` at page level) |
-| `FormGrid` / `FormField` | Form grid & fields (label / `aria-invalid` / `aria-describedby` wired once) |
-| `useFormTouch` | When validation messages appear (on blur, or all on save) |
-| `FilterBar` / `FilterSearch` / `FilterSelect` + `useListFilters` | List filtering: search, select, count, one-click reset |
-| `NoteCallout` / `DescriptionList` / `ActionBar` | Callouts, key–value summaries, action buttons |
-
-Two known traps: table cells default to `whitespace-nowrap` (long text needs `whitespace-normal` plus
-a column width), and composite controls (`Select`, `InputGroup`) do not forward props to the DOM —
-pass `injectProps={false}` to `FormField` and wire `id`/`aria-*` yourself.
-
-## Page permissions
-
-Roles × routes, configured on `/permissions` (system admins only by default). Page permissions
-control **visibility** — the sidebar entry and direct URL access — and are **not** an authorisation
-boundary; a server must re-check. Add a page by registering one line in
-`src/config/permissions.ts`; `pnpm check:routes` fails if you forget, because the route guard is
-fail-open. See [`docs/route-permissions.md`](./docs/route-permissions.md).
-
-## AI assistant
-
-`/ai` is a working chat page whose provider is swappable in one place (`src/lib/ai`). With no
-configuration it runs a **local demo provider** (streaming, no network); point
-`VITE_AI_PROXY_URL` at a same-origin gateway that speaks the OpenAI-compatible
-`POST /chat/completions` streaming API (DeepSeek, OpenAI, most gateways) to use a real model.
-
-> ⚠️ **API keys never go to the front end.** Anything in `.env` is published in the bundle. The page
-> sends no key at all — your gateway holds it. Contract, nginx sample and a ~20-line Node gateway:
-> [`docs/ai-integration.md`](./docs/ai-integration.md).
-
-## System configuration (SMTP)
-
-`/config/smtp` offers provider presets (QQ / 163 / Gmail / Aliyun / Tencent Exmail / Microsoft 365),
-7 live preflight checks (errors block saving, warnings do not) and a password that is never written
-to disk — only non-sensitive fields are persisted, so the password lives in memory and must be
-re-entered after a reload. Preflight validates *shape*, not real connectivity: a browser cannot open
-an SMTP socket. See [`SECURITY.md`](./SECURITY.md).
+| [`docs/tableau-setup.md`](./docs/tableau-setup.md) | Switching from the demo site to your own Tableau Cloud site |
+| [`docs/route-permissions.md`](./docs/route-permissions.md) | Adding a page, editing the permission matrix, or understanding `ROUTE_CATALOG` |
+| [`docs/org-rules.md`](./docs/org-rules.md) | Changing the organisation model: users, teams, membership, freezing |
+| [`docs/ui-conventions.md`](./docs/ui-conventions.md) | Adding a page / form / list, or wondering why not to hand-roll layout |
+| [`docs/ai-integration.md`](./docs/ai-integration.md) | Moving `/ai` from the demo provider to a real model (with a gateway sample) |
+| [`docs/login-setup.md`](./docs/login-setup.md) | Login layouts, hero image, third-party entries, and the backend contract |
+| [`SECURITY.md`](./SECURITY.md) | Before deploying: credential boundary and vulnerability reporting |
+| [`THIRD-PARTY.md`](./THIRD-PARTY.md) | Third-party components, trademarks and notices |
+| [`CHANGELOG.md`](./CHANGELOG.md) | What changed in each version, plus known issues (Chinese) |
+| [`PROGRESS.md`](./PROGRESS.md) | Progress, key decisions, environment pitfalls and workarounds (Chinese) |
+| [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Local setup, commit conventions and the PR flow |
 
 ## Roadmap
 
@@ -212,13 +355,12 @@ an SMTP socket. See [`SECURITY.md`](./SECURITY.md).
 - [x] Phase 3 — **generic starting point**: env-driven site binding, deploy sample, environment check, English README
 - [x] Phase 4 — **AI starting point**: `src/lib/ai`, streaming client, zero-config demo provider, `/ai` page, proxy contract
 - [ ] Phase 5 (optional) — SQLite backend (Drizzle), dual-database CI matrix, server-side JWT signing
-- [ ] v1 — bilingual docs, demo site
-
-## Contributing
-
-See [`CONTRIBUTING.md`](./CONTRIBUTING.md) and [`SECURITY.md`](./SECURITY.md). Architecture and
-progress notes are kept in Chinese ([`PROGRESS.md`](./PROGRESS.md), [`CHANGELOG.md`](./CHANGELOG.md)).
+- [ ] v1 — pure front-end runnable template, bilingual docs, demo site
 
 ## License
 
-MIT
+[MIT License](./LICENSE) — commercial use, modification and closed-source distribution are all fine;
+keep the copyright and licence notice.
+
+> Tableau and Tableau Cloud are trademarks of Salesforce, Inc. This project is not affiliated with,
+> endorsed by, or sponsored by Salesforce, Inc.
