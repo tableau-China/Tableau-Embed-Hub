@@ -30,6 +30,34 @@
 > ⚠️ **0.12.0（登录页模板）与 0.13.0 在同一次提交里一起发布**：0.12.0 的内容线先完成但未单独发布，
 > 线上版本号因此直接从 `0.11.1` 跳到 `0.13.0`。两条记录都留在本文件里以便追溯。
 
+## [未发布] - 2026-10-11
+
+### Changed（变更）：登录框换装「纸上语言」（`/login` 的登录框）
+
+按设计稿 `sandbox/design/order-center-login-breakthrough.html` 把**三套样式共用的登录内容**换成纸上语言：
+去掉白卡盒子、标签改 mono 小字大写、输入框只留下划线（聚焦时从左长出薄荷强调线、右端方块同时变色）、
+主按钮改薄荷方角（`#0b7a5e`、圆角 2px、mono 字距 .28em）、第三方入口用两根发丝夹住一行小字、
+按钮下方一条渐隐强调线。`fullscreen-card` 因背景是图，额外垫一层半透明面板（`surface="panel"`）。
+
+| 文件 | 改动 |
+| --- | --- |
+| `src/index.css` | 新增登录页令牌 `--login-accent(-foreground)` / `--login-line(-strong)` / `--login-warn`（浅色 + 深色两套）并在 `@theme inline` 注册成工具类 |
+| `src/features/login/paper-field.tsx` | **新增**：下划线字段件（mono 标签 / 下划线输入 / 生长线 / 端部方块 / 字段级错误行；验证码占位图形走 `suffix`） |
+| `src/features/login/login-form.tsx` | 换用纸上语言；新增 `surface: 'bare' \| 'panel'`。**文案、字段顺序、`data-*` 钩子、「无后端只提示」的行为都未变** |
+| `templates/{centered-card,split-hero,fullscreen-card}.tsx` | 去掉 `max-w-sm`（宽度收进 `LoginForm` 的 `max-w-[340px]`）；`split-hero` 宽屏下登录框贴右栏左缘（设计稿 `justify-self:start`）；`fullscreen-card` 传 `surface="panel"` |
+| `docs/login-setup.md` | 第 3 节补「纸上语言」小节；§5 的模板示例宽度订正 |
+
+**验证**：`pnpm build && pnpm check:login` **7/7 通过**；`pnpm typecheck` / `check:i18n` / `check:i18n:keys` /
+`check:routes` / `check:team-routes` / `check:smtp` / `check:permissions` 全绿；1440×900 与 390×844、
+浅色/深色、聚焦态与空提交态逐一截图核对（关键计算样式实测：主按钮 `rgb(11,122,94)` + 圆角 2px、
+输入框上边框 0px / 下边框 1px、聚焦生长线 `scale: 1`）。
+
+**已知问题（非本次引入）**：
+
+- `pnpm check:filters` 自 v0.13.0 起失败：`ERR_MODULE_NOT_FOUND: Cannot find package '@/lib'`
+  （`src/stores/org-store.ts:4` 用了 `@/` 别名，脚本里没有别名解析）—— 改名那一版漏了这一步，与登录页无关；
+- `split-hero` 深色主题下左下角站点名（`text-primary-foreground`）压在黑色遮罩上几乎读不出来，属未改动的左栏既有问题。
+
 ## [未发布] - 2026-10-09
 
 ### Changed（变更）

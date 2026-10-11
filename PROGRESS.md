@@ -13,6 +13,45 @@
 
 ---
 
+## 🚧 未发布 — 登录框「纸上语言」换装（2026-10-11）
+
+一句话：`/login` 三套样式共用的登录内容，按设计稿 `sandbox/design/order-center-login-breakthrough.html`
+换成**纸上语言** —— 无卡片盒子、下划线输入（聚焦长薄荷线）、薄荷方角主按钮、两根发丝夹的第三方行。
+
+### 落点
+
+| 文件 | 改动 |
+| --- | --- |
+| `src/index.css` | 新增登录页令牌 `--login-accent(-foreground)` / `--login-line(-strong)` / `--login-warn`（浅深两套）+ `@theme inline` 映射 |
+| `src/features/login/paper-field.tsx` | **新增**：下划线字段件（mono 标签 / 下划线输入 / 生长线 / 端部方块 / 字段级错误行；验证码图形走 `suffix`） |
+| `src/features/login/login-form.tsx` | 换用纸上语言 + 新增 `surface: 'bare' \| 'panel'`；文案/字段顺序/`data-*` 钩子/行为未变 |
+| `templates/{centered-card,split-hero,fullscreen-card}.tsx` | 宽度收进 `LoginForm`；`split-hero` 宽屏贴右栏左缘；`fullscreen-card` 传 `surface="panel"` |
+| `docs/login-setup.md` | 第 3 节补 §3.1「纸上语言」与两个坑（禁 `<header>`、保留 `data-captcha-placeholder`） |
+
+### ✅ 验证（2026-10-11 实测）
+
+| 验证 | 命令 | 结果 |
+| --- | --- | --- |
+| 类型 | `./node_modules/.bin/tsc -b` | EXIT=0 |
+| 生产构建 | `./node_modules/.bin/vite build` | ✓ built in 2.21s |
+| **登录页用例** | `node scripts/check-login.mjs` | **7/7 通过**（裸布局 0 header、验证码占位 1 个、provider 开关、恢复默认…） |
+| i18n | `check-i18n.mjs` / `check-i18n-keys.mjs` | 全绿（本次未新增 key） |
+| 其它静态自检 | `check-route-catalog` / `check-team-routes` / `check-smtp` / `check-permissions` | 全绿 |
+| 视觉 | 无头 Chrome（dist + localStorage 写配置）截图 1440×900 / 390×844、浅色 / 深色、聚焦 / 空提交 | 实测：主按钮 `rgb(11,122,94)` + 圆角 2px + 字距 3.08px、输入框上边框 0px / 下边框 1px、聚焦生长线 `scale:1`、聚焦无 ring |
+
+### ⚠️ 环境坑 / 既有问题（都不是本次改出来的）
+
+- **`pnpm check:filters` 自 v0.13.0 起失败**：`ERR_MODULE_NOT_FOUND: Cannot find package '@/lib'`
+  （`src/stores/org-store.ts:4` 用 `@/` 别名，纯 node 解析不了）。GitHub CI 里 `check:filters` 是必跑项，
+  所以上游那条改名线（`shadcn-admin-cn` → `tableau-embed-hub`，引入 `lib/storage-migration`）需要给脚本补别名解析
+  （order-center 侧的做法是 `scripts/alias-loader.mjs`）。
+- `split-hero` **深色主题**下左下角站点名用 `text-primary-foreground`（深色主题=深色字）压在黑色遮罩上，几乎不可见；左栏本次未动。
+- 上游同步：本地 `main` 从 `d41303f`(v0.11.0) **快进到** `075e301`(v0.13.0 + TS 7 刷新)，`pnpm install` 已跑
+  （99 文件 / +9482 行），登录页与 `/config/login` 来自这次同步。
+- 项目根的本地未提交改动：本目录下 `src/features/login/*` 五个文件 + `src/index.css` 为本次换装（**未提交**）。
+
+---
+
 ## 🚧 未发布 — TS 7 dev 刷新 + README（中英）排版重做（2026-10-09）
 
 - ✅ **TS 7 原生编译器刷新**：`@typescript/native` → `npm:typescript@7.1.0-dev.20261009.1`（原 `7.1.0-dev.20260930.4`，next 通道当日构建）。

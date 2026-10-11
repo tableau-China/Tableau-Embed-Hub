@@ -39,6 +39,12 @@
     --color-card: var(--card);
     --color-foreground: var(--foreground);
     --color-background: var(--background);
+    /* 登录页「纸上语言」令牌（值见下方 :root / .dark；只被 features/login 引用） */
+    --color-login-accent: var(--login-accent);
+    --color-login-accent-foreground: var(--login-accent-foreground);
+    --color-login-line: var(--login-line);
+    --color-login-line-strong: var(--login-line-strong);
+    --color-login-warn: var(--login-warn);
     --radius-sm: calc(var(--radius) * 0.6);
     --radius-md: calc(var(--radius) * 0.8);
     --radius-lg: var(--radius);
@@ -81,6 +87,15 @@
     --sidebar-accent-foreground: oklch(0.205 0 0);
     --sidebar-border: oklch(0.922 0 0);
     --sidebar-ring: oklch(0.708 0 0);
+
+    /* 登录页「纸上语言」令牌（只被 `features/login/` 引用，不进后台 UI 表单）。
+       值取自设计稿 sandbox/design/order-center-login-breakthrough.html 的
+       --accent / --line-2 / --line-3 / --accent-2（薄荷强调、两级发丝线、琥珀提示）。 */
+    --login-accent: #0b7a5e;
+    --login-accent-foreground: #ffffff;
+    --login-line: rgba(27, 35, 44, 0.13);
+    --login-line-strong: rgba(27, 35, 44, 0.26);
+    --login-warn: #a96a1b;
 }
 
 .dark {
@@ -115,6 +130,14 @@
     --sidebar-accent-foreground: oklch(0.985 0 0);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
+
+    /* 深色主题：薄荷提亮（#0b7a5e 在暗底上做文字与焦点线对比不足），
+       强调色随之改成浅底深字；两级发丝线改白系。 */
+    --login-accent: #3fbf95;
+    --login-accent-foreground: #04211a;
+    --login-line: rgba(255, 255, 255, 0.16);
+    --login-line-strong: rgba(255, 255, 255, 0.3);
+    --login-warn: #e0a646;
 }
 
 @layer base {

@@ -33,12 +33,36 @@ pnpm build && pnpm check:login   # 领域层断言 + 7 项页面用例（需本�
 
 | id | 版面 | 用宣传图 |
 | --- | --- | --- |
-| `centered-card` | 居中卡片：品牌标识 + 登录框（用户名 / 密码 / 验证码）+ 第三方入口 | 否（**默认**） |
-| `split-hero` | 左侧 **2/3** 宣传图 + 右侧 **1/3** 登录面板；窄屏（< lg）收起宣传图、表单居中 | 是 |
-| `fullscreen-card` | 全屏背景图 + 居中卡片（图上压一层遮罩保证对比度） | 是 |
+| `centered-card` | 居中登录框：品牌标识 + 登录框（用户名 / 密码 / 验证码）+ 第三方入口 | 否（**默认**） |
+| `split-hero` | 左侧 **2/3** 宣传图 + 右侧 **1/3** 登录框（宽屏贴右栏左缘，与图之间留一道沟）；窄屏（< lg）收起宣传图、表单居中 | 是 |
+| `fullscreen-card` | 全屏背景图 + 居中登录框（图上压一层遮罩 + 一层半透明面板） | 是 |
 
 样式与配置的对应关系在 `src/lib/login.ts` 的 `LOGIN_TEMPLATES`，组件在
 `src/features/login/templates/`，注册表是 `templates/registry.tsx`。
+
+### 3.1 登录框的「纸上语言」（2026-10-11 起，三套共用）
+
+登录内容只有一份（`login-form.tsx`），外观是设计稿 `sandbox/design/order-center-login-breakthrough.html`
+的「纸上语言」：**没有卡片盒子**，直接落在纸面/图上。要点：
+
+| 元素 | 规则 | 落点 |
+| --- | --- | --- |
+| 字段 | 只有一条下划线；聚焦时下划线从左长出（`scaleX 0→1`，450ms），右端 5px 方块同时变强调色 | `features/login/paper-field.tsx` |
+| 标签 | mono 小字、大写、宽字距（制图标注感） | 同上 |
+| 主按钮 | 薄荷强调色 + 白字 + 圆角 2px + mono 字距 `.28em` + 悬停扫光；按钮下方一条渐隐强调线 | `login-form.tsx` |
+| 第三方入口 | 两根发丝线夹一行小字；按钮纸白底、发丝边、悬停整块转强调色 | 同上 |
+| 面板 | 只有 `fullscreen-card` 传 `surface="panel"`（背景是图，不是纸面） | `fullscreen-card.tsx` |
+| 宽度 | `LoginForm` 自带 `max-w-[340px]`，模板**不要再写宽度** | `login-form.tsx` |
+
+颜色令牌在 `src/index.css`（`--login-accent` / `--login-line` / `--login-line-strong` / `--login-warn`，
+浅色与深色各一套，经 `@theme inline` 暴露为 `bg-login-accent` 等工具类）。
+**不复用 `--accent` / `--primary`**：本项目 `--accent` 是 shadcn 的浅灰（悬停底色）、`--primary` 浅色主题是近黑，
+都不是设计稿的薄荷。
+
+> ⚠️ 两个坑（改之前先看）：
+> 1. 表单标题块**不要**用 `<header>` —— `check:login` 的「裸布局」判据是「`/login` 上 `header` 元素数为 0」
+>    （`scripts/check-login.mjs`），用 `<div>` + `<h1>` 即可；
+> 2. 验证码占位图形必须保留 `data-captcha-placeholder`（用例断言它恰好 1 个）。
 
 ## 4. 配置项与存储
 
@@ -75,7 +99,8 @@ interface LoginConfig {
 ## 5. 新增一个登录样式（三步）
 
 1. 写 `src/features/login/templates/<your-template>.tsx`：接收 `{ config, heroImageUrl }`，
-   里面渲染 `<LoginForm config={config} className="max-w-sm" />`（**登录内容只有这一份**，不要抄第二遍）；
+   里面渲染 `<LoginForm config={config} />`（**登录内容只有这一份**，不要抄第二遍；宽度由 `LoginForm`
+   的 `max-w-[340px]` 决定，背景是**图**时传 `surface="panel"`）；
 2. 在 `templates/registry.tsx` 的 `LOGIN_TEMPLATE_COMPONENTS` 登记一行（漏了 tsc 报错）；
 3. 在 `src/lib/login.ts` 的 `LOGIN_TEMPLATES` 加一条（`nameKey` / `descriptionKey` 写 i18n key，
    `login.test.ts` 会断言它们真的存在于词典）。配置页的选项与线框缩略图会自动多一项。

@@ -9,6 +9,8 @@ import type { LoginTemplateProps } from './registry'
  *
  * - **2/3 : 1/3** 用 `lg:grid-cols-3` + `lg:col-span-2` 表达（不是 66%/33% 的魔法数字）；
  * - 窄屏（< lg）**收起宣传图**、表单居中：手机上一张 2/3 宽的图只会把登录框挤到屏幕外；
+ * - 宽屏下登录框**贴右栏左缘**（设计稿 `.auth` 的 `justify-self:start` + 栅格 gap ≈ 64px），
+ *   与宣传图之间留一道明确的沟，而不是飘在右栏正中；
  * - 图上压一层渐变遮罩，避免浅色图片让左上角的内容（站点名）读不清。
  */
 export function SplitHeroTemplate({ config, heroImageUrl }: LoginTemplateProps) {
@@ -21,8 +23,8 @@ export function SplitHeroTemplate({ config, heroImageUrl }: LoginTemplateProps) 
           <p className="text-2xl font-semibold tracking-tight">{APP_NAME}</p>
         </div>
       </div>
-      <div className="flex items-center justify-center p-4 sm:p-6">
-        <LoginForm config={config} className="max-w-sm" />
+      <div className="flex items-center justify-center p-4 sm:p-6 lg:justify-start lg:pl-16">
+        <LoginForm config={config} />
       </div>
     </div>
   )
