@@ -2,10 +2,13 @@
 
 [![CI](https://github.com/tableau-China/Tableau-Embed-Hub/actions/workflows/ci.yml/badge.svg)](https://github.com/tableau-China/Tableau-Embed-Hub/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
-[![Version](https://img.shields.io/badge/version-0.13.1-informational.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.13.2-informational.svg)](./CHANGELOG.md)
 [![React 19](https://img.shields.io/badge/React-19-087ea4.svg)](https://react.dev)
 [![TypeScript 7](https://img.shields.io/badge/TypeScript-7-3178c6.svg)](https://www.typescriptlang.org)
 [![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4-38bdf8.svg)](https://tailwindcss.com)
+[![Stars](https://img.shields.io/github/stars/tableau-China/Tableau-Embed-Hub?style=flat)](https://github.com/tableau-China/Tableau-Embed-Hub/stargazers)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
+[![Node.js 24](https://img.shields.io/badge/Node.js-24-339933.svg)](https://nodejs.org)
 
 > 中文版文档：[README.md](./README.md) ｜ Repository: <https://github.com/tableau-China/Tableau-Embed-Hub>
 > Formerly `shadcn-admin-cn`; renamed to **Tableau-Embed-Hub** (display name **Tableau Embed Hub**) in October 2026.
@@ -42,7 +45,7 @@ point and a deploy sample. The UI is **en-US only** for now; more locales are pl
 
 ## Capabilities at a glance
 
-Current version **0.13.1** — see [CHANGELOG.md](./CHANGELOG.md) (Chinese); the version number is
+Current version **0.13.2** — see [CHANGELOG.md](./CHANGELOG.md) (Chinese); the version number is
 cross-checked across `package.json`, the sidebar and `PROGRESS.md`.
 
 | Capability | In one line | Since |
@@ -59,21 +62,47 @@ cross-checked across `package.json`, the sidebar and `PROGRESS.md`.
 | Check scripts | **9 `check:*` commands** + 113 pure-function tests + a two-job GitHub Actions workflow (including a public-repo path guard) | since v0.11.0 |
 | Deploy sample | Pure static output + `deploy/nginx.conf.example` + an in-app environment check on `/help` | v0.10.0 |
 
-## Quick start
+## Quick start (5 minutes)
+
+Three steps, **zero configuration** — nothing to fill in before the whole UI works.
 
 ```bash
+# 1) Clone and install — Node.js 24 + pnpm 12.9.1 (`packageManager` pins it; CI uses the same)
 git clone https://github.com/tableau-China/Tableau-Embed-Hub.git
 cd Tableau-Embed-Hub
 pnpm install
-pnpm dev            # http://127.0.0.1:5174
+
+# 2) Start the dev server — port pinned to 5174, IPv4 loopback only
+pnpm dev            # → http://127.0.0.1:5174
 ```
 
-- **Requirements**: Node.js 24 and pnpm 12.9.1 (`packageManager` pins it; CI uses the same).
-- **No configuration needed**: with nothing set, the app falls back to a built-in **demo Tableau site +
-  demo credentials** and a local **demo AI provider** (streaming, no network requests), so every page is
-  clickable immediately.
-- **Point it at your own site**: `.env` only, no code changes — see
-  [Configure your own Tableau site](#configure-your-own-tableau-site).
+**3) Open <http://127.0.0.1:5174> — here is what you get**
+
+| What you see | Why |
+| --- | --- |
+| The workspace, straight in — **no login** | `/` redirects to the current team's `/t/acme_hq` (demo data: the Admin user, default team Acme HQ) |
+| Sidebar groups **General / AI / Settings / Config** | Dashboard plus Favorites, Recents, Workbooks and Views all live under General |
+| **A real embedded Tableau view** | With no `.env` it uses the built-in **demo site + demo credentials** |
+| The AI page **streaming** a reply | Built-in **demo provider**: streams locally, makes no network requests |
+| Three demo teams to switch between | `acme_hq` / `acme_analytics` / `acme_data_platform`; team identity lives in the URL (`/t/{slug}`) |
+
+> Want to know whether you are on the demo values or your own? Open **`/help` → environment check**
+> inside the app — it reports each one.
+
+**Where to go next**
+
+| I want to… | Read |
+| --- | --- |
+| Connect my own Tableau Cloud site (`.env` only, no code changes) | [Configure your own Tableau site](#configure-your-own-tableau-site) · [docs/tableau-setup.md](./docs/tableau-setup.md) (Chinese) |
+| Add a page / edit the permission matrix | [docs/route-permissions.md](./docs/route-permissions.md) (Chinese) |
+| Change the login layout / wire real sign-in | [docs/login-setup.md](./docs/login-setup.md) (Chinese) |
+| Point `/ai` at a real model | [docs/ai-integration.md](./docs/ai-integration.md) |
+| Deploy to my own domain | [deploy/nginx.conf.example](./deploy/nginx.conf.example) |
+| Run the checks before opening a PR | [CONTRIBUTING.md](./CONTRIBUTING.md) |
+
+> ⚠️ **Before deploying**: this is a front-end only app, and everything in `.env` is inlined into the
+> build output. [SECURITY.md](./SECURITY.md) covers the credential boundary and what still has to
+> happen server-side.
 
 ## Is this for you?
 
@@ -346,6 +375,7 @@ Suites that drive a browser need a recent `pnpm build` first — they run agains
 | [`CHANGELOG.md`](./CHANGELOG.md) | What changed in each version, plus known issues (Chinese) |
 | [`PROGRESS.md`](./PROGRESS.md) | Progress, key decisions, environment pitfalls and workarounds (Chinese) |
 | [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Local setup, commit conventions and the PR flow |
+| [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md) | Community standards and the private channel for reporting unacceptable behaviour |
 
 ## Roadmap
 
@@ -364,3 +394,15 @@ keep the copyright and licence notice.
 
 > Tableau and Tableau Cloud are trademarks of Salesforce, Inc. This project is not affiliated with,
 > endorsed by, or sponsored by Salesforce, Inc.
+
+## Contributors
+
+Thanks to everyone who filed an issue, opened a PR, or took the template for a spin.
+
+<a href="https://github.com/tableau-China/Tableau-Embed-Hub/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=tableau-China/Tableau-Embed-Hub" alt="Contributor avatars" />
+</a>
+
+## Star history
+
+[![Star History Chart](https://api.star-history.com/svg?repos=tableau-China/Tableau-Embed-Hub&type=Date)](https://star-history.com/#tableau-China/Tableau-Embed-Hub&Date)

@@ -1,6 +1,6 @@
 # Tableau Embed Hub 项目进度（PROGRESS）
 
-> 更新于 2026-10-11 ｜ **本文档一切命令与路径均以「仓库根目录」为基准**（本仓库在多台 Mac 上各有一份工作副本，
+> 更新于 2026-10-12 ｜ **本文档一切命令与路径均以「仓库根目录」为基准**（本仓库在多台 Mac 上各有一份工作副本，
 > 各自绝对路径不同，一律不入库、不写进文档 —— 换机器时照抄这里的命令不会失效）。
 
 ## 项目概况
@@ -11,11 +11,43 @@
 - **多机副本**：本仓库在**多台 Mac 上各有一份工作副本**（同一远端 `origin/main`，内容一致），各自的绝对路径不同。
   文档一律不写机器绝对路径：命令都在**仓库根目录**下执行即可；「上次是在哪台机器改的」这类信息对复现没有价值，
   写进文档只会让另一台机器上的人误以为目录失效（本节曾踩过这个坑，2026-10-11 订正）。
-- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.13.1**）。
+- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.13.2**）。
 - **项目更名**（2026-10-09）：`shadcn-admin-cn` → 仓库/包名 **`tableau-embed-hub`**、显示名 **`Tableau Embed Hub`**（主打「Tableau 嵌入可视化」，品牌唯一来源仍是 `src/config/app.ts`）。localStorage 前缀同步改为 `tableau-embed-hub`，旧 key 保留并由 `src/lib/storage-migration.ts` 一次性迁移；细节见 CHANGELOG.md 的 `0.13.0` / `0.13.1` 节。
 
 ---
 
+## ✅ v0.13.2 — 行为准则 + README 快速上手重写 + 徽章 / 贡献者墙（2026-10-12）
+
+背景：仓库要对外推广，「克隆下来先看什么、下一步做什么」必须一眼可见；同时补齐开源仓库的社区基建。
+
+### 落点
+
+| 文件 | 改动 |
+| --- | --- |
+| `CODE_OF_CONDUCT.md` | **新增**：Contributor Covenant 2.1 官方正文（举报渠道 → `src/config/app.ts` 的维护者信息 + fork 提示）；与上游逐行比对，只差被替换的那一行 |
+| `README.md` / `README.en.md` | 「快速开始」→「**5 分钟快速上手**」；头部 +3 徽章（Stars / PRs Welcome / Node.js 24）；底部 +贡献者墙 +Star 趋势 |
+| `CONTRIBUTING.md` | 补行为准则入口；已知 warning 数订正 16 → 17 |
+| `package.json` / `src/config/app.ts` | 版本 **0.13.1 → 0.13.2**（本版本无依赖变化，lock 未动，`--frozen-lockfile` 不受影响） |
+
+### ✅ 验证（2026-10-12 实测）
+
+| 验证 | 命令 | 结果 |
+| --- | --- | --- |
+| 单测 | `vitest run` | **113 passed**（10 文件） |
+| Lint | `eslint .` | 0 error / 17 warning（全在既有 `src/` 文件） |
+| 类型检查 | `tsc -b` | 通过 |
+| 静态校验 | `check:i18n` / `check:i18n:keys` / `check:routes` | 全绿 |
+| 路径守卫 | `bash scripts/check-public-paths.sh` | ✅ |
+| 生产构建 | `vite build` | 通过 |
+| README 结构 | 临时脚本（跑完即删） | 相对链接 70/70 可达、表格列数一致、站内锚点 0 缺失 |
+
+### ⚠️ 环境坑：开发沙箱下 `pnpm` 自举失败
+
+本轮开发沙箱里 `pnpm` 报 `create the temporary package manager install directory: Operation not permitted`
+（建不了临时安装目录）。**绕法**：改用 `./node_modules/.bin/{vitest,eslint,tsc,vite}` 直跑 —— 与 `pnpm run` 等价，
+且不依赖 pnpm 自举。**CI 不受影响**（CI 有完整网络与权限，`pnpm install --frozen-lockfile` 照常）。
+
+---
 ## ✅ v0.13.1 — README 宣传向重构 + 截图脚本 + `@/` 别名修复（2026-10-11）
 
 背景：GitHub 仓库已改名为 **`tableau-China/Tableau-Embed-Hub`**（旧名 `tableau-China/shadcn-admin-cn` 现在 301 跳转，
