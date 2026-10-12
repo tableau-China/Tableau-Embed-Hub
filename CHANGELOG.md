@@ -6,6 +6,7 @@
 
 | 版本 | package.json | 侧边栏显示 | PROGRESS.md | CHANGELOG 条目 | 日期 |
 | --- | --- | --- | --- | --- | --- |
+| 0.13.2 | ✅ `0.13.2` | ✅ `v0.13.2`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0132---2026-10-12) | 2026-10-12 |
 | 0.13.1 | ✅ `0.13.1` | ✅ `v0.13.1`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0131---2026-10-11) | 2026-10-11 |
 | 0.13.0 | ✅ `0.13.0` | ✅ `v0.13.0`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0130---2026-10-09) | 2026-10-09 |
 | 0.12.0 | ⚠️ 未单独发布（并入 0.13.0） | — | ✅ 已同步 | ✅ [本节](#0120---2026-10-09) | 2026-10-09 |
@@ -34,6 +35,34 @@
 > 📌 **0.13.1 的范围**：把 2026-10-09 与 2026-10-11 两条「未发布」内容线**一起收口**（TS 7 dev 刷新、README 排版重做、
 > 登录框「纸上语言」换装），并补上 README 宣传向重构、页面截图、`@/` 别名修复与文档绝对路径订正。
 
+## [0.13.2] - 2026-10-12
+
+### Added（新增）：行为准则 `CODE_OF_CONDUCT.md`
+
+采用 **Contributor Covenant 2.1** 官方正文（从上游抓取正文后逐行比对：只差被替换的举报渠道那一行）。
+本仓库定制两处：**举报渠道**指向 `src/config/app.ts` 的维护者信息（与 SECURITY.md 同一口径，并明确要求走私密渠道），
+**fork 提示**提醒换成自己真会看的渠道；顶部附官方简体中文译本直链。
+
+入口三处：README（中英）的文档地图、`CONTRIBUTING.md` 的「报告 bug 与安全问题」一节 ——
+GitHub 仓库的 Community Standards 清单会据此点亮。
+
+### Changed（变更）：README（中英）「5 分钟快速上手」+ 头部徽章 + 底部贡献者墙
+
+| 文件 | 改动 |
+| --- | --- |
+| `README.md` / `README.en.md` | 「快速开始」→「**5 分钟快速上手**」：三步命令 +「你会看到什么」表（**不需要登录**、`/` 跳 `/t/acme_hq`、三个演示团队、`/help` 环境自检）+「接下来做什么」表（接站点 / 加页面 / 登录页 / 接模型 / 部署 / 提 PR）+ 部署前安全提示 |
+| `README.md` / `README.en.md` | 头部新增 3 枚徽章：GitHub Stars（动态）、PRs Welcome、Node.js 24 —— 全部实测可解析 |
+| `README.md` / `README.en.md` | 底部新增「贡献者」（contrib.rocks 头像墙）与「Star 趋势」（star-history） |
+| `CONTRIBUTING.md` | 已知 fast-refresh warning 数订正 **16 → 17**（实测），并补行为准则入口 |
+
+### Verification（验证）
+
+`tsc -b` / `eslint`（0 error，17 warning）/ `vitest run`（**113 passed**）/ `check:i18n` / `check:i18n:keys` /
+`check:routes` / `scripts/check-public-paths.sh` / `vite build` 全绿。
+README 结构自检（临时脚本，跑完即删）：**相对链接 70 条 0 缺失**、表格列数一致、站内锚点 0 缺失；
+新增/改动的外部 URL 逐个实测（11 个直接 200；4 个 `github.com` 页面本机网络不可达，改用 GitHub API 交叉验证）。
+
+> ⚠️ 本版本**没有任何依赖变化**：`pnpm-lock.yaml` 未改动，`--frozen-lockfile` 不受影响。
 ## [0.13.1] - 2026-10-11
 
 ### Changed（变更）：登录框换装「纸上语言」（`/login` 的登录框）

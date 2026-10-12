@@ -20,7 +20,7 @@ Run the same checks CI runs:
 
 ```bash
 pnpm typecheck        # tsc -b (TypeScript 7 native compiler)
-pnpm lint             # eslint (0 errors expected; 16 known fast-refresh warnings)
+pnpm lint             # eslint (0 errors expected; 17 known fast-refresh warnings)
 pnpm test             # vitest — pure functions, <1s
 pnpm check:i18n       # locale key alignment
 pnpm check:routes     # route files ↔ permission catalog consistency
@@ -75,3 +75,5 @@ A few rules that are easy to trip over:
 
 - Functional bugs: open an issue using the template.
 - Security issues: **do not** open a public issue — see [`SECURITY.md`](./SECURITY.md).
+- Everything else — questions, ideas, or behaviour you found unacceptable — see
+  [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md) for the standards and the private reporting channel.

@@ -2,10 +2,13 @@
 
 [![CI](https://github.com/tableau-China/Tableau-Embed-Hub/actions/workflows/ci.yml/badge.svg)](https://github.com/tableau-China/Tableau-Embed-Hub/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
-[![Version](https://img.shields.io/badge/version-0.13.1-informational.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.13.2-informational.svg)](./CHANGELOG.md)
 [![React 19](https://img.shields.io/badge/React-19-087ea4.svg)](https://react.dev)
 [![TypeScript 7](https://img.shields.io/badge/TypeScript-7-3178c6.svg)](https://www.typescriptlang.org)
 [![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4-38bdf8.svg)](https://tailwindcss.com)
+[![Stars](https://img.shields.io/github/stars/tableau-China/Tableau-Embed-Hub?style=flat)](https://github.com/tableau-China/Tableau-Embed-Hub/stargazers)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
+[![Node.js 24](https://img.shields.io/badge/Node.js-24-339933.svg)](https://nodejs.org)
 
 > English version: [README.en.md](./README.en.md) ｜ 仓库：<https://github.com/tableau-China/Tableau-Embed-Hub>
 > 仓库原名 `shadcn-admin-cn`，2026-10 更名为 **Tableau-Embed-Hub**（显示名 **Tableau Embed Hub**），旧链接自动跳转。
@@ -36,7 +39,7 @@
 
 ## 能力速览
 
-当前版本 **0.13.1**（变更记录见 [CHANGELOG.md](./CHANGELOG.md)，版本号跨 `package.json` / 侧边栏 / `PROGRESS.md` 核对）。
+当前版本 **0.13.2**（变更记录见 [CHANGELOG.md](./CHANGELOG.md)，版本号跨 `package.json` / 侧边栏 / `PROGRESS.md` 核对）。
 
 | 能力 | 一句话 | 从哪版起 |
 | --- | --- | --- |
@@ -52,19 +55,45 @@
 | 校验脚本体系 | **9 个 `check:*` 命令** + 113 个纯函数用例 + GitHub Actions 双 job（含公开仓库路径守卫） | v0.11.0 起 |
 | 部署样例 | 纯静态产物 + `deploy/nginx.conf.example` 反代样例 + 应用内 `/help` 环境自检 | v0.10.0 |
 
-## 快速开始
+## 5 分钟快速上手
+
+三步，**零配置** —— 什么都不填，也能看到完整界面。
 
 ```bash
+# 1) 克隆并安装 —— Node.js 24 + pnpm 12.9.1（`packageManager` 已锁定，CI 用同一版本）
 git clone https://github.com/tableau-China/Tableau-Embed-Hub.git
 cd Tableau-Embed-Hub
 pnpm install
-pnpm dev            # http://127.0.0.1:5174
+
+# 2) 启动开发服务器 —— 端口固定 5174，只监听 IPv4 环回
+pnpm dev            # → http://127.0.0.1:5174
 ```
 
-- **环境**：Node.js 24 + pnpm 12.9.1（`package.json` 的 `packageManager` 已锁定，CI 用同一版本）。
-- **零配置即可看效果**：什么都不配也能跑 —— 应用使用内置的**演示 Tableau 站点 + 演示凭据**，
-  AI 页走**内置演示 provider**（本地流式输出，不发任何请求）。
-- **接自己的站点**：只改 `.env`，不用改代码，见 [配置自己的 Tableau 站点](#配置自己的-tableau-站点)。
+**3) 打开 <http://127.0.0.1:5174>，你会看到**
+
+| 你会看到 | 为什么是这样 |
+| --- | --- |
+| 直接进工作台，**不需要登录** | `/` 自动跳到当前团队的 `/t/acme_hq`（演示数据里是 Admin + 默认团队 Acme HQ） |
+| 侧边栏 **General / AI / Settings / Config** 四个分组 | 工作台与 Favorites、Recents、Workbooks、Views 都在 General 下 |
+| **真实嵌入的 Tableau 视图** | 不配 `.env` 时走内置**演示站点 + 演示凭据** |
+| AI 页能逐字**流式输出** | 走内置**演示 provider**：本地流式输出，不发任何网络请求 |
+| 三个演示团队可随时切换 | `acme_hq` / `acme_analytics` / `acme_data_platform`，团队身份就在 URL 里（`/t/{slug}`） |
+
+> 想知道现在用的是演示值还是你自己的值？打开应用内 **`/help` → 环境自检**，它逐项告诉你。
+
+**接下来做什么**
+
+| 我想… | 去哪 |
+| --- | --- |
+| 接自己的 Tableau Cloud 站点（只改 `.env`，不动代码） | [配置自己的 Tableau 站点](#配置自己的-tableau-站点) ｜ [docs/tableau-setup.md](./docs/tableau-setup.md) |
+| 加一个新页面 / 改权限矩阵 | [docs/route-permissions.md](./docs/route-permissions.md) |
+| 换登录页样式 / 接真实登录 | [docs/login-setup.md](./docs/login-setup.md) |
+| 把 `/ai` 接到真实模型 | [docs/ai-integration.md](./docs/ai-integration.md) |
+| 部署到自己的域名 | [deploy/nginx.conf.example](./deploy/nginx.conf.example) |
+| 提 PR 前跑通本地校验 | [CONTRIBUTING.md](./CONTRIBUTING.md) |
+
+> ⚠️ **部署前必读**：这是**纯前端**应用，`.env` 里的内容会被内联进构建产物 ——
+> 凭据边界、以及仍需你在服务端完成的工作，见 [SECURITY.md](./SECURITY.md)。
 
 ## 十秒判断它适不适合你
 
@@ -307,6 +336,7 @@ cp .env.example .env      # .env 已被 .gitignore 排除
 | [CHANGELOG.md](./CHANGELOG.md) | 每个版本改了什么、遗留问题与待办 |
 | [PROGRESS.md](./PROGRESS.md) | 进度、关键决策、环境坑与绕法（开发向） |
 | [CONTRIBUTING.md](./CONTRIBUTING.md) | 本地开发、提交约定与 PR 流程 |
+| [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) | 参与社区（issue / PR / 讨论）时的行为准则与私密举报渠道 |
 
 ## 路线图
 
@@ -323,3 +353,15 @@ cp .env.example .env      # .env 已被 .gitignore 排除
 [MIT License](./LICENSE) —— 可商用、可修改、可闭源分发，保留版权与许可声明即可。
 
 > Tableau 与 Tableau Cloud 是 Salesforce, Inc. 的商标；本项目与 Salesforce, Inc. 无隶属、授权或赞助关系。
+
+## 贡献者
+
+感谢每一位提 issue、提 PR、帮忙试用的同学。
+
+<a href="https://github.com/tableau-China/Tableau-Embed-Hub/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=tableau-China/Tableau-Embed-Hub" alt="贡献者头像" />
+</a>
+
+## Star 趋势
+
+[![Star History Chart](https://api.star-history.com/svg?repos=tableau-China/Tableau-Embed-Hub&type=Date)](https://star-history.com/#tableau-China/Tableau-Embed-Hub&Date)
