@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi-Team Organization Model</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Geist', -apple-system, system-ui, sans-serif;
+      background: #f5f5f5;
+      padding: 2rem;
+      line-height: 1.6;
+      color: #2d3142;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: 1.75rem;
+      font-weight: 400;
+      margin-bottom: 0.5rem;
+      color: #2d3142;
+    }
+    .eyebrow {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.75rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #7a8399;
+      margin-bottom: 0.5rem;
+    }
+    svg { display: block; margin: 2rem 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <p class="eyebrow">ORGANIZATION MODEL</p>
+    <h1>Multi-Team Organization Model</h1>
+    
+    <svg viewBox="0 0 800 520" role="img" aria-labelledby="org-title org-desc" xmlns="http://www.w3.org/2000/svg">
+      <title id="org-title">Multi-Team Organization Model</title>
+      <desc id="org-desc">Organization diagram showing global users with different roles across multiple teams, where each user can have team-specific roles like team-admin, analyst, or viewer.</desc>
+      
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/>
+        </marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/>
+        </marker>
+      </defs>
+      
+      <!-- Background -->
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+      
+      <!-- Arrows first -->
+      
+      <!-- User Alice -> Team A membership -->
+      <path d="M 160,120 L 160,188" stroke="#eb6c36" stroke-width="1.2" fill="none" marker-end="url(#arrow-accent)"/>
+      <rect x="124" y="142" width="72" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="160" y="151" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">team-admin</text>
+      
+      <!-- User Alice -> Team B membership -->
+      <path d="M 180,120 Q 180,154 280,188" stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
+      <rect x="220" y="142" width="48" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="244" y="151" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">viewer</text>
+      
+      <!-- User Bob -> Team A membership -->
+      <path d="M 400,120 Q 400,154 300,188" stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
+      <rect x="332" y="142" width="52" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="358" y="151" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">analyst</text>
+      
+      <!-- User Bob -> Team B membership -->
+      <path d="M 420,120 Q 420,154 520,188" stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
+      <rect x="456" y="142" width="72" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="492" y="151" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">team-admin</text>
+      
+      <!-- User Carol -> Team B membership -->
+      <path d="M 640,120 L 640,188" stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
+      <rect x="604" y="142" width="72" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="640" y="151" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">team-admin</text>
+      
+      <!-- Team A -> Workbooks -->
+      <path d="M 160,244 L 160,316" stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
+      <rect x="132" y="268" width="56" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="160" y="277" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">contains</text>
+      
+      <!-- Team A -> Dashboard -->
+      <path d="M 220,244 Q 220,280 320,316" stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
+      <rect x="256" y="268" width="56" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="284" y="277" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">contains</text>
+      
+      <!-- Team B -> Views -->
+      <path d="M 540,244 Q 540,280 440,316" stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
+      <rect x="476" y="268" width="56" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="504" y="277" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">contains</text>
+      
+      <!-- Team B -> Settings -->
+      <path d="M 580,244 L 580,316" stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
+      <rect x="552" y="268" width="56" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="580" y="277" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">contains</text>
+      
+      <!-- Nodes -->
+      
+      <!-- Global Users Layer Label -->
+      <rect x="40" y="48" width="720" height="28" rx="4" fill="rgba(235,108,54,0.08)" stroke="rgba(235,108,54,0.4)" stroke-width="1"/>
+      <text x="400" y="66" fill="#eb6c36" font-size="10" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">GLOBAL USERS</text>
+      
+      <!-- User: Alice (system admin, focal) -->
+      <rect x="80" y="92" width="160" height="48" rx="6" fill="#f5f5f5"/>
+      <rect x="80" y="92" width="160" height="48" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.2"/>
+      <rect x="92" y="102" width="36" height="12" rx="2" fill="transparent" stroke="rgba(235,108,54,0.6)" stroke-width="0.8"/>
+      <text x="110" y="110" fill="rgba(235,108,54,0.9)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">USER</text>
+      <text x="160" y="122" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Alice</text>
+      <text x="160" y="134" fill="#eb6c36" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">system-admin</text>
+      
+      <!-- User: Bob -->
+      <rect x="320" y="92" width="160" height="48" rx="6" fill="#f5f5f5"/>
+      <rect x="320" y="92" width="160" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="332" y="102" width="36" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.4)" stroke-width="0.8"/>
+      <text x="350" y="110" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">USER</text>
+      <text x="400" y="122" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Bob</text>
+      <text x="400" y="134" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">regular user</text>
+      
+      <!-- User: Carol -->
+      <rect x="560" y="92" width="160" height="48" rx="6" fill="#f5f5f5"/>
+      <rect x="560" y="92" width="160" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="572" y="102" width="36" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.4)" stroke-width="0.8"/>
+      <text x="590" y="110" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">USER</text>
+      <text x="640" y="122" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Carol</text>
+      <text x="640" y="134" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">regular user</text>
+      
+      <!-- Teams Layer Label -->
+      <rect x="40" y="176" width="720" height="28" rx="4" fill="rgba(79,93,117,0.08)" stroke="rgba(79,93,117,0.3)" stroke-width="1"/>
+      <text x="400" y="194" fill="#4f5d75" font-size="10" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">TEAMS (WORKSPACES)</text>
+      
+      <!-- Team A -->
+      <rect x="80" y="216" width="200" height="48" rx="6" fill="#f5f5f5"/>
+      <rect x="80" y="216" width="200" height="48" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+      <rect x="92" y="226" width="40" height="12" rx="2" fill="transparent" stroke="rgba(79,93,117,0.4)" stroke-width="0.8"/>
+      <text x="112" y="234" fill="rgba(79,93,117,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">TEAM</text>
+      <text x="180" y="246" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Team A (marketing)</text>
+      <text x="180" y="258" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">/t/marketing</text>
+      
+      <!-- Team B -->
+      <rect x="480" y="216" width="200" height="48" rx="6" fill="#f5f5f5"/>
+      <rect x="480" y="216" width="200" height="48" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+      <rect x="492" y="226" width="40" height="12" rx="2" fill="transparent" stroke="rgba(79,93,117,0.4)" stroke-width="0.8"/>
+      <text x="512" y="234" fill="rgba(79,93,117,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">TEAM</text>
+      <text x="580" y="246" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Team B (sales)</text>
+      <text x="580" y="258" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">/t/sales</text>
+      
+      <!-- Resources Layer Label -->
+      <rect x="40" y="304" width="720" height="28" rx="4" fill="rgba(79,93,117,0.05)" stroke="rgba(79,93,117,0.2)" stroke-width="1"/>
+      <text x="400" y="322" fill="#7a8399" font-size="10" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">TEAM-SCOPED RESOURCES</text>
+      
+      <!-- Resource: Workbooks -->
+      <rect x="80" y="344" width="120" height="48" rx="6" fill="#f5f5f5"/>
+      <rect x="80" y="344" width="120" height="48" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.25)" stroke-width="1"/>
+      <text x="140" y="371" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Workbooks</text>
+      <text x="140" y="383" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">by role</text>
+      
+      <!-- Resource: Dashboard -->
+      <rect x="240" y="344" width="120" height="48" rx="6" fill="#f5f5f5"/>
+      <rect x="240" y="344" width="120" height="48" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.25)" stroke-width="1"/>
+      <text x="300" y="371" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Dashboard</text>
+      <text x="300" y="383" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">by role</text>
+      
+      <!-- Resource: Views -->
+      <rect x="400" y="344" width="120" height="48" rx="6" fill="#f5f5f5"/>
+      <rect x="400" y="344" width="120" height="48" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.25)" stroke-width="1"/>
+      <text x="460" y="371" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Views</text>
+      <text x="460" y="383" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">by role</text>
+      
+      <!-- Resource: Settings -->
+      <rect x="560" y="344" width="120" height="48" rx="6" fill="#f5f5f5"/>
+      <rect x="560" y="344" width="120" height="48" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.25)" stroke-width="1"/>
+      <text x="620" y="371" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Settings</text>
+      <text x="620" y="383" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">admin only</text>
+      
+      <!-- Annotation -->
+      <text x="40" y="432" fill="#4f5d75" font-family="'Instrument Serif', serif" font-style="italic" font-size="13">
+        <tspan x="40" dy="0">Same user can have different roles in different teams.</tspan>
+        <tspan x="40" dy="18">Alice is team-admin in Team A but only viewer in Team B.</tspan>
+      </text>
+      
+      <!-- Legend -->
+      <line x1="30" y1="480" x2="770" y2="480" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <text x="30" y="496" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+      
+      <line x1="160" y1="496" x2="200" y2="496" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+      <text x="210" y="500" fill="#4f5d75" font-size="9" font-family="'Geist', sans-serif">Primary role</text>
+      
+      <line x1="340" y1="496" x2="380" y2="496" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <text x="390" y="500" fill="#4f5d75" font-size="9" font-family="'Geist', sans-serif">Team membership</text>
+    </svg>
+  </div>
+</body>
+</html>

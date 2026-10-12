@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Permission Matrix Model</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Geist', -apple-system, system-ui, sans-serif;
+      background: #f5f5f5;
+      padding: 2rem;
+      line-height: 1.6;
+      color: #2d3142;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: 1.75rem;
+      font-weight: 400;
+      margin-bottom: 0.5rem;
+      color: #2d3142;
+    }
+    .eyebrow {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.75rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #7a8399;
+      margin-bottom: 0.5rem;
+    }
+    svg { display: block; margin: 2rem 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <p class="eyebrow">PERMISSION MODEL</p>
+    <h1>Role × Route Permission Matrix</h1>
+    
+    <svg viewBox="0 0 800 560" role="img" aria-labelledby="perm-title perm-desc" xmlns="http://www.w3.org/2000/svg">
+      <title id="perm-title">Role × Route Permission Matrix</title>
+      <desc id="perm-desc">Permission matrix showing how different roles (system-admin, team-admin, analyst, viewer) have access to different routes, with fail-closed default where new pages are system-admin only.</desc>
+      
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/>
+        </marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/>
+        </marker>
+      </defs>
+      
+      <!-- Background -->
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+      
+      <!-- Matrix Container -->
+      <rect x="40" y="60" width="720" height="380" rx="6" fill="#ffffff" stroke="rgba(45,49,66,0.12)" stroke-width="1"/>
+      
+      <!-- Header Row - Roles -->
+      <rect x="40" y="60" width="180" height="48" rx="6" fill="rgba(235,108,54,0.08)" stroke="rgba(235,108,54,0.3)" stroke-width="1"/>
+      <text x="130" y="88" fill="#eb6c36" font-size="11" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ROLE</text>
+      
+      <rect x="220" y="60" width="140" height="48" rx="6" fill="rgba(235,108,54,0.05)" stroke="rgba(235,108,54,0.2)" stroke-width="1"/>
+      <text x="290" y="81" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">system-admin</text>
+      <text x="290" y="95" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">global</text>
+      
+      <rect x="360" y="60" width="140" height="48" rx="6" fill="rgba(79,93,117,0.05)" stroke="rgba(79,93,117,0.2)" stroke-width="1"/>
+      <text x="430" y="81" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">team-admin</text>
+      <text x="430" y="95" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">per team</text>
+      
+      <rect x="500" y="60" width="140" height="48" rx="6" fill="rgba(79,93,117,0.05)" stroke="rgba(79,93,117,0.2)" stroke-width="1"/>
+      <text x="570" y="81" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">analyst</text>
+      <text x="570" y="95" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">per team</text>
+      
+      <rect x="640" y="60" width="120" height="48" rx="6" fill="rgba(79,93,117,0.05)" stroke="rgba(79,93,117,0.2)" stroke-width="1"/>
+      <text x="700" y="81" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">viewer</text>
+      <text x="700" y="95" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">per team</text>
+      
+      <!-- Row 1: Dashboard -->
+      <rect x="40" y="108" width="180" height="40" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.08)" stroke-width="1"/>
+      <text x="56" y="125" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist', sans-serif">/t/{slug}/dashboard</text>
+      <text x="56" y="138" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace">General</text>
+      
+      <circle cx="290" cy="128" r="6" fill="#22c55e" stroke="#16a34a" stroke-width="1"/>
+      <circle cx="430" cy="128" r="6" fill="#22c55e" stroke="#16a34a" stroke-width="1"/>
+      <circle cx="570" cy="128" r="6" fill="#22c55e" stroke="#16a34a" stroke-width="1"/>
+      <circle cx="700" cy="128" r="6" fill="#22c55e" stroke="#16a34a" stroke-width="1"/>
+      
+      <!-- Row 2: Tableau Users -->
+      <rect x="40" y="148" width="180" height="40" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.08)" stroke-width="1"/>
+      <text x="56" y="165" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist', sans-serif">/t/{slug}/tableau/users</text>
+      <text x="56" y="178" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace">General</text>
+      
+      <circle cx="290" cy="168" r="6" fill="#22c55e" stroke="#16a34a" stroke-width="1"/>
+      <circle cx="430" cy="168" r="6" fill="#ef4444" stroke="#dc2626" stroke-width="1"/>
+      <circle cx="570" cy="168" r="6" fill="#ef4444" stroke="#dc2626" stroke-width="1"/>
+      <circle cx="700" cy="168" r="6" fill="#ef4444" stroke="#dc2626" stroke-width="1"/>
+      
+      <!-- Row 3: AI Chat -->
+      <rect x="40" y="188" width="180" height="40" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.08)" stroke-width="1"/>
+      <text x="56" y="205" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist', sans-serif">/ai</text>
+      <text x="56" y="218" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace">AI</text>
+      
+      <circle cx="290" cy="208" r="6" fill="#22c55e" stroke="#16a34a" stroke-width="1"/>
+      <circle cx="430" cy="208" r="6" fill="#22c55e" stroke="#16a34a" stroke-width="1"/>
+      <circle cx="570" cy="208" r="6" fill="#22c55e" stroke="#16a34a" stroke-width="1"/>
+      <circle cx="700" cy="208" r="6" fill="#22c55e" stroke="#16a34a" stroke-width="1"/>
+      
+      <!-- Row 4: Users Management -->
+      <rect x="40" y="228" width="180" height="40" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.08)" stroke-width="1"/>
+      <text x="56" y="245" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist', sans-serif">/users</text>
+      <text x="56" y="258" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace">Settings</text>
+      
+      <circle cx="290" cy="248" r="6" fill="#22c55e" stroke="#16a34a" stroke-width="1"/>
+      <circle cx="430" cy="248" r="6" fill="#22c55e" stroke="#16a34a" stroke-width="1"/>
+      <circle cx="570" cy="248" r="6" fill="#ef4444" stroke="#dc2626" stroke-width="1"/>
+      <circle cx="700" cy="248" r="6" fill="#ef4444" stroke="#dc2626" stroke-width="1"/>
+      
+      <!-- Row 5: Permissions -->
+      <rect x="40" y="268" width="180" height="40" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.08)" stroke-width="1"/>
+      <text x="56" y="285" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist', sans-serif">/permissions</text>
+      <text x="56" y="298" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace">Settings</text>
+      
+      <circle cx="290" cy="288" r="6" fill="#22c55e" stroke="#16a34a" stroke-width="1"/>
+      <circle cx="430" cy="288" r="6" fill="#ef4444" stroke="#dc2626" stroke-width="1"/>
+      <circle cx="570" cy="288" r="6" fill="#ef4444" stroke="#dc2626" stroke-width="1"/>
+      <circle cx="700" cy="288" r="6" fill="#ef4444" stroke="#dc2626" stroke-width="1"/>
+      
+      <!-- Row 6: SMTP Config -->
+      <rect x="40" y="308" width="180" height="40" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.08)" stroke-width="1"/>
+      <text x="56" y="325" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist', sans-serif">/config/smtp</text>
+      <text x="56" y="338" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace">Config</text>
+      
+      <circle cx="290" cy="328" r="6" fill="#22c55e" stroke="#16a34a" stroke-width="1"/>
+      <circle cx="430" cy="328" r="6" fill="#ef4444" stroke="#dc2626" stroke-width="1"/>
+      <circle cx="570" cy="328" r="6" fill="#ef4444" stroke="#dc2626" stroke-width="1"/>
+      <circle cx="700" cy="328" r="6" fill="#ef4444" stroke="#dc2626" stroke-width="1"/>
+      
+      <!-- Row 7: Login Config -->
+      <rect x="40" y="348" width="180" height="40" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.08)" stroke-width="1"/>
+      <text x="56" y="365" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist', sans-serif">/config/login</text>
+      <text x="56" y="378" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace">Config</text>
+      
+      <circle cx="290" cy="368" r="6" fill="#22c55e" stroke="#16a34a" stroke-width="1"/>
+      <circle cx="430" cy="368" r="6" fill="#ef4444" stroke="#dc2626" stroke-width="1"/>
+      <circle cx="570" cy="368" r="6" fill="#ef4444" stroke="#dc2626" stroke-width="1"/>
+      <circle cx="700" cy="368" r="6" fill="#ef4444" stroke="#dc2626" stroke-width="1"/>
+      
+      <!-- Row 8: New Page (fail-closed highlight) -->
+      <rect x="40" y="388" width="180" height="40" fill="rgba(235,108,54,0.08)" stroke="rgba(235,108,54,0.3)" stroke-width="1"/>
+      <text x="56" y="405" fill="#eb6c36" font-size="10" font-weight="600" font-family="'Geist', sans-serif">/new-page</text>
+      <text x="56" y="418" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace">fail-closed default</text>
+      
+      <circle cx="290" cy="408" r="6" fill="#22c55e" stroke="#16a34a" stroke-width="1"/>
+      <circle cx="430" cy="408" r="6" fill="#ef4444" stroke="#dc2626" stroke-width="1"/>
+      <circle cx="570" cy="408" r="6" fill="#ef4444" stroke="#dc2626" stroke-width="1"/>
+      <circle cx="700" cy="408" r="6" fill="#ef4444" stroke="#dc2626" stroke-width="1"/>
+      
+      <!-- Fail-closed box -->
+      <rect x="480" y="460" width="280" height="72" rx="6" fill="rgba(235,108,54,0.05)" stroke="rgba(235,108,54,0.4)" stroke-width="1"/>
+      <rect x="492" y="470" width="80" height="12" rx="2" fill="transparent" stroke="rgba(235,108,54,0.6)" stroke-width="0.8"/>
+      <text x="532" y="478" fill="rgba(235,108,54,0.9)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">FAIL-CLOSED</text>
+      <text x="620" y="492" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">New pages default to</text>
+      <text x="620" y="506" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">system-admin only</text>
+      <text x="620" y="520" fill="#7a8399" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">No permission blind spots</text>
+      
+      <!-- Route catalog info -->
+      <rect x="40" y="460" width="400" height="72" rx="6" fill="rgba(79,93,117,0.05)" stroke="rgba(79,93,117,0.25)" stroke-width="1"/>
+      <rect x="52" y="470" width="96" height="12" rx="2" fill="transparent" stroke="rgba(79,93,117,0.4)" stroke-width="0.8"/>
+      <text x="100" y="478" fill="rgba(79,93,117,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ROUTE_CATALOG</text>
+      <text x="56" y="496" fill="#2d3142" font-size="10" font-family="'Geist', sans-serif">Single source of truth:</text>
+      <text x="56" y="510" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">• Sidebar navigation order</text>
+      <text x="56" y="522" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">• Route guard (URL direct access block)</text>
+      
+      <!-- Legend -->
+      <line x1="30" y1="544" x2="770" y2="544" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <text x="30" y="556" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+      
+      <circle cx="164" cy="554" r="5" fill="#22c55e" stroke="#16a34a" stroke-width="1"/>
+      <text x="176" y="558" fill="#4f5d75" font-size="9" font-family="'Geist', sans-serif">Allowed</text>
+      
+      <circle cx="264" cy="554" r="5" fill="#ef4444" stroke="#dc2626" stroke-width="1"/>
+      <text x="276" y="558" fill="#4f5d75" font-size="9" font-family="'Geist', sans-serif">Denied</text>
+    </svg>
+  </div>
+</body>
+</html>

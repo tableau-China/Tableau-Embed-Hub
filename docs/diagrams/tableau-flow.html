@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tableau Embedding Flow</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Geist', -apple-system, system-ui, sans-serif;
+      background: #f5f5f5;
+      padding: 2rem;
+      line-height: 1.6;
+      color: #2d3142;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: 1.75rem;
+      font-weight: 400;
+      margin-bottom: 0.5rem;
+      color: #2d3142;
+    }
+    .eyebrow {
+      font-family: 'Geist Mono', monospace;
+      font-size: 0.75rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #7a8399;
+      margin-bottom: 0.5rem;
+    }
+    svg { display: block; margin: 2rem 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <p class="eyebrow">EMBEDDING FLOW</p>
+    <h1>Tableau Embedding Flow with JWT</h1>
+    
+    <svg viewBox="0 0 800 580" role="img" aria-labelledby="flow-title flow-desc" xmlns="http://www.w3.org/2000/svg">
+      <title id="flow-title">Tableau Embedding Flow with JWT</title>
+      <desc id="flow-desc">Sequence diagram showing the JWT signing process in browser and the two paths: REST API calls through proxy for metadata, and direct iframe embedding for visualizations.</desc>
+      
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/>
+        </marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/>
+        </marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/>
+        </marker>
+      </defs>
+      
+      <!-- Background -->
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+      
+      <!-- Lifelines -->
+      <line x1="120" y1="100" x2="120" y2="480" stroke="#4f5d75" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="280" y1="100" x2="280" y2="480" stroke="#4f5d75" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="480" y1="100" x2="480" y2="480" stroke="#4f5d75" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="680" y1="100" x2="680" y2="480" stroke="#4f5d75" stroke-width="1" stroke-dasharray="3,3"/>
+      
+      <!-- Actors -->
+      <!-- User -->
+      <rect x="60" y="40" width="120" height="48" rx="6" fill="#f5f5f5"/>
+      <rect x="60" y="40" width="120" height="48" rx="6" fill="rgba(79,93,117,0.10)" stroke="#4f5d75" stroke-width="1"/>
+      <text x="120" y="69" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">User</text>
+      
+      <!-- React App -->
+      <rect x="220" y="40" width="120" height="48" rx="6" fill="#f5f5f5"/>
+      <rect x="220" y="40" width="120" height="48" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+      <text x="280" y="69" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">React App</text>
+      
+      <!-- REST Proxy -->
+      <rect x="420" y="40" width="120" height="48" rx="6" fill="#f5f5f5"/>
+      <rect x="420" y="40" width="120" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="480" y="69" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">REST Proxy</text>
+      
+      <!-- Tableau Cloud -->
+      <rect x="620" y="40" width="120" height="48" rx="6" fill="#f5f5f5"/>
+      <rect x="620" y="40" width="120" height="48" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+      <text x="680" y="69" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Tableau Cloud</text>
+      
+      <!-- Sequence flows -->
+      
+      <!-- 1. User navigates -->
+      <path d="M 120,120 L 260,120" stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
+      <rect x="148" y="102" width="84" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="190" y="111" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">1. Navigate /views</text>
+      
+      <!-- 2. Sign JWT (internal) -->
+      <rect x="260" y="140" width="40" height="48" rx="3" fill="rgba(235,108,54,0.12)" stroke="#eb6c36" stroke-width="1"/>
+      <rect x="220" y="148" width="120" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="280" y="157" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">2. Sign JWT locally</text>
+      <text x="280" y="168" fill="#7a8399" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle">Connected App</text>
+      <text x="280" y="178" fill="#7a8399" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle">clientId + secret</text>
+      
+      <!-- 3. Fetch workbooks list via proxy -->
+      <path d="M 300,208 L 460,208" stroke="#eb6c36" stroke-width="1.2" fill="none" marker-end="url(#arrow-accent)"/>
+      <rect x="328" y="190" width="104" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="380" y="199" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">3. GET workbooks</text>
+      
+      <!-- 4. Proxy forwards to Tableau -->
+      <path d="M 500,228 L 660,228" stroke="#2e5aa8" stroke-width="1.2" fill="none" marker-end="url(#arrow-link)"/>
+      <rect x="544" y="210" width="72" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="580" y="219" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">4. REST API</text>
+      
+      <!-- 5. Return workbooks -->
+      <path d="M 660,248 L 500,248" stroke="#2e5aa8" stroke-width="1.2" fill="none" marker-end="url(#arrow-link)" stroke-dasharray="4,3"/>
+      <rect x="544" y="236" width="72" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="580" y="245" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">5. JSON list</text>
+      
+      <!-- 6. Return to React -->
+      <path d="M 460,268 L 300,268" stroke="#eb6c36" stroke-width="1.2" fill="none" marker-end="url(#arrow-accent)" stroke-dasharray="4,3"/>
+      <rect x="328" y="256" width="104" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="380" y="265" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">6. Workbooks data</text>
+      
+      <!-- 7. User selects view -->
+      <path d="M 120,300 L 260,300" stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
+      <rect x="148" y="288" width="84" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="190" y="297" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">7. Select view</text>
+      
+      <!-- 8. Create iframe with JWT (direct to Tableau) -->
+      <path d="M 280,328 L 280,352 L 680,352 L 680,328" stroke="#2e5aa8" stroke-width="1.2" fill="none" marker-end="url(#arrow-link)"/>
+      <rect x="420" y="334" width="120" height="24" rx="2" fill="#f5f5f5"/>
+      <text x="480" y="343" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">8. <iframe> embed</text>
+      <text x="480" y="353" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">with JWT token</text>
+      
+      <!-- 9. Validate & render -->
+      <rect x="660" y="380" width="40" height="48" rx="3" fill="rgba(46,90,168,0.08)" stroke="#2e5aa8" stroke-width="1"/>
+      <rect x="620" y="388" width="120" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="680" y="397" fill="#2e5aa8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">9. Validate JWT</text>
+      <text x="680" y="408" fill="#7a8399" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle">Check domain</text>
+      <text x="680" y="418" fill="#7a8399" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle">whitelist</text>
+      
+      <!-- 10. Display visualization -->
+      <path d="M 660,448 L 300,448" stroke="#2e5aa8" stroke-width="1.2" fill="none" marker-end="url(#arrow-link)" stroke-dasharray="4,3"/>
+      <rect x="428" y="436" width="84" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="470" y="445" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">10. Render viz</text>
+      
+      <!-- 11. Show to user -->
+      <path d="M 260,468 L 120,468" stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)" stroke-dasharray="4,3"/>
+      <rect x="148" y="456" width="84" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="190" y="465" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">11. Display view</text>
+      
+      <!-- Key insight boxes -->
+      <rect x="40" y="500" width="340" height="64" rx="6" fill="rgba(235,108,54,0.05)" stroke="rgba(235,108,54,0.4)" stroke-width="1"/>
+      <rect x="52" y="510" width="96" height="12" rx="2" fill="transparent" stroke="rgba(235,108,54,0.6)" stroke-width="0.8"/>
+      <text x="100" y="518" fill="rgba(235,108,54,0.9)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">JWT IN BROWSER</text>
+      <text x="56" y="534" fill="#2d3142" font-size="9" font-family="'Geist', sans-serif">JWT signed client-side with Connected App</text>
+      <text x="56" y="546" fill="#2d3142" font-size="9" font-family="'Geist', sans-serif">credentials. Credentials are bundled in build</text>
+      <text x="56" y="558" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace">(obfuscated, not encrypted)</text>
+      
+      <rect x="420" y="500" width="340" height="64" rx="6" fill="rgba(46,90,168,0.05)" stroke="rgba(46,90,168,0.4)" stroke-width="1"/>
+      <rect x="432" y="510" width="80" height="12" rx="2" fill="transparent" stroke="rgba(46,90,168,0.6)" stroke-width="0.8"/>
+      <text x="472" y="518" fill="rgba(46,90,168,0.9)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">TWO PATHS</text>
+      <text x="436" y="534" fill="#2d3142" font-size="9" font-family="'Geist', sans-serif">• REST API → nginx proxy (CORS bypass)</text>
+      <text x="436" y="546" fill="#2d3142" font-size="9" font-family="'Geist', sans-serif">• Viz embed → direct iframe (domain</text>
+      <text x="436" y="558" fill="#2d3142" font-size="9" font-family="'Geist', sans-serif">  whitelisted in Connected App)</text>
+    </svg>
+  </div>
+</body>
+</html>

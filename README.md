@@ -8,7 +8,6 @@
 [![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4-38bdf8.svg)](https://tailwindcss.com)
 
 > English version: [README.en.md](./README.en.md) ｜ 仓库：<https://github.com/tableau-China/Tableau-Embed-Hub>
-> 仓库原名 `shadcn-admin-cn`，2026-10 更名为 **Tableau-Embed-Hub**（显示名 **Tableau Embed Hub**），旧链接自动跳转。
 
 ## 把 Tableau 的分析嵌进你自己的产品，而不是把用户赶去 Tableau
 
@@ -16,14 +15,38 @@
 登录页模板、SMTP 配置、AI 对话页、部署样例全部已接线，克隆下来就能改成你自己的东西。
 基于 shadcn/ui + Tailwind CSS v4 + Radix UI + TanStack **从零构建** —— 不是别的模板的 fork。
 
+### 核心设计一览
+
+#### 架构：浏览器内 JWT 签发 + 双路径（REST 代理 + iframe 直连）
+
+这套应用采用**纯前端架构**：JWT 签发逻辑完全在浏览器内运行（jose 库），REST API 请求通过 nginx 反向代理转发到 Tableau Cloud，而视图嵌入则是浏览器直连 Tableau 的 iframe。这种设计让部署变得简单（纯静态产物 + nginx 配置），同时保持了 Tableau 嵌入 API 的完整能力。
+
+![架构图：浏览器内签发 JWT，REST API 走 nginx 代理，视图嵌入走直连 iframe](docs/images/architecture.png)
+
+#### 多租户模型：全局用户 × 团队工作区 × 岗位权限
+
+用户是**全局身份**（跨团队），团队是**工作区边界**（资源隔离），岗位是**团队成员关系上的角色**。同一个人在不同团队可以有不同岗位——比如 Alice 在 Team A 是 admin，在 Team B 只是 viewer。这正是企业内部交付的常态。
+
+![组织模型：用户在不同团队可以有不同岗位，同一人在 A 团队是 admin、在 B 团队是 viewer](docs/images/multi-tenant.png)
+
+#### 权限模型：角色 × 路由矩阵，fail-closed 默认
+
+权限体系是一张**角色 × 路由的勾选矩阵**，在 `/permissions` 页配置。新增页面只需在路由目录登记一行，就自动进入这套体系——侧边栏、路由守卫、权限页三处都读同一份目录。**fail-closed 默认**：未登记的页面一律拦截，避免权限盲区。
+
+![权限矩阵：system-admin / team-admin / analyst / viewer 四角色对应不同页面访问权限](docs/images/permissions-matrix.png)
+
+#### Tableau 嵌入流程：JWT 签发 → REST 获取元数据 → iframe 嵌入视图
+
+完整的 Tableau 嵌入流程分三步：浏览器内用 jose 库签发 Connected App JWT，通过 REST 代理获取工作簿列表与缩略图（含 `auth/signin` 换取会话令牌），最后用 Tableau Embedding API 把视图嵌入 iframe。令牌与缩略图都纳入 TanStack Query 缓存，减少重复请求。
+
+![嵌入流程：浏览器内签发 JWT，通过 REST 代理获取工作簿列表，通过 iframe 直连嵌入视图](docs/images/tableau-flow.png)
+
+### 实际效果
+
 ![多团队工作台：左侧 General / AI / Settings / Config 四组导航，右侧是当前团队的工作台与最近动态](docs/images/dashboard.png)
 
 **当前状态**：Phase 0–4 已完成 —— 脚手架与 TS 7 工具链、多团队工作区、Tableau 嵌入与站点管理页、
-页面级权限、系统配置、AI 起点、部署样例。界面语言当前仅 **en-US**，中/日文后期扩展。
-
-> **它为什么长这样**：这套模板先是我自己在多个 AI 开发与企业交付项目里共用的前端底座，稳定之后才抽出来开源。
-> 所以它的取舍偏「能交付」而不是「能演示」—— 权限默认 **fail-closed**、校验脚本进 CI、部署样例带 nginx 反代、
-> 文档里明确标出哪些只是 UI 层的安全剧场。
+页面级权限、系统配置、AI 起点、部署样例。界面语言当前仅 **en-US**。
 
 > [!WARNING]
 > **非官方项目**：与 Salesforce, Inc. 无隶属、授权或赞助关系；Tableau 与 Tableau Cloud 是 Salesforce, Inc. 的商标
@@ -33,24 +56,6 @@
 > [!CAUTION]
 > **凭据边界**：纯前端应用，`.env` 与内置演示凭据**都会被内联进构建产物**。
 > 部署前请先读 [SECURITY.md](./SECURITY.md)。
-
-## 能力速览
-
-当前版本 **0.13.1**（变更记录见 [CHANGELOG.md](./CHANGELOG.md)，版本号跨 `package.json` / 侧边栏 / `PROGRESS.md` 核对）。
-
-| 能力 | 一句话 | 从哪版起 |
-| --- | --- | --- |
-| 多团队工作区 | **团队身份进 URL**（`/t/{slug}/...`），收藏 / 最近 / 列表筛选都按团队隔离，侧边栏可切换团队 | v0.5.0 |
-| 用户与岗位 | 用户是**全局**的（在团队之上），岗位（`team-admin` / `analyst` / `viewer`）挂在「团队成员关系」上；用户与团队都可冻结 | v0.4.0 / v0.9.0 |
-| 页面级权限 | 角色 × 路由矩阵，在 `/permissions` 勾选；**侧边栏过滤与 URL 直达拦截同时生效**，新页面默认仅系统管理员可见（fail-closed） | v0.6.0 |
-| Tableau 嵌入 | 浏览器内签发 Connected App JWT，嵌入工作簿 / 视图；REST 走同源代理；令牌与缩略图纳入 TanStack Query 缓存 | v0.1.0 起 |
-| Tableau 站点管理 | 站点用户与角色页、定时计划运行情况页（只读） | v0.13.0 |
-| 登录页模板 | 三套样式 + 宣传图 + GitHub / Google 入口的**公开参数**，可直达预览 | v0.12.0 |
-| AI 对话页 | provider 只在一处可换；零配置走内置演示 provider，配 `VITE_AI_PROXY_URL` 即接真实模型 | v0.10.0 |
-| 系统配置 | SMTP 配置 + 7 项实时预检；**密码不落盘**（只存内存） | v0.7.0 |
-| 前端通用件 | `PageContainer` / `FormGrid` / `FilterBar` / `useFormTouch` 等 **37 个公共件**，`/components` 页有清单与实时预览 | v0.7.0 / v0.10.0 |
-| 校验脚本体系 | **9 个 `check:*` 命令** + 113 个纯函数用例 + GitHub Actions 双 job（含公开仓库路径守卫） | v0.11.0 起 |
-| 部署样例 | 纯静态产物 + `deploy/nginx.conf.example` 反代样例 + 应用内 `/help` 环境自检 | v0.10.0 |
 
 ## 快速开始
 
@@ -75,7 +80,7 @@ pnpm dev            # http://127.0.0.1:5174
 | 用 AI 辅助开发做**企业应用交付**，要一份能直接改的起点 | 需要 Tableau 官方客户端的替代品：嵌入依赖 Connected App，能力边界由 Salesforce 决定 |
 | 想学一套**从零构建**的 React 19 + TS 7 + Tailwind v4 + TanStack 组合怎么接线 | 想要组件库 / UI 框架本身：这里是应用骨架，组件底层是 shadcn/ui(Radix) |
 
-## 页面与入口
+## 功能页面与入口
 
 | 页面 | 路由 | 入口 | 默认可见角色 |
 | --- | --- | --- | --- |
