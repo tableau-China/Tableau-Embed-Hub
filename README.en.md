@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/tableau-China/Tableau-Embed-Hub/actions/workflows/ci.yml/badge.svg)](https://github.com/tableau-China/Tableau-Embed-Hub/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
-[![Version](https://img.shields.io/badge/version-0.13.2-informational.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.13.3-informational.svg)](./CHANGELOG.md)
 [![React 19](https://img.shields.io/badge/React-19-087ea4.svg)](https://react.dev)
 [![TypeScript 7](https://img.shields.io/badge/TypeScript-7-3178c6.svg)](https://www.typescriptlang.org)
 [![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4-38bdf8.svg)](https://tailwindcss.com)
@@ -11,8 +11,6 @@
 [![Node.js 24](https://img.shields.io/badge/Node.js-24-339933.svg)](https://nodejs.org)
 
 > 中文版文档：[README.md](./README.md) ｜ Repository: <https://github.com/tableau-China/Tableau-Embed-Hub>
-> Formerly `shadcn-admin-cn`; renamed to **Tableau-Embed-Hub** (display name **Tableau Embed Hub**) in October 2026.
-> Old links keep working — GitHub redirects them.
 
 ## Embed your Tableau analytics in your own product, instead of sending users to Tableau
 
@@ -21,17 +19,50 @@ An open-source **multi-team admin console plus a Tableau embedding starting poin
 and a deploy sample are all wired up — clone it and make it yours. Built **from scratch** on
 shadcn/ui + Tailwind CSS v4 + Radix UI + TanStack — not a fork of another template.
 
+### Core design overview
+
+#### Architecture: in-browser JWT signing + two paths (REST proxy + direct iframe)
+
+This is a **front-end-only architecture**: JWT signing happens entirely in the browser (jose library),
+REST API requests are forwarded to Tableau Cloud through an nginx reverse proxy, and view embedding
+uses the browser's direct iframe connection to Tableau. This keeps deployment simple (pure static
+output + nginx config) while preserving the full Tableau Embedding API surface.
+
+![Architecture: JWT signed in browser, REST API goes through nginx proxy, view embedding uses direct iframe](docs/images/architecture.png)
+
+#### Multi-tenant model: global users × team workspaces × role grants
+
+Users are **global identities** (across teams); teams are **workspace boundaries** (resource
+isolation); roles are **attributes of a team-membership relation**. The same person can have
+a different role in each team — for example, Alice is admin in Team A but only viewer in Team B.
+This mirrors how enterprise delivery usually works.
+
+![Organization model: users can have different roles in different teams; the same person may be admin in Team A and viewer in Team B](docs/images/multi-tenant.png)
+
+#### Permission model: role × route matrix, fail-closed by default
+
+Permissions are a **role × route check matrix**, edited on `/permissions`. Adding a page is one line
+in the route catalog — the sidebar, route guard and permissions page all read the same catalog.
+**Fail-closed by default**: unlisted pages are blocked, so there are no permission blind spots.
+
+![Permission matrix: system-admin / team-admin / analyst / viewer roles mapped to page access](docs/images/permissions-matrix.png)
+
+#### Tableau embedding flow: JWT sign → REST metadata → iframe view
+
+The full Tableau embedding flow has three steps: sign a Connected App JWT in the browser with jose,
+fetch workbooks and thumbnails through the REST proxy (including `auth/signin` for the session
+token), then embed the view with the Tableau Embedding API in an iframe. Tokens and thumbnails are
+cached in TanStack Query to avoid repeated requests.
+
+![Embedding flow: JWT signed in browser, workbook list fetched through REST proxy, view embedded via direct iframe](docs/images/tableau-flow.png)
+
+### What it looks like
+
 ![The multi-team workspace: General / AI / Settings / Config navigation on the left, the current team's dashboard and recent activity on the right](docs/images/dashboard.png)
 
 **Status**: Phases 0–4 are done — scaffolding and the TS 7 toolchain, multi-team workspace, Tableau
 embedding plus site-management pages, page-level permissions, system configuration, the AI starting
-point and a deploy sample. The UI is **en-US only** for now; more locales are planned.
-
-> **Why it looks like this**: this template started as the front-end foundation I reused across my own
-> AI-assisted and enterprise-delivery projects, and was extracted into a public starting point once it
-> settled. So it optimises for *shipping* over *demoing* — permissions default to **fail-closed**, the
-> check scripts run in CI, the deploy sample ships an nginx reverse proxy, and the docs say plainly
-> which parts are security theatre.
+point and a deploy sample. The UI is **en-US only** for now.
 
 > [!WARNING]
 > **Not an official project.** Not affiliated with, endorsed by, or sponsored by Salesforce, Inc.
@@ -42,25 +73,6 @@ point and a deploy sample. The UI is **en-US only** for now; more locales are pl
 > [!CAUTION]
 > **Credential boundary**: this is a front-end only app, so `.env` values and the built-in demo
 > credentials are inlined into the build output. Read [SECURITY.md](./SECURITY.md) before deploying.
-
-## Capabilities at a glance
-
-Current version **0.13.2** — see [CHANGELOG.md](./CHANGELOG.md) (Chinese); the version number is
-cross-checked across `package.json`, the sidebar and `PROGRESS.md`.
-
-| Capability | In one line | Since |
-| --- | --- | --- |
-| Multi-team workspace | **Team identity lives in the URL** (`/t/{slug}/...`); favourites, recents and list filters are per team; switch teams from the sidebar | v0.5.0 |
-| Users and roles | Users are **global** (above teams); roles (`team-admin` / `analyst` / `viewer`) belong to the team-membership relation; users and teams can be frozen | v0.4.0 / v0.9.0 |
-| Page-level permissions | A role × route matrix edited on `/permissions`; the sidebar filter and direct-URL blocking both apply, and new pages start admin-only (fail-closed) | v0.6.0 |
-| Tableau embedding | Connected App JWT signed in the browser, workbooks and views embedded; REST goes through a same-origin proxy; tokens and thumbnails cached in TanStack Query | since v0.1.0 |
-| Tableau site management | Site users & roles page, scheduled-task run status page (read-only) | v0.13.0 |
-| Login-page template | Three layouts plus a hero image and the **public** parameters of the GitHub / Google entries, previewable | v0.12.0 |
-| AI assistant page | Provider swappable in one place; zero-config runs a local demo provider, point `VITE_AI_PROXY_URL` at a real model | v0.10.0 |
-| System configuration | SMTP settings with 7 live preflight checks; the **password is never persisted** (memory only) | v0.7.0 |
-| Shared components | `PageContainer` / `FormGrid` / `FilterBar` / `useFormTouch` and friends — **37 shared pieces**, catalogued with live previews on `/components` | v0.7.0 / v0.10.0 |
-| Check scripts | **9 `check:*` commands** + 113 pure-function tests + a two-job GitHub Actions workflow (including a public-repo path guard) | since v0.11.0 |
-| Deploy sample | Pure static output + `deploy/nginx.conf.example` + an in-app environment check on `/help` | v0.10.0 |
 
 ## Quick start (5 minutes)
 
@@ -113,7 +125,7 @@ pnpm dev            # → http://127.0.0.1:5174
 | AI-assisted development for **enterprise delivery**, where a forkable starting point beats a blank page | Anyone wanting a Tableau desktop/client replacement: embedding depends on Connected App, and the boundaries are set by Salesforce |
 | Learning how a from-scratch React 19 + TS 7 + Tailwind v4 + TanStack app is wired together | Anyone wanting a component library or design system: the primitives are shadcn/ui (Radix) |
 
-## Pages
+## Features & Pages
 
 | Page | Route | Entry | Default roles |
 | --- | --- | --- | --- |

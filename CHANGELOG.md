@@ -6,6 +6,7 @@
 
 | 版本 | package.json | 侧边栏显示 | PROGRESS.md | CHANGELOG 条目 | 日期 |
 | --- | --- | --- | --- | --- | --- |
+| 0.13.3 | ✅ `0.13.3` | ✅ `v0.13.3`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0133---2026-10-12) | 2026-10-12 |
 | 0.13.2 | ✅ `0.13.2` | ✅ `v0.13.2`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0132---2026-10-12) | 2026-10-12 |
 | 0.13.1 | ✅ `0.13.1` | ✅ `v0.13.1`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0131---2026-10-11) | 2026-10-11 |
 | 0.13.0 | ✅ `0.13.0` | ✅ `v0.13.0`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0130---2026-10-09) | 2026-10-09 |
@@ -34,6 +35,29 @@
 
 > 📌 **0.13.1 的范围**：把 2026-10-09 与 2026-10-11 两条「未发布」内容线**一起收口**（TS 7 dev 刷新、README 排版重做、
 > 登录框「纸上语言」换装），并补上 README 宣传向重构、页面截图、`@/` 别名修复与文档绝对路径订正。
+
+## [0.13.3] - 2026-10-12
+
+### Added（新增）：README 架构图 + 截图脚本
+
+| 文件 | 改动 |
+| --- | --- |
+| `docs/diagrams/*.html` | **新增 4 张 SVG 架构图**：应用架构、多租户组织模型、权限矩阵、Tableau 嵌入流程（自包含 HTML + inline SVG，遵循 diagram-design 规范） |
+| `docs/images/*.png` | 上述 4 张图的高清 PNG 截图（1800×N @2x） |
+| `scripts/capture-diagram-shots.mjs` | **新增**：可重复生成架构图截图的脚本，使用原生 Chrome CDP（与 `capture-readme-shots.mjs` 同技术栈） |
+| `README.md` / `README.en.md` | 在正文前增加「核心设计一览 / Core design overview」板块，每张图配一段文字说明；删除仓库原名说明、「它为什么长这样」段落和「能力速览」表格；英文版同步中文版结构；「页面与入口」→「功能页面与入口」 |
+
+### Changed（变更）：版本号 0.13.2 → 0.13.3
+
+- `package.json` / `src/config/app.ts` / `README.md` / `README.en.md` / `PROGRESS.md` / `CHANGELOG.md` 同步升级到 **0.13.3**
+
+### Verification（验证）
+
+- `pnpm test`：113 passed
+- `pnpm lint`：0 error / 17 warning（既有 warning）
+- `pnpm typecheck`：通过
+- `pnpm check:routes` / `check:i18n` / `check:i18n:keys`：全绿
+- `node scripts/capture-diagram-shots.mjs`：4 张 PNG 成功生成
 
 ## [0.13.2] - 2026-10-12
 

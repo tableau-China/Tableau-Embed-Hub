@@ -11,10 +11,37 @@
 - **多机副本**：本仓库在**多台 Mac 上各有一份工作副本**（同一远端 `origin/main`，内容一致），各自的绝对路径不同。
   文档一律不写机器绝对路径：命令都在**仓库根目录**下执行即可；「上次是在哪台机器改的」这类信息对复现没有价值，
   写进文档只会让另一台机器上的人误以为目录失效（本节曾踩过这个坑，2026-10-11 订正）。
-- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.13.2**）。
+- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.13.3**）。
 - **项目更名**（2026-10-09）：`shadcn-admin-cn` → 仓库/包名 **`tableau-embed-hub`**、显示名 **`Tableau Embed Hub`**（主打「Tableau 嵌入可视化」，品牌唯一来源仍是 `src/config/app.ts`）。localStorage 前缀同步改为 `tableau-embed-hub`，旧 key 保留并由 `src/lib/storage-migration.ts` 一次性迁移；细节见 CHANGELOG.md 的 `0.13.0` / `0.13.1` 节。
 
 ---
+
+## ✅ v0.13.3 — README 架构图 + 截图脚本 + 英文版同步（2026-10-12）
+
+背景：README 纯文字描述难以让读者快速理解架构与权限模型，需要一组可视化图表 + 配套说明；同时英文版需与中文版结构保持一致。
+
+### 落点
+
+| 文件 | 改动 |
+| --- | --- |
+| `docs/diagrams/*.html` | 新增 4 张 SVG 架构图：应用架构、多租户组织模型、权限矩阵、Tableau 嵌入流程 |
+| `docs/images/*.png` | 4 张图的高清 PNG 截图（1800×N @2x） |
+| `scripts/capture-diagram-shots.mjs` | 可重复生成架构图截图的 Chrome CDP 脚本 |
+| `README.md` / `README.en.md` | 增加「核心设计一览 / Core design overview」板块，删除冗余段落，同步结构；版本号 0.13.2 → 0.13.3 |
+| `package.json` / `src/config/app.ts` | 版本 0.13.2 → 0.13.3 |
+| `CHANGELOG.md` / `PROGRESS.md` | 增加 v0.13.3 记录 |
+
+### ✅ 验证（2026-10-12 实测）
+
+| 验证 | 命令 | 结果 |
+| --- | --- | --- |
+| 单测 | `vitest run` | 113 passed（10 文件） |
+| Lint | `eslint .` | 0 error / 17 warning（既有） |
+| 类型检查 | `tsc -b` | 通过 |
+| 静态校验 | `check:i18n` / `check:i18n:keys` / `check:routes` | 全绿 |
+| 路径守卫 | `bash scripts/check-public-paths.sh` | ✅ |
+| 生产构建 | `vite build` | 通过 |
+| 图表截图 | `node scripts/capture-diagram-shots.mjs` | 4/4 成功 |
 
 ## ✅ v0.13.2 — 行为准则 + README 快速上手重写 + 徽章 / 贡献者墙（2026-10-12）
 
