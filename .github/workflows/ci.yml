@@ -46,6 +46,9 @@ jobs:
       #   "@typescript/native": "npm:typescript@7.1.0-dev…"     ← tsc/typecheck 仍用原生 TS 7
       - run: pnpm lint
       - run: pnpm build
+      # 体积门禁：首屏静态 JS ≤ 260 KB gzip、总 JS ≤ 550 KB、单文件 raw ≤ 2 MB
+      # （check-bundle 读 dist/.vite/manifest.json 区分首屏与懒加载 chunk）
+      - run: pnpm check:bundle
 
   # 浏览器用例（真实 Chrome CDP）。单独一个 job，且**暂时允许失败**（advisory）：
   #  · 脚本原先硬编码 macOS 的 Chrome 路径，Linux 上根本起不来 —— 已改为跨平台探测

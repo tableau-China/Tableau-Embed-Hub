@@ -45,6 +45,14 @@ interface ImportMetaEnv {
   readonly VITE_AI_MODEL?: string
   /** 可选：系统提示词 */
   readonly VITE_AI_SYSTEM_PROMPT?: string
+
+  /* ---------- 运维（可选） ---------- */
+
+  /**
+   * 错误上报收集端点（HTTPS，公网可用）。留空 = 生产不上报，错误页仍展示 errorId。
+   * 负载形状见 src/lib/error-reporting.ts 的 ErrorReport；只放收集地址，不要放 token。
+   */
+  readonly VITE_ERROR_REPORT_URL?: string
 }
 
 interface ImportMeta {
