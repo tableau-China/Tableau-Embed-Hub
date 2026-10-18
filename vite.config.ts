@@ -30,6 +30,14 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(import.meta.dirname, './src'),
       },
     },
+    build: {
+      /**
+       * 输出构建清单（dist/.vite/manifest.json）：check:bundle 用它区分
+       * 「首屏必须加载的 JS」与「路由懒加载的 JS」；没有 manifest 时只靠总体积
+       * 无法证明代码分割真的生效。
+       */
+      manifest: true,
+    },
     server: {
       // 固定端口 5174：同机常跑多个 Vite 项目，5173 已被占用时默认会静默换端口，
       // 结果"以为在 5173、其实在 5175"。显式固定在 5174 并只监听 IPv4 环回

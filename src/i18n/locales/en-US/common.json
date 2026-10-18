@@ -1066,5 +1066,19 @@
       "incrementExtracts": "Incremental refresh",
       "runSubscription": "Subscription"
     }
+  },
+  "errors": {
+    "boundaryTitle": "Something went wrong",
+    "boundaryDescription": "The app hit an unexpected error. Copy the error ID below and share it with your administrator, then reload the page.",
+    "routeTitle": "This page failed to render",
+    "routeDescription": "An unexpected error occurred while rendering this page. Try again first; if it keeps failing, copy the error ID below and contact an administrator.",
+    "reload": "Reload page",
+    "retry": "Try again",
+    "backHome": "Go to dashboard",
+    "copyId": "Copy error ID",
+    "copied": "Copied",
+    "copyFailed": "Copy failed",
+    "errorId": "Error ID",
+    "errorIdPending": "Reporting…"
   }
 }

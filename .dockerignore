@@ -1,0 +1,25 @@
+# Docker 构建上下文排除：镜像内会重新 install/build
+node_modules/
+.pnpm-store/
+.tanstack/
+dist/
+coverage/
+*.tsbuildinfo
+
+.git/
+.gitignore
+.github/
+
+.tmp-*/
+logs/
+tmp/
+temp/
+
+.env
+.env.*
+!.env.example
+
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

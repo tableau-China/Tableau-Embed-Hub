@@ -1,6 +1,7 @@
 import { createRootRoute, Outlet, useRouterState } from '@tanstack/react-router'
 
 import { AppSidebar } from '@/components/app-sidebar'
+import { RouteErrorFallback } from '@/components/error-boundary'
 import { Header } from '@/components/header'
 import { GlobalRouteGate } from '@/components/route-guard'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
@@ -23,6 +24,8 @@ declare module '@tanstack/react-router' {
 
 export const Route = createRootRoute({
   component: RootComponent,
+  /** 根布局渲染异常兜底：展示带 errorId 的错误页而不是白屏（外层还有 AppErrorBoundary） */
+  errorComponent: RouteErrorFallback,
 })
 
 function RootComponent() {
