@@ -1,8 +1,9 @@
 # 页面与组件约定（UI Conventions）
 
-> v0.7.0 起（v0.10.0 增补筛选栏）。适用对象：**在这个模板上新增页面 / 新增表单 / 新增列表的人**。
+> v0.7.0 起（v0.10.0 增补筛选栏，2026-10-20 增补可复制 Toast）。适用对象：**在这个模板上新增页面 / 新增表单 / 新增列表的人**。
 > 相关文件：`src/components/page-container.tsx`、`src/components/form-field.tsx`、`src/components/note-callout.tsx`、
 > `src/components/description-list.tsx`、`src/components/action-bar.tsx`、`src/components/filter-bar.tsx`、
+> `src/components/ui/sonner.tsx`、`src/lib/clipboard.ts`、
 > `src/hooks/use-form-touch.ts`、`src/hooks/use-list-filters.ts`、`src/routes/__root.tsx`。
 
 目标只有一个：**新增页面时不必重新发明版面、表单接线与筛选栏**。复制下面三个骨架，改内容即可。
@@ -157,7 +158,33 @@ function ListPage() {
 > 校验：`pnpm build && pnpm check:filters`（静态自检 i18n/选项来源 + 7 项页面用例：
 > 搜索口径、组合筛选、计数、重置、三种空态、宽窄屏几何断言）。
 
-## 6. 新增页面的完整清单
+## 6. Toast（右下角消息）
+
+所有右下角消息统一从 `@/components/ui/sonner` 导入 `toast`，**不要直接 `import { toast } from 'sonner'`**：
+项目里的 `toast` 会自动在消息右侧挂一个复制图标，点击即复制（有描述时标题 + 换行 + 描述）。
+`<Toaster />` 已经在 `main.tsx` 挂载一次，页面里不需要再放。
+
+```tsx
+import { toast } from '@/components/ui/sonner'
+
+toast.success(t('users.created'))
+toast.error(t('users.usernameTaken'))
+
+// 标题是 ReactNode、或需要自定义复制内容时，用 copyText 显式给出纯文本：
+toast.success(<Trans>Saved</Trans>, { copyText: t('users.created') })
+
+// 不需要复制按钮时：
+toast.info(t('x.hint'), { copyText: false })
+```
+
+四条固定规则：
+
+- 消息主体尽量用**字符串**（`t(...)` 的结果）—— ReactNode 标题无法可靠转成纯文本，默认不出现复制按钮；
+- `loading` / `promise` / `custom` 透传，不带复制按钮；需要复制的话在成功 / 失败回调里用普通 toast 展示；
+- 复制成功后图标变成对勾、失败变成叉，**不会**自动关闭 toast（Sonner 原生 action 会关闭，这里刻意没有用它）；
+- 剪贴板降级逻辑统一在 `src/lib/clipboard.ts`：https 用 Clipboard API，内网 http 部署回退 `execCommand`。
+
+## 7. 新增页面的完整清单
 
 1. 建路由文件 `src/routes/<name>.tsx`（页面主体放 `src/features/<feature>/`）；
 2. 在 `src/config/permissions.ts` 的 `ROUTE_CATALOG` 登记一行（`key` / `to` / `scope` / `group` /

@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate, useSearch } from '@tanstack/react-r
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/sonner'
 import { AlertCircle, ArrowLeft, Copy, ExternalLink, Info, Star } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'

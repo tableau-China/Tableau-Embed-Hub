@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/sonner'
 import { ArrowUpRight, Building2, Languages, UserRound } from 'lucide-react'
 
 import { ActionButtons } from '@/components/action-bar'

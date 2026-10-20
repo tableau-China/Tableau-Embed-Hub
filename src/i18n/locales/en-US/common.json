@@ -715,7 +715,7 @@
       "tooltip": "Explains icon-only controls. The provider is already mounted in main.tsx.",
       "command": "Searchable command list (cmdk); also available as CommandDialog.",
       "noteCallout": "Info / warning block for explanations and edge-case notes.",
-      "toast": "Transient feedback via sonner. <Toaster /> is mounted once in main.tsx.",
+      "toast": "Transient feedback via sonner. <Toaster /> is mounted once in main.tsx, and every toast carries a copy icon — import toast from '@/components/ui/sonner' (not from 'sonner').",
       "guardCard": "Shared shell for forbidden, missing and empty states.",
       "configStatusCard": "Environment check card: which Tableau site and AI provider are actually in effect.",
       "thumbnailCard": "Workbook / view card with thumbnail, badges and a row menu. It needs real list data, so there is no preview here.",
@@ -1080,5 +1080,10 @@
     "copyFailed": "Copy failed",
     "errorId": "Error ID",
     "errorIdPending": "Reporting…"
+  },
+  "toast": {
+    "copy": "Copy message",
+    "copied": "Copied",
+    "copyFailed": "Copy failed"
   }
 }

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/sonner'
 import { Star, Trash2 } from 'lucide-react'
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'

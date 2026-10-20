@@ -6,6 +6,7 @@
 
 | 版本 | package.json | 侧边栏显示 | PROGRESS.md | CHANGELOG 条目 | 日期 |
 | --- | --- | --- | --- | --- | --- |
+| 0.13.4 | ✅ `0.13.4` | ✅ `v0.13.4`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0134---2026-10-20) | 2026-10-20 |
 | 0.13.3 | ✅ `0.13.3` | ✅ `v0.13.3`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0133---2026-10-12) | 2026-10-12 |
 | 0.13.2 | ✅ `0.13.2` | ✅ `v0.13.2`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0132---2026-10-12) | 2026-10-12 |
 | 0.13.1 | ✅ `0.13.1` | ✅ `v0.13.1`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0131---2026-10-11) | 2026-10-11 |
@@ -35,6 +36,35 @@
 
 > 📌 **0.13.1 的范围**：把 2026-10-09 与 2026-10-11 两条「未发布」内容线**一起收口**（TS 7 dev 刷新、README 排版重做、
 > 登录框「纸上语言」换装），并补上 README 宣传向重构、页面截图、`@/` 别名修复与文档绝对路径订正。
+
+## [0.13.4] - 2026-10-20
+
+### Added（新增）：Toast 一键复制
+
+背景：新增用户、保存配置等操作的反馈是右下角 toast；排查 / 反馈问题时需要把文案复制出来，此前只能手动选中，而 toast 4 秒后就会消失。
+
+| 文件 | 改动 |
+| --- | --- |
+| `src/components/ui/sonner.tsx` | **新增**复制感知的 `toast` 包装：默认 / success / info / warning / error / message 自动在消息右侧挂复制按钮；点击 → 对勾（1.6s 复原），失败 → 叉，且**不会关闭 toast**；支持 `copyText` / `copyText: false` 选项 |
+| `src/lib/clipboard.ts` | **新增**统一剪贴板降级：安全上下文用 Clipboard API，内网 http 回退 `execCommand`；错误页的「复制 Error ID」改为复用 |
+| `src/lib/toast-copy.ts` | **新增** toast 文本解析：字符串 / 数字标题，有描述时按换行拼接；ReactNode 标题不瞎复制 |
+| `src/lib/clipboard.test.ts` / `src/lib/toast-copy.test.ts` | **新增** 11 个单测 |
+| 17 个调用点 | `toast` 统一改从 `@/components/ui/sonner` 导入（不再直接 `import 'sonner'`） |
+| `src/i18n/locales/en-US/common.json` | 新增 `toast.copy` / `toast.copied` / `toast.copyFailed` |
+| `docs/ui-conventions.md` | 新增 §6「Toast（右下角消息）」；原章节 6 → 7 |
+
+### Changed（变更）：版本号 0.13.3 → 0.13.4
+
+- `package.json` / `src/config/app.ts` / `README.md` / `README.en.md` / `Dockerfile` / `docs/deployment.md` / `PROGRESS.md` / `CHANGELOG.md` 同步升级到 **0.13.4**
+
+### Verification（验证）
+
+- `pnpm test`：124 passed（12 文件）
+- `pnpm lint`：0 error / 17 warning（既有 warning）
+- `pnpm typecheck`：通过
+- `pnpm check:routes` / `check:i18n` / `check:i18n:keys`：全绿
+- `pnpm build`：通过；`pnpm check:bundle`：首屏 226.9 KB gzip（预算 260 KB）
+- 真实 Chrome CDP 冒烟：点击示例 toast → 复制图标出现 → 剪贴板为 “Saved”、图标变 Copied、toast 不关闭、1.6s 后复原
 
 ## [0.13.3] - 2026-10-12
 

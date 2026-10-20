@@ -1,20 +1,49 @@
 # Tableau Embed Hub 项目进度（PROGRESS）
 
-> 更新于 2026-10-12 ｜ **本文档一切命令与路径均以「仓库根目录」为基准**（本仓库在多台 Mac 上各有一份工作副本，
+> 更新于 2026-10-20 ｜ **本文档一切命令与路径均以「仓库根目录」为基准**（本仓库在多台 Mac 上各有一份工作副本，
 > 各自绝对路径不同，一律不入库、不写进文档 —— 换机器时照抄这里的命令不会失效）。
 
 ## 项目概况
 
-- **目标**：从零构建管理后台模板（React 19 + TypeScript 7 + Vite 8 + Tailwind CSS v4 + shadcn/ui(Radix) + TanStack Router），包含 shadcn-admin 的全部基础功能，**含 Tableau 页面**（favorites / recents / workbooks / views —— 浏览器内签发 Connected App JWT 嵌入真实视图，凭据见 README「凭据配置」），**不含 AI 功能**；也不含内部流程页（flows / amro / clean-layer / sql-icon-map，那些只存在于本地开发线），v0.4.0 起含**多团队 + 全局用户**（参照 pg-explorer，无部门管理），v0.5.0 起**团队身份进入 URL**（`/t/{slug}/...`，对齐 pg-explorer 的 `/t/{slug}` + `/admin/*` 划分），v0.6.0 起**页面级权限**（角色 × 路由，权限页勾选；按钮级权限仅预留命名空间），v0.7.0 起**个人资料归位**（`/settings` → `/profile`，入口在左下角用户菜单）+ **Config 分组与 SMTP 配置页** + **帮助页** + **前端通用件**，v0.9.0 起**团队冻结 + 用户冻结 + 用户必须归属团队**，v0.10.0 起**列表筛选栏公共件**（`/users` 先行），v0.11.1 起**组件总览页**（`/components`：公共件清单 + 实时预览），v0.12.0 起**登录页模板**（`/login`：三种样式 + 第三方联合登录入口；`/config/login` 配置样式与 provider 公开参数），v0.13.0 起**更名为 tableau-embed-hub**（显示名 Tableau Embed Hub）+ **Tableau 站点用户与角色 / 定时计划运行情况**两页 + **Help 页第三方版权与商标说明**（Help 同时挪到 Config 分组最末）；i18n 当前仅 **en-US**，中文/日文后期扩展。
+- **目标**：从零构建管理后台模板（React 19 + TypeScript 7 + Vite 8 + Tailwind CSS v4 + shadcn/ui(Radix) + TanStack Router），包含 shadcn-admin 的全部基础功能，**含 Tableau 页面**（favorites / recents / workbooks / views —— 浏览器内签发 Connected App JWT 嵌入真实视图，凭据见 README「凭据配置」），**不含 AI 功能**；也不含内部流程页（flows / amro / clean-layer / sql-icon-map，那些只存在于本地开发线），v0.4.0 起含**多团队 + 全局用户**（参照 pg-explorer，无部门管理），v0.5.0 起**团队身份进入 URL**（`/t/{slug}/...`，对齐 pg-explorer 的 `/t/{slug}` + `/admin/*` 划分），v0.6.0 起**页面级权限**（角色 × 路由，权限页勾选；按钮级权限仅预留命名空间），v0.7.0 起**个人资料归位**（`/settings` → `/profile`，入口在左下角用户菜单）+ **Config 分组与 SMTP 配置页** + **帮助页** + **前端通用件**，v0.9.0 起**团队冻结 + 用户冻结 + 用户必须归属团队**，v0.10.0 起**列表筛选栏公共件**（`/users` 先行），v0.11.1 起**组件总览页**（`/components`：公共件清单 + 实时预览），v0.12.0 起**登录页模板**（`/login`：三种样式 + 第三方联合登录入口；`/config/login` 配置样式与 provider 公开参数），v0.13.0 起**更名为 tableau-embed-hub**（显示名 Tableau Embed Hub）+ **Tableau 站点用户与角色 / 定时计划运行情况**两页 + **Help 页第三方版权与商标说明**（Help 同时挪到 Config 分组最末），v0.13.4 起**Toast 支持一键复制**；i18n 当前仅 **en-US**，中文/日文后期扩展。
 - **关键决策**：跳过 shadcn-admin 模板（无 Sat Naing 署名义务）、TypeScript 7.1.0-dev（next 开发版，验证未来升级，正式版发布后直接升级；**现锁 7.1.0-dev.20261009.1**；**两阶段路线**：先换 7.1 stable，再等上游支持 TS 7 后替换 TS 6 线，见 README「TypeScript 为什么装了两份」）、Vite 8 最新稳定、i18n 当前仅 en-US（zh-CN / zh-TW / ja-JP 后期扩展）。
 - **工具链锁定**：pnpm **12.9.1**（`package.json` 的 `packageManager` 字段，CI 同版本）、Node **24**（本地与 CI 一致，`@types/node` 对齐 **24 线**——类型线高于运行时会写出跑不起来的代码）。⚠️ 2026-10-05 pnpm 由 11.28.2 升级到 12.9.1：pnpm 12 要求 lock 头部带 `packageManagerDependencies` 文档（+158 行，含 pnpm 自身各平台 `@pnpm/exe.*`），**不提交这份 lock，CI 的 `--frozen-lockfile` 会直接失败**；迁移后已实测 12.6.0 / 12.9.1 的 `--frozen-lockfile` 通过。
 - **多机副本**：本仓库在**多台 Mac 上各有一份工作副本**（同一远端 `origin/main`，内容一致），各自的绝对路径不同。
   文档一律不写机器绝对路径：命令都在**仓库根目录**下执行即可；「上次是在哪台机器改的」这类信息对复现没有价值，
   写进文档只会让另一台机器上的人误以为目录失效（本节曾踩过这个坑，2026-10-11 订正）。
-- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.13.3**）。
+- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.13.4**）。
 - **项目更名**（2026-10-09）：`shadcn-admin-cn` → 仓库/包名 **`tableau-embed-hub`**、显示名 **`Tableau Embed Hub`**（主打「Tableau 嵌入可视化」，品牌唯一来源仍是 `src/config/app.ts`）。localStorage 前缀同步改为 `tableau-embed-hub`，旧 key 保留并由 `src/lib/storage-migration.ts` 一次性迁移；细节见 CHANGELOG.md 的 `0.13.0` / `0.13.1` 节。
 
 ---
+
+## ✅ v0.13.4 — Toast 一键复制（2026-10-20）
+
+背景：新增用户、保存配置等操作的反馈是右下角 toast；排查 / 反馈问题时需要把文案复制出来，此前只能手动选中，而 toast 4 秒后就会消失。
+
+### 落点
+
+| 文件 | 改动 |
+| --- | --- |
+| `src/components/ui/sonner.tsx` | 新增复制感知的 `toast` 包装：默认 / success / info / warning / error / message 自动在消息右侧挂复制按钮；点击 → 对勾（1.6s 复原），失败 → 叉，且**不会关闭 toast**；支持 `copyText` / `copyText: false` 选项 |
+| `src/lib/clipboard.ts` | 统一剪贴板降级：安全上下文用 Clipboard API，内网 http 回退 `execCommand`；错误页的「复制 Error ID」改为复用 |
+| `src/lib/toast-copy.ts` | toast 文本解析：字符串 / 数字标题，有描述时按换行拼接；ReactNode 标题不瞎复制 |
+| `src/lib/clipboard.test.ts` / `src/lib/toast-copy.test.ts` | 新增 11 个单测 |
+| 17 个调用点 | `toast` 统一改从 `@/components/ui/sonner` 导入（不再直接 `import 'sonner'`） |
+| `src/i18n/locales/en-US/common.json` | 新增 `toast.copy` / `toast.copied` / `toast.copyFailed` |
+| `docs/ui-conventions.md` | 新增 §6「Toast（右下角消息）」；原章节 6 → 7 |
+| `package.json` / `src/config/app.ts` / `README*.md` / `Dockerfile` / `docs/deployment.md` | 版本 0.13.3 → 0.13.4 |
+
+### ✅ 验证（2026-10-20 实测）
+
+| 验证 | 命令 | 结果 |
+| --- | --- | --- |
+| 单测 | `vitest run` | 124 passed（12 文件） |
+| 类型检查 | `tsc -b` | 通过 |
+| Lint | `eslint src scripts` | 0 error / 17 warning（既有） |
+| 静态校验 | `check:i18n` / `check:i18n:keys` / `check:routes` | 全绿 |
+| 生产构建 | `vite build` | 通过 |
+| 体积门禁 | `check:bundle` | 首屏 226.9 KB gzip（预算 260 KB） |
+| 浏览器冒烟 | 临时 Chrome CDP（跑完即删） | 点击示例 toast → 复制图标出现 → 剪贴板为 “Saved”、图标变 Copied、toast 不关闭、1.6s 后复原 |
 
 ## ✅ v0.13.3 — README 架构图 + 截图脚本 + 英文版同步（2026-10-12）
 

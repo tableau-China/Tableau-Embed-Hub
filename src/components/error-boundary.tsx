@@ -28,35 +28,8 @@ import { AlertTriangle, Check, Copy, Home, RefreshCw, RotateCw } from 'lucide-re
 import { GuardCard } from '@/components/route-guard'
 import { Button } from '@/components/ui/button'
 import { APP_VERSION } from '@/config/app'
+import { copyText } from '@/lib/clipboard'
 import { reportError } from '@/lib/error-reporting'
-
-/** 复制文本：优先 Clipboard API（需安全上下文），回退旧式 execCommand（内网 http 部署仍可用） */
-async function copyText(text: string): Promise<boolean> {
-  try {
-    if (typeof navigator !== 'undefined' && navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(text)
-      return true
-    }
-  } catch {
-    // 继续走兜底
-  }
-  try {
-    const area = document.createElement('textarea')
-    area.value = text
-    area.setAttribute('readonly', '')
-    area.style.position = 'fixed'
-    area.style.top = '0'
-    area.style.left = '0'
-    area.style.opacity = '0'
-    document.body.appendChild(area)
-    area.select()
-    const ok = document.execCommand('copy')
-    document.body.removeChild(area)
-    return ok
-  } catch {
-    return false
-  }
-}
 
 /** 复制错误 ID 的小按钮（就地反馈，不依赖 Toaster——错误页要能在最差环境下工作） */
 function CopyErrorIdButton({ errorId }: { errorId: string }) {

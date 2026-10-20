@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/sonner'
 import {
   AlertCircle,
   AlertTriangle,

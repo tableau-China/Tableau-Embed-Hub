@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/sonner'
 import { KeyRound } from 'lucide-react'
 
 import { ActionButtons } from '@/components/action-bar'

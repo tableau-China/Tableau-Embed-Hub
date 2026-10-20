@@ -9,7 +9,7 @@ import {
   ShieldAlert,
 } from 'lucide-react'
 import { Link, useLocation, useNavigate } from '@tanstack/react-router'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/sonner'
 
 import {
   DropdownMenu,

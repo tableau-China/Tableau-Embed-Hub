@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Calendar, Copy, FileText, Plus, Search, Settings, ShieldX } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/sonner'
 
 import { ConfigStatusCard } from '@/components/config-status-card'
 import { DescriptionList } from '@/components/description-list'

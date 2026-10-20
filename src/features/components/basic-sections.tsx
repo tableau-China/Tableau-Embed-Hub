@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Bold, ChevronDown, Copy, Pencil, Plus, Search, Trash2 } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/sonner'
 
 import { ActionButtons } from '@/components/action-bar'
 import { FormField, FormGrid, type FieldIssue } from '@/components/form-field'
