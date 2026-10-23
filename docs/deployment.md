@@ -57,7 +57,7 @@ pnpm check:bundle   # 体积门禁（需先 build；读 dist/.vite/manifest.json
 ## 4. Docker
 
 ```bash
-docker build -t tableau-embed-hub:0.14.1 \
+docker build -t tableau-embed-hub:0.14.8 \
   --build-arg VITE_TABLEAU_SERVER_URL=https://your-site.online.tableau.com \
   --build-arg VITE_TABLEAU_SITE_NAME=your_site \
   --build-arg VITE_TABLEAU_SITE_CONTENT_URL=your_site \
@@ -68,7 +68,7 @@ docker build -t tableau-embed-hub:0.14.1 \
   --build-arg VITE_ERROR_REPORT_URL=https://errors.example.com/collect \
   .
 
-docker run --rm -p 8080:80 tableau-embed-hub:0.14.1
+docker run --rm -p 8080:80 tableau-embed-hub:0.14.8
 curl -fsS http://127.0.0.1:8080/healthz   # → ok
 ```
 
@@ -113,7 +113,7 @@ AI 网关若为同源（`/ai-proxy`）无需额外放行。`style-src` 保留 `'
   "message": "...",
   "stack": "...",
   "route": "/t/acme/workbooks",
-  "version": "0.14.1",
+  "version": "0.14.8",
   "userAgent": "...",
   "timestamp": "2026-10-18T09:00:00.000Z",
   "context": { "source": "route-error" }

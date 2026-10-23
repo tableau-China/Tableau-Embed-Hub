@@ -257,16 +257,16 @@ export const ROUTE_CATALOG = [
   },
   {
     // 帮助页：说明模板的核心功能 / 开发者 / 版本号 / **第三方版权与商标**。
-    // ⚠️ 侧边栏顺序由本目录顺序决定：Help **排在 Components 之后**（说明书类的收尾页，
-    //    2026-10-09 起由「排在最前」调整为「排在最后」）。
-    // 它是给全体成员看的说明书、不属于管理面，因此默认授权给 member
-    //（与同一分组里 fail-closed 只给系统管理员的 SMTP 形成对照）
+    // v0.14.4 起入口移到左下角用户菜单（Profile 下面），因此 `navHidden` ——
+    // 与 Profile 同一处理：不进侧边栏，但仍登记在目录里，守卫与权限矩阵照常生效。
+    // 默认授权给 member：说明书不属于管理面（与同分组里 fail-closed 的 SMTP 形成对照）
     key: 'page.help',
     to: '/help',
     scope: 'global',
     group: 'config',
     labelKey: 'nav.help',
     defaultRoles: ['member'],
+    navHidden: true,
   },
   {
     // 权限页自身：新页面按 fail-closed 原则默认**只有系统管理员**可见

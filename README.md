@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/tableau-China/Tableau-Embed-Hub/actions/workflows/ci.yml/badge.svg)](https://github.com/tableau-China/Tableau-Embed-Hub/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
-[![Version](https://img.shields.io/badge/version-0.14.1-informational.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.14.8-informational.svg)](./CHANGELOG.md)
 [![React 19](https://img.shields.io/badge/React-19-087ea4.svg)](https://react.dev)
 [![TypeScript 7](https://img.shields.io/badge/TypeScript-7-3178c6.svg)](https://www.typescriptlang.org)
 [![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4-38bdf8.svg)](https://tailwindcss.com)
@@ -118,13 +118,12 @@ pnpm dev            # → http://127.0.0.1:5174
 | Tableau 定时计划运行情况 | `/t/{slug}/tableau/schedules` | 侧边栏 General | 团队成员（按岗位，只读） |
 | AI 对话 | `/ai` | 侧边栏 AI | 全体成员（未配代理时走内置演示 provider） |
 | 用户 / 团队 / 权限 | `/users`、`/teams`、`/permissions` | 侧边栏 Settings | 成员（权限页仅系统管理员） |
-| 个人资料 | `/profile` | **左下角用户菜单** | 全体成员（v0.7.0 起由 `/settings` 改名） |
-| 个人信息（摘要 + 改登录名 / 改口令） | 左下角用户菜单内的区块 | **左下角用户菜单** | 全体成员（v0.14.0 起；口令只显示状态、永不回显） |
+| 个人资料（详情 + 改显示名称 / 登录名 / 口令） | `/profile` | **左下角用户菜单（唯一入口）** | 全体成员（v0.7.0 由 `/settings` 改名；v0.14.3 起四项资料合并为 Your details 单卡，口令只显示状态、永不回显） |
 | SMTP 邮件服务 | `/config/smtp` | 侧边栏 Config | 仅系统管理员（fail-closed） |
 | 登录页 | `/login` | 直达 / 配置页的「Open preview」 | **无需权限**（登录前页面，裸布局） |
 | 登录页配置 | `/config/login` | 侧边栏 Config | 仅系统管理员（fail-closed） |
 | 组件总览 | `/components` | 侧边栏 Config | 全体成员（公共件清单 + 实时预览） |
-| 帮助 / 关于 | `/help` | 侧边栏 Config（**分组最末**） | 全体成员（核心功能、开发者、版本号、第三方版权与商标） |
+| 帮助 / 关于 | `/help` | **左下角用户菜单（Profile 下面）** | 全体成员（核心功能、开发者、版本号、第三方版权与商标） |
 
 > **Views 的落点**：点侧边栏 **Views**、或直接打开 `/t/{slug}/views`（不带参数）时，先落到**上次打开的视图**；
 > 解析不到就用固定兜底视图 `VITE_TABLEAU_FALLBACK_VIEW`（缺省是演示站点上的 `Superstore/Overview`）。

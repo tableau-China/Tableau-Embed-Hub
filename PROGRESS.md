@@ -5,16 +5,219 @@
 
 ## 项目概况
 
-- **目标**：从零构建管理后台模板（React 19 + TypeScript 7 + Vite 8 + Tailwind CSS v4 + shadcn/ui(Radix) + TanStack Router），包含 shadcn-admin 的全部基础功能，**含 Tableau 页面**（favorites / recents / workbooks / views —— 浏览器内签发 Connected App JWT 嵌入真实视图，凭据见 README「凭据配置」），**不含 AI 功能**；也不含内部流程页（flows / amro / clean-layer / sql-icon-map，那些只存在于本地开发线），v0.4.0 起含**多团队 + 全局用户**（参照 pg-explorer，无部门管理），v0.5.0 起**团队身份进入 URL**（`/t/{slug}/...`，对齐 pg-explorer 的 `/t/{slug}` + `/admin/*` 划分），v0.6.0 起**页面级权限**（角色 × 路由，权限页勾选；按钮级权限仅预留命名空间），v0.7.0 起**个人资料归位**（`/settings` → `/profile`，入口在左下角用户菜单）+ **Config 分组与 SMTP 配置页** + **帮助页** + **前端通用件**，v0.9.0 起**团队冻结 + 用户冻结 + 用户必须归属团队**，v0.10.0 起**列表筛选栏公共件**（`/users` 先行），v0.11.1 起**组件总览页**（`/components`：公共件清单 + 实时预览），v0.12.0 起**登录页模板**（`/login`：三种样式 + 第三方联合登录入口；`/config/login` 配置样式与 provider 公开参数），v0.13.0 起**更名为 tableau-embed-hub**（显示名 Tableau Embed Hub）+ **Tableau 站点用户与角色 / 定时计划运行情况**两页 + **Help 页第三方版权与商标说明**（Help 同时挪到 Config 分组最末），v0.13.4 起**Toast 支持一键复制**，v0.14.0 起**左下角「个人信息」**（摘要 + 自助改登录名 / 改口令）；i18n 当前仅 **en-US**，中文/日文后期扩展。
+- **目标**：从零构建管理后台模板（React 19 + TypeScript 7 + Vite 8 + Tailwind CSS v4 + shadcn/ui(Radix) + TanStack Router），包含 shadcn-admin 的全部基础功能，**含 Tableau 页面**（favorites / recents / workbooks / views —— 浏览器内签发 Connected App JWT 嵌入真实视图，凭据见 README「凭据配置」），**不含 AI 功能**；也不含内部流程页（flows / amro / clean-layer / sql-icon-map，那些只存在于本地开发线），v0.4.0 起含**多团队 + 全局用户**（参照 pg-explorer，无部门管理），v0.5.0 起**团队身份进入 URL**（`/t/{slug}/...`，对齐 pg-explorer 的 `/t/{slug}` + `/admin/*` 划分），v0.6.0 起**页面级权限**（角色 × 路由，权限页勾选；按钮级权限仅预留命名空间），v0.7.0 起**个人资料归位**（`/settings` → `/profile`，入口在左下角用户菜单）+ **Config 分组与 SMTP 配置页** + **帮助页** + **前端通用件**，v0.9.0 起**团队冻结 + 用户冻结 + 用户必须归属团队**，v0.10.0 起**列表筛选栏公共件**（`/users` 先行），v0.11.1 起**组件总览页**（`/components`：公共件清单 + 实时预览），v0.12.0 起**登录页模板**（`/login`：三种样式 + 第三方联合登录入口；`/config/login` 配置样式与 provider 公开参数），v0.13.0 起**更名为 tableau-embed-hub**（显示名 Tableau Embed Hub）+ **Tableau 站点用户与角色 / 定时计划运行情况**两页 + **Help 页第三方版权与商标说明**（Help 同时挪到 Config 分组最末），v0.13.4 起**Toast 支持一键复制**，v0.14.0 起**左下角「个人信息」**（摘要 + 自助改登录名 / 改口令），v0.14.2 起**账号信息收敛到 /profile**（左下角只留 Profile 入口），v0.14.3 起四项资料合并为一张 **Your details** 卡（显示名称 → 登录名 → 邮箱 → 口令，后两项折叠）并移除 Manage users，v0.14.4 起**精简 config 页提示词**、删除空泛说明，并把 **Help 入口移到用户菜单（Profile 下面）**，v0.14.5 起**显示名称/邮箱改为行内排布**、**改口令改为输入框 + 按钮直接改**，v0.14.6 起显示名称 / 邮箱改为 **GitHub Settings 式表单行**（标签在上、说明 + 控件在下）并调整字段顺序，v0.14.7 起标签与输入框同行、说明挂在下方，username 前置且只读，v0.14.8 起 /profile 视觉收尾（横幅去重、四行表单统一节奏）；i18n 当前仅 **en-US**，中文/日文后期扩展。
 - **关键决策**：跳过 shadcn-admin 模板（无 Sat Naing 署名义务）、TypeScript 7.1.0-dev（next 开发版，验证未来升级，正式版发布后直接升级；**现锁 7.1.0-dev.20261009.1**；**两阶段路线**：先换 7.1 stable，再等上游支持 TS 7 后替换 TS 6 线，见 README「TypeScript 为什么装了两份」）、Vite 8 最新稳定、i18n 当前仅 en-US（zh-CN / zh-TW / ja-JP 后期扩展）。
 - **工具链锁定**：pnpm **12.9.1**（`package.json` 的 `packageManager` 字段，CI 同版本）、Node **24**（本地与 CI 一致，`@types/node` 对齐 **24 线**——类型线高于运行时会写出跑不起来的代码）。⚠️ 2026-10-05 pnpm 由 11.28.2 升级到 12.9.1：pnpm 12 要求 lock 头部带 `packageManagerDependencies` 文档（+158 行，含 pnpm 自身各平台 `@pnpm/exe.*`），**不提交这份 lock，CI 的 `--frozen-lockfile` 会直接失败**；迁移后已实测 12.6.0 / 12.9.1 的 `--frozen-lockfile` 通过。
 - **多机副本**：本仓库在**多台 Mac 上各有一份工作副本**（同一远端 `origin/main`，内容一致），各自的绝对路径不同。
   文档一律不写机器绝对路径：命令都在**仓库根目录**下执行即可；「上次是在哪台机器改的」这类信息对复现没有价值，
   写进文档只会让另一台机器上的人误以为目录失效（本节曾踩过这个坑，2026-10-11 订正）。
-- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.14.1**）。
+- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.14.8**）。
 - **项目更名**（2026-10-09）：`shadcn-admin-cn` → 仓库/包名 **`tableau-embed-hub`**、显示名 **`Tableau Embed Hub`**（主打「Tableau 嵌入可视化」，品牌唯一来源仍是 `src/config/app.ts`）。localStorage 前缀同步改为 `tableau-embed-hub`，旧 key 保留并由 `src/lib/storage-migration.ts` 一次性迁移；细节见 CHANGELOG.md 的 `0.13.0` / `0.13.1` 节。
 
 ---
+
+## ✅ v0.14.8 — /profile 视觉收尾（2026-10-23）
+
+背景：功能已通，但还有三处「像没做完」：横幅重复 username/email；口令区是唯一不走的 `field` 块，
+与上面几列不对齐；改登录名表单靠手工 `pl-24` 缩进。
+
+### 落点
+
+| 文件 | 改动 |
+| --- | --- |
+| `src/features/profile/profile-page.tsx` | 横幅瘦身（只答「这是不是我」）；username → display name → email → password 四行统一 `field` 节奏；口令区与标签列对齐；去掉手工缩进与空 fragment；宽度统一 `max-w-3xl` |
+| `src/i18n/locales/en-US/common.json` | 恢复 `profile.avatarHint`（`check:i18n:keys` 抓出的漏网 key） |
+| 版本 | 0.14.7 → **0.14.8** |
+
+### 设计要点
+
+- 同一页不出现两处同名信息（横幅 vs 表单），避免「以哪个为准」的疑问。
+- 五块内容对齐一条垂直基线，不再有一块凸出。
+- 宽度与其它设置页一致。
+
+### 本地验证
+
+`tsc -b`、`eslint`、`check:i18n`、`check:i18n:keys`、`check:route-catalog` 全通过；
+jsdom 渲染断言 16 条全过（横幅去重 / 顺序与布局 / 口令区对齐 / 3 张卡 / 保存与展开回归）。
+
+## ✅ v0.14.7 — 标签与输入框同行 + username 前置只读（2026-10-23）
+
+背景：v0.14.6 把说明放在标签与输入框之间的左栏，长说明会挤压输入框；username 夹在可编辑字段
+中间，也分不清哪个能改。
+
+### 落点
+
+| 文件 | 改动 |
+| --- | --- |
+| `src/components/form-field.tsx` | `field` 布局改为「标签与控件同一行 + 说明/错误挂控件下方」；空 `label` 不渲染标签节点 |
+| `src/features/profile/profile-page.tsx` | username 提前至第一位并 `disabled`，右侧「更改登录名」按钮点开才渲染 `UsernameForm`；显示名称 / 邮箱随后；删除 `ProfileRow` |
+| `src/components/org/account-dialogs.tsx` | 行内改密去掉「New password」标签与占位文案，改用紧凑占位符 + `aria-label` |
+| `src/i18n/locales/en-US/common.json` | 新增 `usernameHint` / `passwordPlaceholder` / `confirmPasswordPlaceholder`，删 `newPasswordPlaceholder` |
+| `scripts/check-account.mjs` | 顺序断言 + username 只读断言 |
+| 版本 | 0.14.6 → **0.14.7** |
+
+### 设计要点
+
+- 说明放下方：整行铺开，不与输入框抢宽度，与输入框左边缘对齐。
+- username 前置只读：先交代「改的是哪个账号」，能改不能改一眼可辨。
+- 口令行无标签：一个动作一行，标签是噪音。
+
+### 本地验证
+
+`tsc -b`、`eslint`、`check:i18n`、`check:i18n:keys` 全通过；
+jsdom 渲染断言 17 条全过：username 居首且 readonly、标签与输入框同行、说明位于控件下方并对齐、
+无 "New password" 文案、口令框无标签、点开按钮出现改登录名表单。
+
+## ✅ v0.14.6 — 显示名称 / 邮箱改为 GitHub 式表单行（2026-10-23）
+
+背景：v0.14.5 的 `layout="inline"` 把标签固定在左（`w-32`）、输入框挤在右侧剩余空间；
+两个字段之间还夹着「登录名」只读行 —— 三种形状混排，版式很乱。
+
+### 落点
+
+| 文件 | 改动 |
+| --- | --- |
+| `src/components/form-field.tsx` | 新增 `layout="field"`：标签独占一行加粗 → 下一行「说明（左，`leading-9` 与输入框基线对齐）+ 控件（右，`sm:w-80`）」→ 错误单独一行 |
+| `src/features/profile/profile-page.tsx` | 显示名称 / 邮箱用 `field` 布局、宽度统一 `max-w-2xl`；登录名挪到邮箱之后；保存条同宽 |
+| `src/i18n/locales/en-US/common.json` | 恢复 `displayNameHint` / `emailHint`（作左栏说明用） |
+| `scripts/check-account.mjs` | 顺序断言改为 显示名称 → 邮箱 → 登录名 → 口令 |
+| 版本 | 0.14.5 → **0.14.6** |
+
+### 设计要点
+
+- 参考 GitHub Settings：标签在上、说明与控件同行左右对齐 —— 标签不被挤压，说明不额外占垂直空间。
+- 两个常编辑字段（显示名称 / 邮箱）连续，中间不插只读行。
+- 加粗标签，与说明文字拉开层级。
+
+### 本地验证
+
+`tsc -b`、`eslint`、`check:i18n`、`check:i18n:keys` 全通过；
+jsdom 渲染断言 9 条全过：标签独占一行、容器纵向、标签加粗、两个字段都有说明、输入框宽度容器一致、顺序正确。
+
+## ✅ v0.14.5 — 显示名称行内排布 + 改口令改为输入框 + 按钮（2026-10-23）
+
+背景：每个字段都是「标签在上、输入框在下」占两行；改口令还要点「修改」展开三段式表单
+（当前口令 + 新口令 + 确认），对「顺手换把钥匙」来说太重。
+
+### 落点
+
+| 文件 | 改动 |
+| --- | --- |
+| `src/components/form-field.tsx` | `FormField` 新增 `layout="inline"`（标签在左固定宽、控件占剩余宽度；说明/错误仍占整行并对齐） |
+| `src/features/profile/profile-page.tsx` | 显示名称、邮箱改为行内；口令区改为常驻 `InlinePasswordForm` |
+| `src/components/org/account-dialogs.tsx` | 新增 `InlinePasswordForm`：输入新口令 → 出现确认框 → 点「Change password」；支持 Enter；校验失败揭示错误而不置灰按钮。弹窗 `PasswordForm` 保持不变（仍要求当前口令） |
+| `src/i18n/locales/en-US/common.json` | 新增 `profile.newPasswordPlaceholder` |
+| `scripts/check-account.mjs` | 口令用例改行内流程；顺序断言末项改为口令输入框 |
+| 版本 | 0.14.4 → **0.14.5** |
+
+### 设计要点
+
+- **行内只用于单标签 + 单输入框**：带 hint 的复杂字段仍用上下堆叠。
+- **两条改密路径语义不同**：页面内联不验旧口令（已登录会话内），弹窗仍验；都只写时间戳。
+- **确认框延迟出现**：空表单只一个框，输入后立刻要求二次确认防打错。
+
+### 本地验证
+
+`tsc -b`、`eslint`、`check:i18n`、`check:i18n:keys`、`check:route-catalog` 全通过；
+jsdom 渲染断言 **15 条全过**：label 与 input 同行、口令区无展开按钮且有输入框 + 按钮、
+空状态单框、输入后出现确认框、过短/不一致被拦且不落库、一致后写时间戳、无明文、状态行刷新、显示名称保存落库。
+
+## ✅ v0.14.4 — 精简 config 提示词 + Help 入口移到用户菜单（2026-10-23）
+
+背景：config 各页的提示文案偏「教学」，一句能说完的事写成两三句；/profile 上又留着
+「其他用户看到的名字和邮箱，改动立即生效」这类不提供决策信息的提示。
+Help 也不该占侧边栏的 Config 分组 —— 它是给人看的说明书，不是系统配置。
+
+### 落点
+
+| 文件 | 改动 |
+| --- | --- |
+| `src/i18n/locales/en-US/common.json` | config 两页文案整体精简（SMTP 14 处 + 12 条校验文案、登录页 8 处 + 6 条校验文案）；删除 6 个空泛的 `profile.*` 提示；两条口令/登录名说明各压成一句。key 总数 977 → 971 |
+| `src/features/profile/profile-page.tsx` | 移除空泛提示渲染；`ProfileRow` 去掉 `description`，折叠行只留「图标 + 标题 + 当前值 + 修改」 |
+| `src/config/permissions.ts` | `page.help` 加 `navHidden: true`（不进侧边栏，仍在权限目录内） |
+| `src/components/org/user-menu.tsx` | 新增 Help 入口（Profile 下面），受 `page.help` 控制 |
+| `src/routes/help.tsx` | 注释同步 |
+| `scripts/check-account.mjs` | 用例 1 增加 Help 存在 / 指向 / 顺序三条断言 |
+| 版本 | 0.14.3 → **0.14.4** |
+
+### 设计要点
+
+- **只压缩、不删除安全类说明**：`secretNote`（口令只存内存）、`secretBody`（OAuth secret 不进浏览器）、
+  `pageNote`（/login 不建立会话）讲的是真实约束，删了会误导；改成一句话保留。
+- **删除废话型提示**：「其他人看到的名字」「缩写来自显示名」没有决策价值。
+- **Help 归入个人层**：与 Profile 同属「我」的东西，侧边栏留给工作区与管理面。
+
+### 本地验证
+
+`tsc -b`、`eslint`、`check:i18n`、`check:i18n:keys`、`check:route-catalog` 全通过；
+jsdom 渲染断言 14 条全过：空泛提示已消失、Your details 卡结构正常、菜单源码中 Help 在 Profile 之后、
+Help 指向 `/help` 且受 `page.help` 控制、`page.help` 已 `navHidden` 且仍默认授权 member。
+
+## ✅ v0.14.3 — /profile 资料合并单卡 + 移除 Manage users（2026-10-23）
+
+背景：v0.14.2 的版面把「我的账号资料」切成了三张卡（显示名称+邮箱 / 登录名 / 口令），
+排在一起出现大片空白，也让人误以为是三个独立功能。
+
+### 落点
+
+| 文件 | 改动 |
+| --- | --- |
+| `src/features/profile/profile-page.tsx` | 三卡合一为 **Your details**，顺序 **显示名称 → 登录名 → 邮箱 → 口令**；登录名 / 口令为折叠行 `ProfileRow`，用 `Separator` 分隔；邮箱独占一整行；保存工具条紧跟两个常驻字段；删除 `EditableSection` / `FormGrid` |
+| `src/features/profile/profile-page.tsx` | **移除 Manage users 链接**（及 `ArrowUpRight` / `Link` 导入） |
+| `src/i18n/locales/en-US/common.json` | 删除死键 `profile.manageUsers`（key 总数 978 → 977） |
+| `scripts/check-account.mjs` | `clickProfileSave` 改按 `[data-profile-row]` 定位（否则会点到详情卡的 Save）；新增三项断言：只有两张卡、字段顺序正确、无 Manage users |
+| 版本 | 0.14.2 → **0.14.3**（package.json / app.ts / README 徽标 / deployment.md / 本文档 / CHANGELOG） |
+
+### 设计要点
+
+- **单卡 + 分隔线**：合并后靠 `Separator` 与字重组织层次，比三层 `Card` 嵌套更清楚。
+- **邮箱独占一行**：最长字段，并排会被撑成半宽反而易折行。
+- **保存按钮贴合作用域**：只保存显示名称与邮箱，放在两者紧邻处、同宽度上限（`max-w-xl`）。
+- 改登录名 / 改口令仍折叠，展开才渲染表单；口令仍只写 `passwordUpdatedAt`。
+
+### 本地验证
+
+`tsc -b`、`eslint`、`check:i18n`、`check:i18n:keys`、`check:route-catalog` 全通过；
+jsdom 渲染真实组件 **18 条断言全过**：单卡结构 / 字段顺序 / 邮箱独占行 / 无 Manage users /
+两项折叠 / 展开改登录名被拦与落库 / 改密写时间戳且无明文 / 改显示名称落库。
+
+## ✅ v0.14.2 — 账号信息收敛到 /profile：左下角只留 Profile 入口（2026-10-23）
+
+背景：v0.14.0 把账号摘要（登录名 / 显示名 / 角色 / 口令状态）与「修改登录名」「修改口令」两个入口
+塞进了左下角用户下拉。下拉本质是「切换身份」的容器 —— 叠上两个敏感表单入口后菜单变长、
+切换用户被挤到下面，改密码的触发点也藏在了浮层里。用户诉求：点左下角用户应该**打开个人资料页**，
+在页面里看用户详情、改密码、改显示名称。
+
+### 落点
+
+| 文件 | 改动 |
+| --- | --- |
+| `src/components/org/user-menu.tsx` | **删除**菜单内摘要与两个自助入口，只留 `Profile`（`data-user-menu="profile"` → `/profile`）+ 切换身份区 |
+| `src/features/profile/profile-page.tsx` | 版面重构：身份横幅（头像 / 显示名称 / 登录名 / 邮箱 / 角色 + 状态徽标）→「Your details」（显示名称 + 邮箱，可编辑）→ 改登录名 / 改口令（**默认折叠**，展开才渲染表单）→ 团队归属 |
+| `src/components/org/account-dialogs.tsx` | 拆出可复用 `UsernameForm` / `PasswordForm`（校验 + 落库在表单内，按钮位由 `footer` 渲染函数决定）；`ChangeUsernameDialog` / `ChangePasswordDialog` 变薄壳。两个入口共用同一份校验 |
+| `src/i18n/locales/en-US/common.json` | `profile` 新增 `displayNameHint` / `detailsTitle` / `detailsSubtitle` / `passwordUpdatedAt`，`subtitle` 改口径 |
+| `scripts/check-account.mjs` | 用例按新 IA 重写（菜单只有 Profile → 页内详情 → 改显示名称 → 折叠区展开改登录名 / 改口令 + 口令不落盘查盘） |
+| 版本 | 0.14.1 → **0.14.2**（`package.json` / `src/config/app.ts` / README 徽标 / `docs/deployment.md` / 本文档） |
+
+### 设计要点
+
+- **默认折叠**：改登录名 / 改口令是低频敏感动作，常驻展开会让一页同时立着 5 个输入框（含 2 个密码框），
+  淹没真正常改的「显示名称」。折叠后每块一行「当前值 + 修改」，收起即卸载、重开是干净表单。
+- **表单与弹窗分离**：`footer?: (submit) => ReactNode` 让按钮落在弹窗底部通栏或页面卡片工具条里，
+  校验与落库只有一份实现 —— 不会出现「弹窗拦得住、页面拦不住」。
+- **口令仍不回显**：页面只显示 `Last changed {time}` / Not set，`setOwnPassword()` 只写时间戳。
+- 改登录名需校验**当前口令**（主键口径）；改显示名称不需要（只是展示名）。
+
+### 本地验证
+
+`tsc -b`、`eslint`、`check:i18n`、`check:i18n:keys`、`check:route-catalog` 全通过；
+另用 jsdom + TypeScript transpileModule 渲染真实组件，跑了 22 条断言（详情渲染 / 折叠行为 /
+拦截与落库 / 菜单只含 Profile 入口），全通过。
+
+> ⚠️ 本机 `pnpm build` / `pnpm dev` / `vitest` 无法启动：Vite 8 的 rolldown 原生 binding
+> （`rolldown-binding.darwin-arm64.node`）签名与运行时 Node 的 Team ID 不一致，macOS 拒绝 dlopen。
+> 属机器级问题，与本次改动无关；换系统 Node 或对本机该 `.node` 重新 ad-hoc 签名可解。
+> 因此 `check:account` / `check:permissions` 等需要 Chrome + 构建产物的脚本在本机未能执行。
 
 ## ✅ v0.14.1 — 缩略图卡片图标按钮的可访问性修复（2026-10-23）
 

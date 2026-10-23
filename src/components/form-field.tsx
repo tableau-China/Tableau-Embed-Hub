@@ -55,13 +55,21 @@ export function FormGrid({
   return <div className={cn('grid max-w-3xl gap-4', cols, className)}>{children}</div>
 }
 
-/** 单个表单字段：标签 + 控件 + 一行说明/错误 */
+/**
+ * 单个表单字段：标签 + 控件 + 一行说明/错误。
+ *
+ * `layout="field"` 是设置页用的紧凑表单行：**标签与控件同一行**（标签在左、固定宽度），
+ * **说明文字挂在控件下方**（与控件左边缘对齐）。相比「说明在左、控件在右」，
+ * 说明不会再和输入框抢横向空间，长说明也不会把控件挤窄；相比 `inline`，
+ * 它多了「说明 + 错误」的独立挂载位，不会让提示漂在行间。
+ */
 export function FormField({
   id,
   label,
   hint,
   issue,
   className,
+  layout = 'stacked',
   injectProps = true,
   children,
 }: {
@@ -73,6 +81,12 @@ export function FormField({
   /** 当前问题：error 红字、warning 琥珀字；有值时取代 hint */
   issue?: FieldIssue | null
   className?: string
+  /**
+   * stacked = 标签在上、控件在下（默认，适合弹窗等窄容器）
+   * inline  = 标签在左、控件在右（同一行，固定标签宽）
+   * field   = 设置页紧凑行：标签与控件同一行，说明/错误挂在控件下方
+   */
+  layout?: 'stacked' | 'inline' | 'field'
   /**
    * 是否把 id / aria-* 注入到 children：默认 true（适配 `<Input>`、`<Textarea>` 这类
    * 会把 props 透传到真实 DOM 的控件）。复合控件（Select / InputGroup）传 false 自行接线。
@@ -91,9 +105,75 @@ export function FormField({
       })
     : children
 
+  if (layout === 'field') {
+    return (
+      <div className={cn('flex flex-col gap-1', className)}>
+        <div className={cn('flex items-center gap-3', label.trim() === '' && 'gap-0')}>
+          {label.trim() !== '' && (
+            <Label htmlFor={id} className="w-24 shrink-0 text-sm font-medium sm:w-32">
+              {label}
+            </Label>
+          )}
+          <div className="min-w-0 flex-1">{control}</div>
+        </div>
+        {/* 说明 / 错误统一挂在控件下方，与输入框左边缘对齐 */}
+        {message !== undefined && message !== null && (
+          <p
+            id={messageId}
+            data-field-message={id}
+            data-field-level={issue ? issue.level : 'hint'}
+            className={cn(
+              'text-xs',
+              label.trim() !== '' && 'pl-24 sm:pl-32',
+              issue
+                ? issue.level === 'error'
+                  ? 'text-destructive'
+                  : 'text-amber-600 dark:text-amber-500'
+                : 'text-muted-foreground',
+            )}
+          >
+            {message}
+          </p>
+        )}
+      </div>
+    )
+  }
+
+  if (layout === 'inline') {
+    return (
+      <div className={cn('flex flex-col gap-1', className)}>
+        <div className="flex items-center gap-3">
+          <Label htmlFor={id} className="w-32 shrink-0 sm:w-40">
+            {label}
+          </Label>
+          <div className="min-w-0 flex-1">{control}</div>
+        </div>
+        {message !== undefined && message !== null && (
+          <p
+            id={messageId}
+            data-field-message={id}
+            data-field-level={issue ? issue.level : 'hint'}
+            className={cn(
+              'pl-32 text-xs sm:pl-40',
+              issue
+                ? issue.level === 'error'
+                  ? 'text-destructive'
+                  : 'text-amber-600 dark:text-amber-500'
+                : 'text-muted-foreground',
+            )}
+          >
+            {message}
+          </p>
+        )}
+      </div>
+    )
+  }
+
+  const hasLabel = label.trim() !== ''
+
   return (
     <div className={cn('grid gap-2', className)}>
-      <Label htmlFor={id}>{label}</Label>
+      {hasLabel && <Label htmlFor={id}>{label}</Label>}
       {control}
       {message !== undefined && message !== null && (
         <p

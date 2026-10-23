@@ -1,15 +1,6 @@
-import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/components/ui/sonner'
-import {
-  ChevronsUpDown,
-  IdCard,
-  KeyRound,
-  LogIn,
-  RefreshCcw,
-  ShieldCheck,
-  UserRound,
-} from 'lucide-react'
+import { ChevronsUpDown, CircleHelp, RefreshCcw, UserRound } from 'lucide-react'
 import { Link, useNavigate } from '@tanstack/react-router'
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -26,7 +17,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
-import { ChangePasswordDialog, ChangeUsernameDialog } from '@/components/org/account-dialogs'
 import { useCurrentTeam } from '@/hooks/use-current-team'
 import { useCan } from '@/hooks/use-permissions'
 import { userDefaultTeam } from '@/lib/team-context'
@@ -35,13 +25,13 @@ import { userMemberships, useOrgStore } from '@/stores/org-store'
 /**
  * 侧边栏底部用户菜单（用户在 Team 之上）：
  * - 展示当前登录用户与其全局身份（系统管理员 / 成员）
- * - **个人资料入口**：/profile（v0.7.0 起从 /settings 改名而来；该页 navHidden，不占侧边栏）
- * - **个人信息**（v0.14.0 起）：登录名 / 显示名 / 角色 / 邮箱 / 口令状态的只读摘要，
- *   外加「修改登录名」与「修改口令」两个自助入口（都要先校验当前口令）
+ * - **个人资料入口**：`/profile`（v0.7.0 起从 /settings 改名而来；该页 navHidden，不占侧边栏）
+ * - **帮助入口**：`/help`（v0.14.4 起从侧边栏 Config 分组移来，紧跟在 Profile 下面）
+ *   v0.14.2 起下拉里**只留入口，不再平铺账号摘要**：用户点开后进入个人资料页，
+ *   在那里看完整用户详情、改显示名称、改登录名、改口令（见 features/profile/profile-page.tsx）。
+ *   理由：下拉是把「我」（换身份）与「我的账号」两件事混在一起的窄容器，口令状态这类信息
+ *   塞在里面既挤又难读，还把两个敏感表单的触发点藏在了浮层里。
  * - 演示环境内置「以其他用户身份查看」：切换后其所属团队随之成为可切换范围
- *
- * 口令在这里**只显示状态、永不回显**：`passwordUpdatedAt` 时间戳或「未设置」，
- * 口令本身不进前端状态（见 `stores/org-store.ts` 的 `OrgUser.passwordUpdatedAt` 注释）。
  */
 export function UserMenu() {
   const { t } = useTranslation()
@@ -55,8 +45,6 @@ export function UserMenu() {
   const urlTeam = useCurrentTeam()
   // 个人资料页的准入：入口在这里而不在侧边栏，但仍按同一套权限判定（无权则不显示入口）
   const can = useCan()
-  // 「个人信息」区块的两个自助弹窗（同一时刻只开一个）
-  const [dialog, setDialog] = useState<'username' | 'password' | null>(null)
 
   const currentUser = users.find((u) => u.id === currentUserId) ?? null
   if (!currentUser) return null
@@ -140,72 +128,29 @@ export function UserMenu() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {/* 个人资料：入口在用户菜单里（该页 navHidden，不占侧边栏） */}
+            {/* 个人资料：唯一的账号入口。详情、改显示名称、改登录名、改口令都在那一页里，
+                下拉本身不再展开任何账号摘要（见文件头注释）。 */}
             {can('page.profile') && (
-              <>
-                <DropdownMenuItem asChild>
-                  <Link to="/profile" className="gap-2 p-2" data-user-menu="profile">
-                    <UserRound className="size-4" />
-                    <span className="flex-1 truncate">{t('nav.profile')}</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-              </>
+              <DropdownMenuItem asChild>
+                <Link to="/profile" className="gap-2 p-2" data-user-menu="profile">
+                  <UserRound className="size-4" />
+                  <span className="flex-1 truncate">{t('profile.title')}</span>
+                </Link>
+              </DropdownMenuItem>
             )}
-            {/* 个人信息：只读摘要 + 两个自助入口（登录名 / 口令）。
-                刻意做成非交互的 label 而不是按钮 —— 它交代「我是谁、我的口令上次什么时候动过」，
-                要点的是下面两个动作。 */}
-            <DropdownMenuLabel className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <IdCard className="size-3" />
-              {t('profile.personalInfo')}
-            </DropdownMenuLabel>
-            <div className="flex flex-col gap-1 px-1.5 pb-1.5 text-xs">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-muted-foreground">{t('users.username')}</span>
-                <span className="truncate font-mono font-medium" data-user-menu="username">
-                  {currentUser.username}
-                </span>
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-muted-foreground">{t('users.name')}</span>
-                <span className="truncate font-medium">{currentUser.name}</span>
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-muted-foreground">{t('profile.role')}</span>
-                <span className="flex items-center gap-1 truncate font-medium">
-                  {currentUser.isSystemAdmin && <ShieldCheck className="size-3" />}
-                  {roleLabel}
-                </span>
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-muted-foreground">{t('users.password')}</span>
-                {/* 口令只报状态，不回显：时间戳或「未设置」—— 口令本身不进前端状态 */}
-                <span className="truncate font-medium" data-user-menu="password-state">
-                  {currentUser.passwordUpdatedAt
-                    ? new Date(currentUser.passwordUpdatedAt).toLocaleString()
-                    : t('profile.passwordNotSet')}
-                </span>
-              </div>
-            </div>
-            <DropdownMenuItem
-              onClick={() => setDialog('username')}
-              className="gap-2 p-2"
-              data-user-menu="change-username"
-            >
-              <LogIn className="size-4" />
-              <span className="flex-1 truncate">{t('profile.changeUsername')}</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => setDialog('password')}
-              className="gap-2 p-2"
-              data-user-menu="change-password"
-            >
-              <KeyRound className="size-4" />
-              <span className="flex-1 truncate">{t('profile.changePassword')}</span>
-            </DropdownMenuItem>
+            {/* 帮助：v0.14.4 起从侧边栏 Config 分组移到这里（Profile 下面）——
+                说明书是「给用户本人看的东西」，与账号入口同属个人层，不占侧边栏 */}
+            {can('page.help') && (
+              <DropdownMenuItem asChild>
+                <Link to="/help" className="gap-2 p-2" data-user-menu="help">
+                  <CircleHelp className="size-4" />
+                  <span className="flex-1 truncate">{t('nav.help')}</span>
+                </Link>
+              </DropdownMenuItem>
+            )}
+            {(can('page.profile') || can('page.help')) && <DropdownMenuSeparator />}
             {others.length > 0 && (
               <>
-                <DropdownMenuSeparator />
                 <DropdownMenuLabel className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <RefreshCcw className="size-3" />
                   {t('users.switchUser')}
@@ -248,17 +193,6 @@ export function UserMenu() {
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
-      {/* 两个自助弹窗挂在菜单外：下拉关闭不影响它们（Radix Dialog 是独立 portal） */}
-      <ChangeUsernameDialog
-        user={currentUser}
-        open={dialog === 'username'}
-        onOpenChange={(open) => setDialog(open ? 'username' : null)}
-      />
-      <ChangePasswordDialog
-        user={currentUser}
-        open={dialog === 'password'}
-        onOpenChange={(open) => setDialog(open ? 'password' : null)}
-      />
     </SidebarMenu>
   )
 }

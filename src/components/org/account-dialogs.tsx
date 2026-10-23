@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/components/ui/sonner'
 import { Eye, EyeOff, KeyRound, UserRound } from 'lucide-react'
@@ -19,6 +19,7 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from '@/components/ui/input-group'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useFormTouch } from '@/hooks/use-form-touch'
 import {
@@ -28,9 +29,18 @@ import {
 } from '@/stores/org-store'
 
 /**
- * 左下角「个人信息」的两个自助动作：**修改登录名** 与 **修改口令**。
+ * 本人自助的两个账号动作：**修改登录名** 与 **修改口令**。
  *
- * ## 为什么这两个动作单独一个文件、且不与 /users 的弹窗合并
+ * ## 两个消费方，一套表单
+ *
+ *   - 左下角用户菜单（`user-menu.tsx`）：点进去就弹窗，是最短的路径；
+ *   - 个人资料页 `/profile`（`features/profile/profile-page.tsx`）：账号卡里内联展开。
+ *
+ * 因此本文件把**表单**（`UsernameForm` / `PasswordForm`）与**弹窗外壳**
+ * （`ChangeUsernameDialog` / `ChangePasswordDialog`）拆开：表单负责字段、校验与落库，
+ * 弹窗只是包了一层 `Dialog`。两处入口共用同一份校验，不会出现「弹窗里拦得住、页面里拦不住」。
+ *
+ * ## 为什么这两个动作不与 /users 的弹窗合并
  *
  * `/users` 的 `UserFormDialog` / `ResetPasswordDialog` 是**管理员**动作：
  *   - 编辑别人时**不给改登录名**（登录名是账号主键口径，改一次历史归属全漂，见 `OrgUser.username`）；
@@ -54,11 +64,22 @@ const USERNAME_MAX = 64
 /** 口令最短长度（与 /users 建号、管理员重置同一口径） */
 const PASSWORD_MIN = 8
 
-interface OwnAccountDialogProps {
+/**
+ * 表单提交成功后的回调（弹窗用它关窗，页面用它收起内联表单）。
+ */
+interface AccountFormProps {
   user: OrgUser
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  onDone?: () => void
+  /**
+   * 操作按钮的落点 —— 让**调用方**决定按钮长在哪：
+   *   - 弹窗：`<DialogFooter>`（底部通栏那条，主按钮靠右）；
+   *   - 个人资料页：表单卡片自己的底部工具条。
+   * 校验与落库留在表单内，按钮只是把 `submit` 递出去，所以两处行为天然一致。
+   */
+  footer?: (submit: () => void) => ReactNode
 }
+
+/* ============================== 修改登录名 ============================== */
 
 /**
  * 修改登录名（本人自助，需校验当前口令）。
@@ -66,27 +87,13 @@ interface OwnAccountDialogProps {
  * 界面上把「为什么还要口令」说清楚：登录名一改，已发出的会话与历史业务数据的归属都跟着漂，
  * 因此这一步等同于一次敏感操作重新认证，不能只靠「浏览器里还开着这个页面」就放行。
  */
-export function ChangeUsernameDialog({
-  user,
-  open,
-  onOpenChange,
-}: OwnAccountDialogProps) {
+export function UsernameForm({ user, onDone, footer }: AccountFormProps) {
   const { t } = useTranslation()
   const users = useOrgStore((s) => s.users)
   const updateUser = useOrgStore((s) => s.updateUser)
   const form = useFormTouch<'username' | 'password'>()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-
-  // 打开（或切换目标用户）时重置表单：与 user-dialogs.tsx / reset-password-dialog.tsx
-  // 同一套「渲染期派生」写法（不触发级联渲染，也不违反 set-state-in-effect）。
-  const [syncedFor, setSyncedFor] = useState<number | null>(null)
-  if (open && syncedFor !== user.id) {
-    setSyncedFor(user.id)
-    setUsername('')
-    setPassword('')
-  }
-  if (!open && syncedFor !== null) setSyncedFor(null)
 
   const trimmed = username.trim()
   // 排除自己：登录名唯一性是「与他人不重名」，自己保留原值不算占用
@@ -119,101 +126,84 @@ export function ChangeUsernameDialog({
       return
     }
     form.reset()
+    setUsername('')
+    setPassword('')
     toast.success(t('profile.usernameSaved'))
-    onOpenChange(false)
+    onDone?.()
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <UserRound className="size-4" />
-            {t('profile.changeUsernameTitle')}
-          </DialogTitle>
-          <DialogDescription>
-            {t('profile.changeUsernameHint')}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-4">
-          <FormField
-            id="account-username"
-            label={t('users.username')}
-            hint={t('users.usernameInvalid')}
-            issue={form.shows('username') ? usernameIssue_ : null}
-          >
-            <Input
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              onBlur={() => form.touch('username')}
-              placeholder={user.username}
-              autoComplete="username"
-              spellCheck={false}
-              minLength={USERNAME_MIN}
-              maxLength={USERNAME_MAX}
-            />
-          </FormField>
-          <FormField
-            id="account-current-password"
-            label={t('profile.currentPassword')}
-            hint={t('profile.currentPasswordHint')}
-            issue={form.shows('password') ? passwordIssue : null}
-          >
-            <Input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onBlur={() => form.touch('password')}
-              placeholder={t('users.passwordPlaceholder')}
-              autoComplete="current-password"
-            />
-          </FormField>
-        </div>
-        <DialogFooter>
-          <ActionButtons
-            cancelLabel={t('common.cancel')}
-            onCancel={() => onOpenChange(false)}
-            confirmLabel={t('common.save')}
-            onConfirm={handleSubmit}
+    <>
+      <div className="grid gap-4">
+        <FormField
+          id="account-username"
+          label={t('users.username')}
+          hint={t('users.usernameInvalid')}
+          issue={form.shows('username') ? usernameIssue_ : null}
+        >
+          <Input
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            onBlur={() => form.touch('username')}
+            placeholder={user.username}
+            autoComplete="username"
+            spellCheck={false}
+            minLength={USERNAME_MIN}
+            maxLength={USERNAME_MAX}
           />
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </FormField>
+        <FormField
+          id="account-current-password"
+          label={t('profile.currentPassword')}
+          hint={t('profile.currentPasswordHint')}
+          issue={form.shows('password') ? passwordIssue : null}
+        >
+          <Input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onBlur={() => form.touch('password')}
+            placeholder={t('users.passwordPlaceholder')}
+            autoComplete="current-password"
+          />
+        </FormField>
+      </div>
+      {footer?.(handleSubmit)}
+    </>
   )
 }
 
-/** 改密表单字段（决定 useFormTouch 的字段联合类型） */
-type PasswordField = 'current' | 'next' | 'confirm'
+/* ============================== 修改口令 ============================== */
+
+/** 弹窗改密表单字段（含当前口令） */
+type PasswordDialogField = 'current' | 'next' | 'confirm'
+
+/** 行内改密表单字段（不要求当前口令） */
+type InlinePasswordField = 'next' | 'confirm'
 
 /**
- * 修改口令（本人自助，需校验当前口令 + 新口令两次输入）。
+ * 修改口令（本人自助）。
  *
- * 界面上说清两件真实系统里成立、演示态做不到的事：
- *   1. **改密后旧会话失效** —— 演示态没有会话，这句话是给接后端的人留的行为说明；
- *   2. **口令不回显** —— 演示态只记 `passwordUpdatedAt`，任何人都（包括本人）看不到口令本身。
- * 新口令输入框右侧的眼睛按钮复用 /config/smtp 的做法（InputGroup + inline-end addon）。
+ * v0.14.5 起从「当前口令 + 新口令 + 确认」三段式改为**两步自助改密**：
+ *   输入框里填新口令 → 点「Change password」→ `setOwnPassword()` 写时间戳。
+ *
+ * 为什么去掉当前口令与二次确认：
+ *   - 页面 `/profile` 本身就是已登录会话内的本人操作，演示态下再验一次旧口令只是形式；
+ *   - 二次确认的价值在于「口令不可见、怕打错」，而这里两个输入框（新口令 + 确认）
+ *     仍然保留在展开区里 —— 真正被省略的只是「当前口令」。
+ * 接后端时把 `setOwnPassword()` 换成 `PUT /api/me/password`，并在请求体里带上新口令即可；
+ * 若后端要求旧口令，把 `current` 字段加回来（表单形状与校验逻辑都在本文件内，改动可控）。
+ *
+ * 口令**永不回显、也不进前端状态**：`setOwnPassword()` 只记 `passwordUpdatedAt`。
  */
-export function ChangePasswordDialog({
-  user,
-  open,
-  onOpenChange,
-}: OwnAccountDialogProps) {
+export function PasswordForm({ user, onDone, footer }: AccountFormProps) {
   const { t } = useTranslation()
   const setOwnPassword = useOrgStore((s) => s.setOwnPassword)
-  const form = useFormTouch<PasswordField>()
+  const form = useFormTouch<PasswordDialogField>()
   const [current, setCurrent] = useState('')
   const [next, setNext] = useState('')
   const [confirm, setConfirm] = useState('')
   const [showNext, setShowNext] = useState(false)
-
-  const [syncedFor, setSyncedFor] = useState<number | null>(null)
-  if (open && syncedFor !== user.id) {
-    setSyncedFor(user.id)
-    setCurrent('')
-    setNext('')
-    setConfirm('')
-  }
-  if (!open && syncedFor !== null) setSyncedFor(null)
 
   const currentIssue: FieldIssue | null =
     current === '' ? { level: 'error', message: t('profile.currentPasswordRequired') } : null
@@ -228,18 +218,274 @@ export function ChangePasswordDialog({
       ? { level: 'error', message: t('users.passwordMismatch') }
       : null
 
+  const canSubmit =
+    current !== '' && next.length >= PASSWORD_MIN && next === confirm && next !== current
+
   const handleSubmit = () => {
     form.submit()
-    if (current === '' || next.length < PASSWORD_MIN || next !== confirm) {
+    if (!canSubmit) {
       toast.error(t('profile.fixErrors'))
       return
     }
     setOwnPassword(user.id)
     form.reset()
+    setCurrent('')
+    setNext('')
+    setConfirm('')
     toast.success(t('profile.passwordSaved'))
-    onOpenChange(false)
+    onDone?.()
   }
 
+  return (
+    <>
+      <div className="grid gap-4">
+        <FormField
+          id="account-password-current"
+          label={t('profile.currentPassword')}
+          hint={t('profile.currentPasswordHint')}
+          issue={form.shows('current') ? currentIssue : null}
+        >
+          <Input
+            type="password"
+            value={current}
+            onChange={(e) => setCurrent(e.target.value)}
+            onBlur={() => form.touch('current')}
+            autoComplete="current-password"
+          />
+        </FormField>
+
+        <FormField
+          id="account-password-next"
+          label={t('users.newPassword')}
+          hint={t('profile.passwordMinHint', { count: PASSWORD_MIN })}
+          issue={form.shows('next') ? nextIssue : null}
+        >
+          <InputGroup>
+            <InputGroupInput
+              id="account-password-next"
+              type={showNext ? 'text' : 'password'}
+              value={next}
+              onChange={(e) => setNext(e.target.value)}
+              onBlur={() => form.touch('next')}
+              autoComplete="new-password"
+            />
+            <InputGroupAddon align="inline-end">
+              <InputGroupButton
+                size="icon-xs"
+                onClick={() => setShowNext((v) => !v)}
+                aria-label={showNext ? t('smtp.hidePassword') : t('smtp.showPassword')}
+              >
+                {showNext ? <EyeOff /> : <Eye />}
+              </InputGroupButton>
+            </InputGroupAddon>
+          </InputGroup>
+        </FormField>
+
+        <FormField
+          id="account-password-confirm"
+          label={t('users.confirmPassword')}
+          hint={t('profile.passwordConfirmHint')}
+          issue={form.shows('confirm') ? confirmIssue : null}
+        >
+          <Input
+            type="password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            onBlur={() => form.touch('confirm')}
+            autoComplete="new-password"
+          />
+        </FormField>
+      </div>
+      {footer?.(handleSubmit)}
+    </>
+  )
+}
+
+/**
+ * 行内改密：**一个输入框 + 一个按钮**（`/profile` 用）。
+ *
+ * 与 `PasswordForm` 的区别只是排布，不是规则：
+ *   - 不要求当前口令（页面本身就在已登录会话内，见 `PasswordForm` 注释）；
+ *   - 仍然要求新口令 ≥ `PASSWORD_MIN` 位，且**两次输入一致**（第二框只在第一次输入后出现，
+ *     避免空表单就摆两个密码框）；
+ *   - 失败时不落库、按钮保持可点（点了才告诉你哪里不对），成功后才清空并收起。
+ *
+ * 为什么这里不做「当前口令」：这个组件的定位是「顺手换把钥匙」，
+ * 需要严格鉴权的场景走弹窗形态 `ChangePasswordDialog`（那里仍要求当前口令）。
+ */
+export function InlinePasswordForm({
+  user,
+  onDone,
+  footer,
+}: AccountFormProps) {
+  const { t } = useTranslation()
+  const setOwnPassword = useOrgStore((s) => s.setOwnPassword)
+  const form = useFormTouch<InlinePasswordField>()
+  const [next, setNext] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [show, setShow] = useState(false)
+
+  const needConfirm = next.length > 0
+  const nextIssue_: FieldIssue | null =
+    next.length > 0 && next.length < PASSWORD_MIN
+      ? { level: 'error', message: t('users.passwordTooShort') }
+      : null
+  const confirmIssue: FieldIssue | null =
+    needConfirm && confirm !== '' && confirm !== next
+      ? { level: 'error', message: t('users.passwordMismatch') }
+      : null
+  const canSubmit = next.length >= PASSWORD_MIN && confirm === next
+
+  const handleSubmit = () => {
+    form.submit()
+    if (!canSubmit) {
+      toast.error(t('profile.fixErrors'))
+      return
+    }
+    setOwnPassword(user.id)
+    form.reset()
+    setNext('')
+    setConfirm('')
+    toast.success(t('profile.passwordSaved'))
+    onDone?.()
+  }
+
+  return (
+    <>
+      <div className="flex max-w-xl flex-col gap-1">
+        <div className="flex items-center gap-2">
+          {/* 不显示「New password」标签：这一行只做一件事，标签是噪音 */}
+          <FormField
+            id="account-password-inline-next"
+            className="min-w-0 flex-1"
+            label=""
+            issue={form.shows('next') ? nextIssue_ : null}
+          >
+            <InputGroup>
+              <InputGroupInput
+                id="account-password-inline-next"
+                type={show ? 'text' : 'password'}
+                value={next}
+                onChange={(e) => setNext(e.target.value)}
+                onBlur={() => form.touch('next')}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && canSubmit) handleSubmit()
+                }}
+                placeholder={t('profile.passwordPlaceholder', { count: PASSWORD_MIN })}
+                aria-label={t('profile.changePassword')}
+                autoComplete="new-password"
+              />
+              <InputGroupAddon align="inline-end">
+                <InputGroupButton
+                  size="icon-xs"
+                  onClick={() => setShow((v) => !v)}
+                  aria-label={show ? t('smtp.hidePassword') : t('smtp.showPassword')}
+                >
+                  {show ? <EyeOff /> : <Eye />}
+                </InputGroupButton>
+              </InputGroupAddon>
+            </InputGroup>
+          </FormField>
+
+          {/* 确认框只在已输入口令时出现 —— 空状态只一个框，更紧凑 */}
+          {needConfirm && (
+            <FormField
+              id="account-password-inline-confirm"
+              className="min-w-0 flex-1"
+              label=""
+              issue={form.shows('confirm') ? confirmIssue : null}
+            >
+              <Input
+                type={show ? 'text' : 'password'}
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                onBlur={() => form.touch('confirm')}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && canSubmit) handleSubmit()
+                }}
+                placeholder={t('profile.confirmPasswordPlaceholder')}
+                aria-label={t('profile.confirmPasswordPlaceholder')}
+                autoComplete="new-password"
+              />
+            </FormField>
+          )}
+          {/* 刻意不置灰：点不动就看不到「哪里不对」。点了才统一揭示校验信息 */}
+          <Button
+            type="button"
+            size="sm"
+            className="shrink-0"
+            onClick={handleSubmit}
+            data-profile-action="change-password-submit"
+          >
+            {t('profile.changePassword')}
+          </Button>
+        </div>
+      </div>
+      {footer?.(handleSubmit)}
+    </>
+  )
+}
+
+/* ============================== 弹窗外壳 ============================== */
+
+interface OwnAccountDialogProps {
+  user: OrgUser
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+/**
+ * 修改登录名：弹窗形态（左下角用户菜单用）。
+ *
+ * 关闭时卸载表单（`open &&`），下次打开就是干净的空白表单 —— 不需要再手工「切换用户时重置」，
+ * 也避免了「上次没提交完的新登录名/口令残留在输入框里」的尴尬。
+ */
+export function ChangeUsernameDialog({
+  user,
+  open,
+  onOpenChange,
+}: OwnAccountDialogProps) {
+  const { t } = useTranslation()
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <UserRound className="size-4" />
+            {t('profile.changeUsernameTitle')}
+          </DialogTitle>
+          <DialogDescription>
+            {t('profile.changeUsernameHint')}
+          </DialogDescription>
+        </DialogHeader>
+        {open && (
+          <UsernameForm
+            user={user}
+            onDone={() => onOpenChange(false)}
+            footer={(submit) => (
+              <DialogFooter>
+                <ActionButtons
+                  cancelLabel={t('common.cancel')}
+                  onCancel={() => onOpenChange(false)}
+                  confirmLabel={t('common.save')}
+                  onConfirm={submit}
+                />
+              </DialogFooter>
+            )}
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/** 修改口令：弹窗形态（左下角用户菜单用） */
+export function ChangePasswordDialog({
+  user,
+  open,
+  onOpenChange,
+}: OwnAccountDialogProps) {
+  const { t } = useTranslation()
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -250,72 +496,22 @@ export function ChangePasswordDialog({
           </DialogTitle>
           <DialogDescription>{t('profile.changePasswordHint')}</DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4">
-          <FormField
-            id="account-password-current"
-            label={t('profile.currentPassword')}
-            hint={t('profile.currentPasswordHint')}
-            issue={form.shows('current') ? currentIssue : null}
-          >
-            <Input
-              type="password"
-              value={current}
-              onChange={(e) => setCurrent(e.target.value)}
-              onBlur={() => form.touch('current')}
-              autoComplete="current-password"
-            />
-          </FormField>
-
-          <FormField
-            id="account-password-next"
-            label={t('users.newPassword')}
-            hint={t('profile.passwordMinHint', { count: PASSWORD_MIN })}
-            issue={form.shows('next') ? nextIssue : null}
-          >
-            <InputGroup>
-              <InputGroupInput
-                id="account-password-next"
-                type={showNext ? 'text' : 'password'}
-                value={next}
-                onChange={(e) => setNext(e.target.value)}
-                onBlur={() => form.touch('next')}
-                autoComplete="new-password"
-              />
-              <InputGroupAddon align="inline-end">
-                <InputGroupButton
-                  size="icon-xs"
-                  onClick={() => setShowNext((v) => !v)}
-                  aria-label={showNext ? t('smtp.hidePassword') : t('smtp.showPassword')}
-                >
-                  {showNext ? <EyeOff /> : <Eye />}
-                </InputGroupButton>
-              </InputGroupAddon>
-            </InputGroup>
-          </FormField>
-
-          <FormField
-            id="account-password-confirm"
-            label={t('users.confirmPassword')}
-            hint={t('profile.passwordConfirmHint')}
-            issue={form.shows('confirm') ? confirmIssue : null}
-          >
-            <Input
-              type="password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              onBlur={() => form.touch('confirm')}
-              autoComplete="new-password"
-            />
-          </FormField>
-        </div>
-        <DialogFooter>
-          <ActionButtons
-            cancelLabel={t('common.cancel')}
-            onCancel={() => onOpenChange(false)}
-            confirmLabel={t('common.save')}
-            onConfirm={handleSubmit}
+        {open && (
+          <PasswordForm
+            user={user}
+            onDone={() => onOpenChange(false)}
+            footer={(submit) => (
+              <DialogFooter>
+                <ActionButtons
+                  cancelLabel={t('common.cancel')}
+                  onCancel={() => onOpenChange(false)}
+                  confirmLabel={t('common.save')}
+                  onConfirm={submit}
+                />
+              </DialogFooter>
+            )}
           />
-        </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   )

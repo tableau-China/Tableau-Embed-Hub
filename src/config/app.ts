@@ -13,7 +13,7 @@
 export const APP_NAME = 'Tableau Embed Hub'
 
 /** 应用版本（与 package.json 同步） */
-export const APP_VERSION = '0.14.1'
+export const APP_VERSION = '0.14.8'
 
 /** 开发者 */
 export const APP_AUTHOR = 'xilejun'

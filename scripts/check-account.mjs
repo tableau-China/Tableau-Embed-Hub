@@ -2,17 +2,20 @@
 /**
  * check-account.mjs — 左下角「个人信息」校验（node scripts/check-account.mjs）
  *
- * 背景：v0.14.0 在左下角用户菜单里加了「个人信息」区块 —— 登录名 / 显示名 / 角色 / 口令状态的
- * 只读摘要，外加「修改登录名」与「修改口令」两个自助入口（都要先校验当前口令）。
- * 这类行为（下拉内容、弹窗接线、落库效果）tsc 与单测都覆盖不到，因此与 check-permissions /
- * check-team-routes 一样用真实 Chrome CDP 驱动验证。
+ * 背景：v0.14.2 起「我是谁」收敛到 /profile 一页：
+ *   - 左下角用户菜单**只留一个「Profile」入口**（不再平铺账号摘要、不再有改登录名/改口令菜单项）；
+ *   - /profile 展示完整用户详情（显示名称 / 登录名 / 邮箱 / 角色 / 状态 / 团队），
+ *     并承载「改显示名称」「改登录名」「改口令」三个自助动作（后两个默认折叠、展开后才可提交）。
+ * 这类行为（下拉内容、跳转、折叠展开、落库效果）tsc 与单测都覆盖不到，
+ * 因此与 check-permissions / check-team-routes 一样用真实 Chrome CDP 驱动验证。
  *
  * 校验项：
- *   1. 个人信息摘要展示当前身份的登录名 / 显示名 / 角色，口令只报状态、**永不回显口令**
- *   2. 改登录名：空口令被拦；改别人已占用的登录名被拦；正确填写后落库且摘要同步刷新
- *   3. 改口令：两次不一致被拦；正确填写后只落 `passwordUpdatedAt` 时间戳，
+ *   1. 左下角菜单只有 Profile 入口，点开后到 /profile，且**页面上**能看到完整详情
+ *   2. 菜单里没有账号摘要、改登录名、改口令三个旧入口（v0.14.2 明确移除）
+ *   3. /profile 上改显示名称落库并同步刷新横幅与侧边栏
+ *   4. 改登录名（折叠区展开后）：占名被拦；通过后落库并同步
+ *   5. 改口令（折叠区展开后）：两次不一致被拦；通过后只落 `passwordUpdatedAt` 时间戳，
  *      且 **localStorage 里不出现任何口令字段**（这是页面对用户的承诺，必须直接查盘）
- *   4. 改登录名不破坏侧边栏左下角的身份显示与「切换用户」列表
  *
  * 依赖：已构建的 dist/（pnpm build）+ 本机 Google Chrome。
  * 用法：pnpm build && node scripts/check-account.mjs
@@ -30,20 +33,33 @@ const PORT = 4326
 const DEBUG_PORT = 9339
 const BASE = `http://127.0.0.1:${PORT}`
 
-/** 左下角用户菜单与两个自助弹窗的稳定钩子（与 user-menu.tsx / account-dialogs.tsx 一一对应） */
+/**
+ * 稳定钩子（与 user-menu.tsx / profile-page.tsx / account-dialogs.tsx 一一对应）
+ *
+ * 注意 v0.14.2 的语义变化：`data-user-menu="username"` / `"password-state"` 现在只在
+ * 个人资料页 `/profile` 上（菜单里的摘要已移除），`change-username` / `change-password` 这两个
+ * 菜单项已删除 —— 下面把它们留在常量里，正是为了让用例能断言「它们不再存在」。
+ */
 const SEL = {
   trigger: '[data-slot="sidebar-footer"] button',
+  menuProfile: '[data-user-menu="profile"]',
   username: '[data-user-menu="username"]',
   passwordState: '[data-user-menu="password-state"]',
+  /** v0.14.0 的旧菜单项：v0.14.2 已移除，用例断言其不存在 */
   changeUsername: '[data-user-menu="change-username"]',
   changePassword: '[data-user-menu="change-password"]',
+  /** /profile 上的折叠区：点「修改」展开表单 */
+  editUsername: '[data-profile-action="edit-username"]',
+  /** 口令行是「输入框 + 按钮」直接改，没有展开动作 */
+  passwordSubmit: '[data-profile-action="change-password-submit"]',
+  displayName: '[data-profile="display-name"]',
+  profileNameInput: '#profile-name',
   usernameInput: '#account-username',
   /** 修改登录名对话框里的「当前口令」字段 */
   currentPasswordForUsername: '#account-current-password',
   /** 修改口令对话框里的三个字段（新口令是 InputGroup 复合控件） */
-  currentPasswordInput: '#account-password-current',
-  nextPasswordInput: '#account-password-next',
-  confirmPasswordInput: '#account-password-confirm',
+  nextPasswordInput: '#account-password-inline-next',
+  confirmPasswordInput: '#account-password-inline-confirm',
 }
 
 /** 演示口令在界面上**绝不允许**出现的字符串（任何形式的回显都算失败） */
@@ -204,7 +220,7 @@ async function openUserMenu(page) {
   await delay(500)
   // 菜单内容也要就位（Radix 的展开带动画）
   await waitFor('用户菜单展开', async () => {
-    return page.evaluate(`!!document.querySelector(${JSON.stringify(SEL.changeUsername)})`)
+    return page.evaluate(`!!document.querySelector(${JSON.stringify(SEL.menuProfile)})`)
   }, { timeout: 8000 })
 }
 
@@ -275,11 +291,69 @@ async function readPersistedOrg(page) {
   })()`)
 }
 
+/**
+ * 点 /profile 上当前可见表单的主操作按钮（保存）。
+ *
+ * v0.14.3 起四项资料合并在同一张卡里：
+ *   - 显示名称 / 邮箱的保存按钮就在那张卡里，**页面上只有一个 Save**；
+ *   - 登录名 / 口令展开后，按钮在 `[data-profile-row]` 内部。
+ * 所以作用域取「展开的那一行」优先，找不到再退回整页的 Save。
+ */
+async function clickProfileSave(page) {
+  const clicked = await page.evaluate(`(() => {
+    const openRow = [...document.querySelectorAll('[data-profile-row]')].find((r) => r.querySelector('input'))
+    const scope = openRow ?? document
+    const buttons = [...scope.querySelectorAll('button')]
+    const save = buttons.filter((b) => /save/i.test(b.textContent ?? '')).pop()
+    if (!save) return 'missing'
+    save.click()
+    return 'ok'
+  })()`)
+  if (clicked !== 'ok') throw new Error('/profile 上未找到保存按钮')
+  await delay(400)
+}
+
+/** 点口令区的「Change password」按钮 */
+async function clickPasswordSubmit(page) {
+  const clicked = await page.evaluate(`(() => {
+    const btn = document.querySelector('[data-profile-action="change-password-submit"]')
+    if (!btn) return 'missing'
+    btn.click()
+    return 'ok'
+  })()`)
+  if (clicked !== 'ok') throw new Error('未找到「Change password」按钮')
+  await delay(400)
+}
+
 /* ============================== 用例 ============================== */
+
+/** /profile 上的入口辅助：点菜单 → Profile，等跳到 /profile 且页面就位 */
+async function gotoProfileFromMenu(page) {
+  await openUserMenu(page)
+  await clickItem(page, SEL.menuProfile, 'Profile 入口')
+  await waitFor('/profile 就位', async () => {
+    const ok = await page.evaluate(`(() => {
+      return location.pathname === '/profile' && !!document.querySelector('[data-profile="display-name"]')
+    })()`)
+    return ok
+  }, { timeout: 10000 })
+}
+
+/** 展开 /profile 上的某个折叠区（改登录名 / 改口令） */
+async function expandSection(page, selector, label) {
+  const clicked = await page.evaluate(`(() => {
+    const el = document.querySelector(${JSON.stringify(selector)})
+    if (!el) return 'missing'
+    el.click()
+    return 'ok'
+  })()`)
+  if (clicked !== 'ok') throw new Error(`/profile 上未找到 ${label}（${selector}）`)
+  await delay(350)
+}
 
 const CASES = [
   {
-    name: '个人信息摘要展示当前身份，口令只报状态不回显',
+    name: '左下角菜单只有 Profile + Help 入口，不再展开账号摘要与改密码/改登录名',
     path: '/t/acme_hq',
     expectPath: '/t/acme_hq',
     custom: async (page) => {
@@ -288,74 +362,157 @@ const CASES = [
 
       const info = await page.evaluate(`(() => {
         const q = (s) => document.querySelector(s)
-        const text = q('[data-slot="dropdown-menu-content"]')?.innerText ?? document.body.innerText
+        const text = q('[data-slot="dropdown-menu-content"]')?.innerText ?? ''
         return {
-          username: q('[data-user-menu="username"]')?.textContent?.trim() ?? null,
-          passwordState: q('[data-user-menu="password-state"]')?.textContent?.trim() ?? null,
-          hasUsernameLabel: text.includes('Username'),
-          hasPasswordLabel: text.includes('Password'),
+          hasProfile: !!q('[data-user-menu="profile"]'),
+          hasUsernameSummary: !!q('[data-user-menu="username"]'),
+          hasPasswordState: !!q('[data-user-menu="password-state"]'),
           hasChangeUsername: !!q('[data-user-menu="change-username"]'),
           hasChangePassword: !!q('[data-user-menu="change-password"]'),
-          allText: text,
+          hasHelp: !!q('[data-user-menu="help"]'),
+          helpHref: q('[data-user-menu="help"]')?.getAttribute('href') ?? null,
+          profileBeforeHelp: (() => {
+            const p = q('[data-user-menu="profile"]')
+            const h = q('[data-user-menu="help"]')
+            return !p || !h ? null : !!(p.compareDocumentPosition(h) & 4) // 4 = DOCUMENT_POSITION_FOLLOWING
+          })(),
+          text,
         }
       })()`)
 
-      if (info.username !== 'admin') failures.push(`摘要应展示当前登录名 admin，实际：${info.username}`)
-      if (!info.hasUsernameLabel) failures.push('摘要缺少「Username」行标签')
-      if (!info.hasPasswordLabel) failures.push('摘要缺少「Password」行标签')
-      if (!info.hasChangeUsername) failures.push('菜单缺少「修改登录名」入口')
-      if (!info.hasChangePassword) failures.push('菜单缺少「修改口令」入口')
-      // 口令状态要么是「未设置」文案，要么是一个时间戳 —— 绝不可以是口令本身
-      if (!info.passwordState) failures.push('口令状态为空')
+      if (!info.hasProfile) failures.push('菜单缺少 Profile 入口')
+      if (info.profileBeforeHelp === false) failures.push('Help 应排在 Profile 之后')
+      if (!info.hasHelp) failures.push('菜单缺少 Help 入口（v0.14.4 起移到 Profile 下面）')
+      if (info.helpHref !== '/help') failures.push(`Help 入口应指向 /help，实际 ${info.helpHref}`)
+      if (info.hasUsernameSummary) failures.push('菜单里仍有登录名摘要（v0.14.2 起应只在 /profile 展示）')
+      if (info.hasPasswordState) failures.push('菜单里仍有口令状态摘要（v0.14.2 起应只在 /profile 展示）')
+      if (info.hasChangeUsername) failures.push('菜单里仍有「修改登录名」入口（应移到 /profile）')
+      if (info.hasChangePassword) failures.push('菜单里仍有「修改口令」入口（应移到 /profile）')
+      if (/Change password/i.test(info.text)) failures.push('菜单文本里出现了 Change password')
       for (const forbidden of FORBIDDEN_PASSWORD_TEXT) {
-        if (info.allText.toLowerCase().includes(forbidden.toLowerCase())) {
-          failures.push(`界面上出现了口令文本 ${forbidden}（口令永不回显）`)
+        if (info.text.toLowerCase().includes(forbidden.toLowerCase())) {
+          failures.push(`菜单里出现了口令文本 ${forbidden}（口令永不回显）`)
         }
       }
       return failures
     },
   },
   {
-    name: '改登录名：不填当前口令被拦，数据不变',
+    name: '点 Profile 打开个人资料页，展示完整用户详情',
     path: '/t/acme_hq',
     expectPath: '/t/acme_hq',
     custom: async (page) => {
       const failures = []
-      await openUserMenu(page)
-      await clickItem(page, SEL.changeUsername, '修改登录名入口')
+      await gotoProfileFromMenu(page)
+
+      const info = await page.evaluate(`(() => {
+        const q = (s) => document.querySelector(s)
+        const text = document.body.innerText
+        return {
+          path: location.pathname,
+          displayName: q('[data-profile="display-name"]')?.textContent?.trim() ?? null,
+          username: q('[data-user-menu="username"]')?.textContent?.trim() ?? null,
+          passwordState: q('[data-user-menu="password-state"]')?.textContent?.trim() ?? null,
+          hasNameInput: !!q('#profile-name'),
+          hasEmailInput: !!q('#profile-email'),
+          hasEditUsername: !!q('[data-profile-action="edit-username"]'),
+          hasUsernameReadonly: (() => {
+            const host = q('#profile-username')
+            const el = host?.tagName === 'INPUT' ? host : host?.querySelector('input')
+            return !!el && (el.readOnly || el.disabled)
+          })(),
+          hasPasswordInput: !!q('#account-password-inline-next'),
+          hasPasswordSubmit: !!q('[data-profile-action="change-password-submit"]'),
+          hasManageUsers: /Manage users/i.test(text),
+          /** 卡片数：四块资料必须同在一张卡里（v0.14.3 合并），页面只该剩下「Your details」+「Teams」两张 */
+          cardTitles: [...document.querySelectorAll('[data-slot="card-title"]')].map((el) => el.textContent.trim()),
+          /** 页面里字段/动作的 DOM 顺序（用于断言「显示名称 → 登录名 → 邮箱 → 口令」） */
+          order: [...new Set([...document.querySelectorAll('#profile-username, #profile-name, #profile-email')].map((el) => el.id))]
+            .map((el) => el.id || el.getAttribute('data-profile-action').replace('edit-', 'edit-')),
+          // 折叠态下不应已经渲染表单输入框
+          hasUsernameForm: !!q('#account-username'),
+          text,
+        }
+      })()`)
+
+      if (info.path !== '/profile') failures.push(`应跳到 /profile，实际 ${info.path}`)
+      if (!info.displayName) failures.push('缺少显示名称横幅')
+      if (info.username !== 'admin') failures.push(`详情应展示登录名 admin，实际：${info.username}`)
+      if (!info.passwordState) failures.push('详情应展示口令状态（最近修改时间 / 未设置）')
+      if (!info.hasNameInput) failures.push('缺少「显示名称」可编辑字段')
+      if (!info.hasEmailInput) failures.push('缺少「邮箱」字段')
+      if (!info.hasEditUsername) failures.push('缺少「修改登录名」入口')
+      if (!info.hasUsernameReadonly) failures.push('username 应排在前面且只读（不可直接编辑）')
+      if (!info.hasPasswordInput) failures.push('口令区应直接渲染口令输入框（行内改密）')
+      if (!info.hasPasswordSubmit) failures.push('缺少「Change password」按钮')
+      if (info.hasManageUsers) failures.push('不应再有 Manage users 链接（v0.14.3 移除）')
+      if (info.cardTitles.length !== 2) {
+        failures.push(`应只剩「Your details」与「Teams」两张卡，实际：${info.cardTitles.join(' / ')}`)
+      }
+      // 视觉顺序：显示名称 → 登录名(修改) → 邮箱 → 口令(修改)
+      const expected = ['profile-username', 'profile-name', 'profile-email']
+      if (JSON.stringify(info.order) !== JSON.stringify(expected)) {
+        failures.push(`字段顺序应为 ${expected.join(' → ')}，实际 ${info.order.join(' → ')}`)
+      }
+      if (info.hasUsernameForm) failures.push('改登录名应默认折叠（展开前不应渲染表单）')
+      // 角色 / 状态以徽标出现（文案随词典，弱断言：不空即可）
+      if (!/admin/i.test(info.text)) failures.push('详情应展示全局角色')
+      if (!/active/i.test(info.text)) failures.push('详情应展示账号状态')
+      if (!/Teams/i.test(info.text)) failures.push('详情应展示团队归属区块')
+      return failures
+    },
+  },
+  {
+    name: '个人资料页：改显示名称落库，横幅与侧边栏同步',
+    path: '/profile',
+    expectPath: '/profile',
+    custom: async (page) => {
+      const failures = []
+      await fillInput(page, SEL.profileNameInput, 'Admin Renamed')
+      await clickProfileSave(page)
+
+      const shown = await waitFor('横幅刷新为新显示名称', async () => {
+        return page.evaluate(`document.querySelector('[data-profile="display-name"]')?.textContent?.trim() === 'Admin Renamed'`)
+      }, { timeout: 5000 }).catch(() => false)
+      if (!shown) failures.push('首页横幅未刷新为新的显示名称')
+
+      const sidebar = await page.evaluate(`document.querySelector('[data-slot="sidebar-footer"]')?.innerText ?? ''`)
+      if (!sidebar.includes('Admin Renamed')) failures.push('侧边栏左下角未同步新的显示名称')
+
+      const persisted = (await readPersistedOrg(page)) ?? ''
+      if (!persisted.includes('"name":"Admin Renamed"')) failures.push('新显示名称未写入 localStorage')
+      return failures
+    },
+  },
+  {
+    name: '改登录名：展开后不填当前口令被拦，数据不变',
+    path: '/profile',
+    expectPath: '/profile',
+    custom: async (page) => {
+      const failures = []
+      await expandSection(page, SEL.editUsername, '修改登录名入口')
       await fillInput(page, SEL.usernameInput, 'admin.renamed')
       // 故意不填当前口令
-      await clickDialogConfirm(page)
+      await clickProfileSave(page)
 
-      const state = await page.evaluate(`(() => ({
-        dialogOpen: !!document.querySelector('[data-slot="dialog-content"]'),
-        persisted: (() => {
-          for (const key of Object.keys(localStorage)) {
-            if (!key.endsWith(':org')) continue
-            return localStorage.getItem(key) ?? ''
-          }
-          return ''
-        })(),
-      }))()`)
-      if (!state.dialogOpen) failures.push('校验未通过时对话框不应关闭')
-      if (state.persisted.includes('admin.renamed')) failures.push('校验未通过却已写入新登录名')
+      const raw = (await readPersistedOrg(page)) ?? ''
+      if (raw.includes('admin.renamed')) failures.push('校验未通过却已写入新登录名')
       return failures
     },
   },
   {
     name: '改登录名：占用他人登录名被拦',
-    path: '/t/acme_hq',
-    expectPath: '/t/acme_hq',
+    path: '/profile',
+    expectPath: '/profile',
     custom: async (page) => {
       const failures = []
-      await openUserMenu(page)
-      await clickItem(page, SEL.changeUsername, '修改登录名入口')
+      await expandSection(page, SEL.editUsername, '修改登录名入口')
       await fillInput(page, SEL.usernameInput, 'alice.chen') // 已被 Alice 占用
       await fillInput(page, SEL.currentPasswordForUsername, 'whatever-old')
-      await clickDialogConfirm(page)
+      await clickProfileSave(page)
 
-      const dialogOpen = await page.evaluate(`!!document.querySelector('[data-slot="dialog-content"]')`)
-      if (!dialogOpen) failures.push('登录名被占用时对话框应保持打开（并提示原因）')
+      const stillOpen = await page.evaluate(`!!document.querySelector('#account-username')`)
+      if (!stillOpen) failures.push('登录名被占用时表单应保持展开（并提示原因）')
       const persisted = (await readPersistedOrg(page)) ?? ''
       if (persisted.includes('"username":"alice.chen"') && !persisted.includes('admin@example.com')) {
         failures.push('占用他人登录名却被写入')
@@ -364,26 +521,23 @@ const CASES = [
     },
   },
   {
-    name: '改登录名：校验通过后落库，摘要与左下角身份同步',
-    path: '/t/acme_hq',
-    expectPath: '/t/acme_hq',
+    name: '改登录名：校验通过后落库，页面收起并同步',
+    path: '/profile',
+    expectPath: '/profile',
     custom: async (page) => {
       const failures = []
-      await openUserMenu(page)
-      await clickItem(page, SEL.changeUsername, '修改登录名入口')
+      await expandSection(page, SEL.editUsername, '修改登录名入口')
       await fillInput(page, SEL.usernameInput, 'admin.root')
       await fillInput(page, SEL.currentPasswordForUsername, 'whatever-old')
-      await clickDialogConfirm(page)
+      await clickProfileSave(page)
 
-      // 对话框应关闭，摘要应刷新成新登录名
-      const closed = await waitFor('对话框关闭', async () => {
-        return (await page.evaluate(`!!document.querySelector('[data-slot="dialog-content"]')`)) === false
+      const collapsed = await waitFor('表单收起', async () => {
+        return (await page.evaluate(`!!document.querySelector('#account-username')`)) === false
       }, { timeout: 5000 }).catch(() => false)
-      if (!closed) failures.push('保存成功后对话框未关闭')
+      if (!collapsed) failures.push('保存成功后折叠区未收起')
 
-      await openUserMenu(page)
       const shown = await page.evaluate(`document.querySelector('[data-user-menu="username"]')?.textContent?.trim() ?? null`)
-      if (shown !== 'admin.root') failures.push(`摘要应显示新登录名 admin.root，实际：${shown}`)
+      if (shown !== 'admin.root') failures.push(`详情应显示新登录名 admin.root，实际：${shown}`)
 
       const persisted = (await readPersistedOrg(page)) ?? ''
       if (!persisted.includes('"username":"admin.root"')) failures.push('新登录名未写入 localStorage')
@@ -391,43 +545,35 @@ const CASES = [
     },
   },
   {
-    name: '改口令：两次不一致被拦',
-    path: '/t/acme_hq',
-    expectPath: '/t/acme_hq',
+    name: '改口令：行内输入 → 两次不一致被拦',
+    path: '/profile',
+    expectPath: '/profile',
     custom: async (page) => {
       const failures = []
-      await openUserMenu(page)
-      await clickItem(page, SEL.changePassword, '修改口令入口')
-      await fillInput(page, SEL.currentPasswordInput, 'whatever-old')
       await fillInput(page, SEL.nextPasswordInput, 'newpassword1')
       await fillInput(page, SEL.confirmPasswordInput, 'newpassword2')
-      await clickDialogConfirm(page)
-
-      const dialogOpen = await page.evaluate(`!!document.querySelector('[data-slot="dialog-content"]')`)
-      if (!dialogOpen) failures.push('两次口令不一致时对话框应保持打开')
+      await clickPasswordSubmit(page)
+      const persisted = (await readPersistedOrg(page)) ?? ''
+      if (persisted.includes('passwordUpdatedAt')) failures.push('两次口令不一致却写入了 passwordUpdatedAt')
       return failures
     },
   },
   {
-    name: '改口令：成功后只记时间戳，localStorage 无口令字段',
-    path: '/t/acme_hq',
-    expectPath: '/t/acme_hq',
+    name: '改口令：行内一致后只记时间戳，localStorage 无口令字段',
+    path: '/profile',
+    expectPath: '/profile',
     custom: async (page) => {
       const failures = []
-      await openUserMenu(page)
-      await clickItem(page, SEL.changePassword, '修改口令入口')
-      await fillInput(page, SEL.currentPasswordInput, 'whatever-old')
       await fillInput(page, SEL.nextPasswordInput, 'newpassword1')
       await fillInput(page, SEL.confirmPasswordInput, 'newpassword1')
-      await clickDialogConfirm(page)
+      await clickPasswordSubmit(page)
 
-      const closed = await waitFor('对话框关闭', async () => {
-        return (await page.evaluate(`!!document.querySelector('[data-slot="dialog-content"]')`)) === false
+      await waitFor('口令状态刷新', async () => {
+        const s = await page.evaluate(`document.querySelector('[data-user-menu="password-state"]')?.textContent?.trim() ?? null`)
+        return s && !/not set/i.test(s)
       }, { timeout: 5000 }).catch(() => false)
-      if (!closed) failures.push('保存成功后对话框未关闭')
 
       const persisted = (await readPersistedOrg(page)) ?? ''
-      // 口令只以「最近修改时间」的形式存在，明文口令绝不落盘
       for (const forbidden of [...FORBIDDEN_PASSWORD_TEXT, 'newpassword1', 'whatever-old']) {
         if (persisted.toLowerCase().includes(forbidden.toLowerCase())) {
           failures.push(`localStorage 里出现了口令文本 ${forbidden}（口令不进前端状态）`)
@@ -435,8 +581,6 @@ const CASES = [
       }
       if (!persisted.includes('passwordUpdatedAt')) failures.push('passwordUpdatedAt 时间戳未写入')
 
-      // 摘要行的口令状态应刷新成一个时间（不再是「未设置」）
-      await openUserMenu(page)
       const state = await page.evaluate(`document.querySelector('[data-user-menu="password-state"]')?.textContent?.trim() ?? null`)
       if (!state || /not set/i.test(state)) failures.push(`口令状态应刷新为时间，实际：${state}`)
       return failures
