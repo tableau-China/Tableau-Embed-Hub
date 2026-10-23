@@ -3,7 +3,7 @@
 # Tableau Embed Hub 生产镜像（纯静态 SPA：Node 构建 → nginx 运行）
 #
 # 构建（VITE_* 是**构建期**变量，必须在这里传，运行时 -e 无效）：
-#   docker build -t tableau-embed-hub:0.13.4 \
+#   docker build -t tableau-embed-hub:0.14.0 \
 #     --build-arg VITE_TABLEAU_SERVER_URL=https://your-site.online.tableau.com \
 #     --build-arg VITE_TABLEAU_SITE_NAME=your_site \
 #     --build-arg VITE_TABLEAU_SITE_CONTENT_URL=your_site \
@@ -15,7 +15,7 @@
 #     .
 #
 # 运行：
-#   docker run --rm -p 8080:80 tableau-embed-hub:0.13.4
+#   docker run --rm -p 8080:80 tableau-embed-hub:0.14.0
 #   curl -fsS http://127.0.0.1:8080/healthz
 #
 # ⚠️ 纯前端无法保管 secret：build-arg 会出现在镜像历史里，且值会内联进 JS bundle。

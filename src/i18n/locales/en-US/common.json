@@ -188,7 +188,23 @@
     "languageHint": "Switched from the header",
     "teams": "Teams",
     "teamsHint": "You sit above teams — the role you hold can differ from team to team.",
-    "manageUsers": "Manage users"
+    "manageUsers": "Manage users",
+    "personalInfo": "Personal info",
+    "passwordNotSet": "Not set",
+    "currentPassword": "Current password",
+    "currentPasswordRequired": "Enter your current password",
+    "currentPasswordHint": "Required to confirm it is really you — a real backend verifies it here.",
+    "changeUsername": "Change username",
+    "changeUsernameTitle": "Change username",
+    "changeUsernameHint": "Your username is the account's primary identifier. Changing it drifts existing sessions and historical ownership, so it needs your current password.",
+    "usernameSaved": "Username updated",
+    "changePassword": "Change password",
+    "changePasswordTitle": "Change password",
+    "changePasswordHint": "Changing the password invalidates existing sessions in a real backend. The password itself is never shown or stored here.",
+    "passwordMinHint": "At least {{count}} characters.",
+    "passwordSameAsCurrent": "The new password is the same as the current one",
+    "passwordConfirmHint": "Type the new password again — passwords are invisible, so a typo locks you out.",
+    "passwordSaved": "Password updated"
   },
   "config": {
     "subtitle": "System-wide settings for this deployment"

@@ -60,6 +60,25 @@
 - **护栏**：不能冻结自己（会把自己当场锁在外面）；不能冻结**最后一名未冻结的系统管理员**（否则没人能再解冻）。
 - **与删除的差别**：冻结保留账号与它的团队关系，解冻即恢复；删除是销毁账号。
 
+## 2.5 登录名的修改边界（v0.14.0 起）
+
+登录名（`OrgUser.username`）是账号的**主键口径**：登录、日志、按录入人隔离的业务归属都认它。
+与 `name`（展示名，可中文、可重名）刻意分开 —— 展示名随便改，登录名一改，已发出的会话与历史业务数据的归属就全漂了。
+
+| 场景 | 能不能改 | 在哪改 | 说明 |
+| --- | --- | --- | --- |
+| 本人自助 | ✅ 可以 | 左下角用户菜单 →「个人信息」→「修改登录名」（`components/org/account-dialogs.tsx`） | **必须填当前口令**：改登录名等同于一次敏感操作重新认证，不能只靠「浏览器里还开着这个页面」就放行 |
+| 管理员改别人 | ❌ 不可以 | ——（`/users` 的编辑弹窗刻意没有这个字段） | 管理员侧只给改姓名 / 邮箱 / 状态 / 是否系统管理员 |
+| 新建用户 | ✅ 建号时定 | `/users` 新建弹窗（`UserFormDialog`） | 建号时必填，落库后即固定 |
+
+- **唯一性校验**：前端 `usernameIssue(username, users, excludeUserId)`（大小写不敏感，`excludeUserId` 让自己保留原值不算占用），
+  **store 里再兜一层** —— `updateUser({ username })` 遇重复 / 非法字符直接**抛错**（与 `addUser` 同一口径）。
+  真实系统里这靠数据库 UNIQUE 约束，前端两道只是少一次往返。
+- **缩写与登录名解耦**：`initials` 只跟随 `name` 重算（`updateUser` 里按新姓名派生），**不跟随登录名** ——
+  缩写是给人看的展示名投影，登录名是机器认的标识。
+- **接后端**：本人自助改登录名 → `PUT /api/me/username`（入参带 `password` 做重新认证）；
+  管理员重置口令 → `PUT /api/users/{id}/password`（不需要旧口令）。两个接口的鉴权语义不同，不要合并成一个。
+
 ## 3. 团队冻结（仅系统管理员可进入）
 
 - **数据值**：`OrgTeam.suspended: boolean`（默认 `false`；`createTeam` 落库时显式写入）。
@@ -82,6 +101,7 @@
 | `OrgUser.username` | 唯一索引 + `USERNAME_PATTERN` | 前端 `usernameIssue()` 只是少一次往返，真正校验在服务端 |
 | `OrgTeam.suspended` | `suspended_at TIMESTAMP NULL`（或 `is_suspended BOOL`） | 前端布尔化即可；冻结时间戳可用于审计 |
 | `TeamMember(teamId,userId,role,isDefault)` | 唯一约束 `(team_id,user_id)` | 归属不变量建议同时用数据库约束兜底（见下） |
+| `OrgUser.username` 自助修改 | `PUT /api/me/username`（带 `password` 重新认证） | 前端唯一性只是少一次往返，真正的约束在数据库 UNIQUE |
 | 归属不变量 | `user` 表 / 触发器保证至少一条成员关系 | 前端已有护栏；后端最好有同等约束，否则接口层能绕过 |
 
 ## 5. 改这块代码时的自查清单
@@ -91,5 +111,6 @@
 - [ ] 新增状态徽章 / 状态文案？→ 用 `USER_STATUS_LABEL_KEYS` 与 `t('users.frozen')`，别新造词。
 - [ ] 动了持久化字段？→ 升 `persist.version` 并补一段 `migrate`（v1/v2 的老数据仍要能升上来）。
 - [ ] 新增/调整删除或冻结入口？→ 默认团队（创建最早）**不可删也不可冻结**；含「唯一归属」成员的团队不可删 —— 三类原因分别提示。
+- [ ] 新增「改登录名 / 改口令」的入口？→ 本人自助必须校验当前口令（见 §2.5）；管理员重置不要旧口令，两者别合并。
 - [ ] 新增文案？→ `pnpm check:i18n:keys`（`scripts/check-i18n-keys.mjs`）会检查「代码在用、词典缺失」的 key，
       避免界面上直接把 key 名渲染出来。

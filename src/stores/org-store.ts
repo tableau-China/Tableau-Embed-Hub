@@ -42,7 +42,11 @@ export interface OrgUser {
   username: string
   name: string
   email: string
-  /** 头像缩略字（如 AC）；新建用户时按姓名自动生成 */
+  /**
+   * 头像缩略字（如 AC）；新建用户时按姓名自动生成。
+   * **改姓名时会跟着重算**（`updateUser` 里按新姓名派生），改登录名不动它 ——
+   * 缩写是给人看的展示名投影，与登录名（机器认的标识）无关。
+   */
   initials: string
   /** true = 全局系统管理员（用户层级高于 team，可管理所有用户/团队） */
   isSystemAdmin: boolean
@@ -451,7 +455,16 @@ interface OrgState {
     /** 在初始团队中的岗位，默认 viewer（最小权限） */
     role?: TeamRole
   }) => OrgUser | null
-  updateUser: (id: number, patch: Partial<Pick<OrgUser, 'name' | 'email' | 'initials' | 'isSystemAdmin' | 'status'>>) => void
+  /**
+   * 更新用户资料。`username`（登录名）只对**本人自助修改**开放，且调用方必须先校验唯一性
+   * （`usernameIssue(..., excludeUserId)`）：登录名是账号的主键口径（见 `OrgUser.username` 注释），
+   * 改一次，已发出的会话与历史业务数据的归属就全漂了 —— 因此管理员侧的表单**不给改**它，
+   * 本人侧也要校验当前口令后才允许改。
+   *
+   * 口令不在这里改：本人自助改密走 `setOwnPassword()`，管理员重置走 `setUserPassword()`，
+   * 两个动作的鉴权语义不同（一个校验旧口令、一个不需要），不要合并。
+   */
+  updateUser: (id: number, patch: Partial<Pick<OrgUser, 'name' | 'email' | 'username' | 'initials' | 'isSystemAdmin' | 'status'>>) => void
   /**
    * 冻结 / 解冻用户：冻结把 `status` 置为 `disabled`，**该用户无法登录**；
    * 账号本身与它的团队关系都保留（与删除账号是两件事）。
@@ -468,6 +481,14 @@ interface OrgState {
    * 接后端时把这个动作内部换成 `PUT /api/users/{id}/password` 即可，调用方无需改动。
    */
   setUserPassword: (id: number) => void
+  /**
+   * 本人自助改密（左下角「个人信息」入口，需要先校验当前口令）。
+   *
+   * 与 `setUserPassword()` 的区别只在**鉴权语义**：一个校验旧口令、一个不需要。
+   * 演示态同样只记录时间戳（`passwordUpdatedAt`），不保存口令 —— 接后端时内部换成
+   * `PUT /api/me/password`（`{ oldPassword, newPassword }`）即可，调用方无需改动。
+   */
+  setOwnPassword: (id: number) => void
 
   /**
    * 新建团队。`slug` 由调用方（新建表单）提供并已通过 `teamSlugIssue` 校验：
@@ -613,6 +634,19 @@ export const useOrgStore = create<OrgState>()(
       },
 
       updateUser: (id, patch) => {
+        const username =
+          patch.username !== undefined ? patch.username.trim() : undefined
+        // 登录名唯一性在 store 里再兜一层（大小写不敏感）—— 与 addUser 同一口径。
+        // 真实系统靠数据库 UNIQUE 约束，演示态没有数据库；不兜的话会静默产生两个"同一个人"。
+        if (username !== undefined) {
+          const problem = usernameIssue(username, get().users, id)
+          if (problem === 'empty' || problem === 'charset') {
+            throw new Error(`Invalid username: ${username}`)
+          }
+          if (problem === 'taken') {
+            throw new Error(`Username already taken: ${username}`)
+          }
+        }
         set((s) => ({
           users: s.users.map((u) => {
             if (u.id !== id) return u
@@ -621,6 +655,8 @@ export const useOrgStore = create<OrgState>()(
               ...u,
               ...patch,
               name,
+              // 缩写跟着**姓名**重算；登录名不参与（它是机器认的标识，不是展示名）
+              username: username ?? u.username,
               initials: patch.name !== undefined ? initialsOf(patch.name) : u.initials,
             }
           }),
@@ -679,6 +715,17 @@ export const useOrgStore = create<OrgState>()(
       setUserPassword: (id) => {
         // 刻意不接收、也不保存口令：口令只应写后端。这里做的只是把「刚刚重置过」这件事
         // 记下来（真实系统里这个时间戳同样有用 —— 用来判断「改密后旧会话是否该失效」）。
+        set((s) => ({
+          users: s.users.map((u) =>
+            u.id === id ? { ...u, passwordUpdatedAt: new Date().toISOString() } : u,
+          ),
+        }))
+      },
+
+      // 与 setUserPassword 同一形状（演示态同样只记时间戳），单独一个动作是为了让
+      // 「本人改密要校验旧口令」这件事在类型上就有落点：将来接后端时改的是这两个动作的
+      // **内部**（一个 PUT /api/users/{id}/password、一个 PUT /api/me/password），调用方不变。
+      setOwnPassword: (id) => {
         set((s) => ({
           users: s.users.map((u) =>
             u.id === id ? { ...u, passwordUpdatedAt: new Date().toISOString() } : u,

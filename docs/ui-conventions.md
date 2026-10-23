@@ -1,6 +1,6 @@
 # 页面与组件约定（UI Conventions）
 
-> v0.7.0 起（v0.10.0 增补筛选栏，2026-10-20 增补可复制 Toast）。适用对象：**在这个模板上新增页面 / 新增表单 / 新增列表的人**。
+> v0.7.0 起（v0.10.0 增补筛选栏，2026-10-20 增补可复制 Toast，2026-10-23 增补口令输入框与「个人信息」区块）。适用对象：**在这个模板上新增页面 / 新增表单 / 新增列表的人**。
 > 相关文件：`src/components/page-container.tsx`、`src/components/form-field.tsx`、`src/components/note-callout.tsx`、
 > `src/components/description-list.tsx`、`src/components/action-bar.tsx`、`src/components/filter-bar.tsx`、
 > `src/components/ui/sonner.tsx`、`src/lib/clipboard.ts`、
@@ -83,6 +83,49 @@ const handleSave = () => {
 - **复合控件**（Radix `Select`、`InputGroup`）自己不落 DOM，传 `injectProps={false}`，把 `id` / `aria-*`
   显式写到真正的 DOM 节点（`SelectTrigger` / `InputGroupInput`）上；
 - 校验结果的呈现分两处：`issue.level = 'error'` 红字拦保存，`'warning'` 琥珀字放行但提醒。
+
+### 口令输入框（带「眼睛」按钮）
+
+口令类字段要能「看一眼再确认」，否则敲错一个字符的后果是本人登录不上，而**界面永不回显已保存的口令**。
+用 `InputGroup` + 右侧眼睛按钮（`/config/smtp` 与左下角「个人信息 → 修改口令」同一套写法）：
+
+```tsx
+const [show, setShow] = useState(false)
+
+{/* 复合控件：injectProps={false}，id 显式写在真正的 DOM 节点上 */}
+<div className="grid gap-2">
+  <Label htmlFor="x-password">{t('x.password')}</Label>
+  <InputGroup>
+    <InputGroupInput
+      id="x-password"
+      type={show ? 'text' : 'password'}
+      value={password}
+      onChange={(e) => setPassword(e.target.value)}
+      autoComplete="new-password"
+    />
+    <InputGroupAddon align="inline-end">
+      <InputGroupButton
+        size="icon-xs"
+        onClick={() => setShow((v) => !v)}
+        aria-label={show ? t('smtp.hidePassword') : t('smtp.showPassword')}
+      >
+        {show ? <EyeOff /> : <Eye />}
+      </InputGroupButton>
+    </InputGroupAddon>
+  </InputGroup>
+  <p id="x-password-message" className="text-muted-foreground text-xs">
+    {t('x.passwordHint')}
+  </p>
+</div>
+```
+
+三条要点：
+
+- `id` 写在 `InputGroupInput` 上（`FormField` 的注入对复合控件无效，所以这里**不套 FormField**，
+  label / 说明行手写，`aria-describedby` 指向说明行的 `id`）；
+- `aria-label` 复用 `smtp.showPassword` / `smtp.hidePassword` 两个既有 key，别为同一种交互造第二套文案；
+- **不要给已保存的口令做「显示」按钮** —— 口令不进前端状态，没有可显示的东西（见 `docs/org-rules.md` §2.5）。
+  这里的眼睛只服务于「正在输入的新口令」。
 
 ## 4. 其他通用件
 

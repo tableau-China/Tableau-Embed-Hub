@@ -57,7 +57,7 @@ pnpm check:bundle   # 体积门禁（需先 build；读 dist/.vite/manifest.json
 ## 4. Docker
 
 ```bash
-docker build -t tableau-embed-hub:0.13.4 \
+docker build -t tableau-embed-hub:0.14.0 \
   --build-arg VITE_TABLEAU_SERVER_URL=https://your-site.online.tableau.com \
   --build-arg VITE_TABLEAU_SITE_NAME=your_site \
   --build-arg VITE_TABLEAU_SITE_CONTENT_URL=your_site \
@@ -68,7 +68,7 @@ docker build -t tableau-embed-hub:0.13.4 \
   --build-arg VITE_ERROR_REPORT_URL=https://errors.example.com/collect \
   .
 
-docker run --rm -p 8080:80 tableau-embed-hub:0.13.4
+docker run --rm -p 8080:80 tableau-embed-hub:0.14.0
 curl -fsS http://127.0.0.1:8080/healthz   # → ok
 ```
 

@@ -6,6 +6,7 @@
 
 | 版本 | package.json | 侧边栏显示 | PROGRESS.md | CHANGELOG 条目 | 日期 |
 | --- | --- | --- | --- | --- | --- |
+| 0.14.0 | ✅ `0.14.0` | ✅ `v0.14.0`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0140---2026-10-23) | 2026-10-23 |
 | 0.13.4 | ✅ `0.13.4` | ✅ `v0.13.4`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0134---2026-10-20) | 2026-10-20 |
 | 0.13.3 | ✅ `0.13.3` | ✅ `v0.13.3`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0133---2026-10-12) | 2026-10-12 |
 | 0.13.2 | ✅ `0.13.2` | ✅ `v0.13.2`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0132---2026-10-12) | 2026-10-12 |
@@ -36,6 +37,53 @@
 
 > 📌 **0.13.1 的范围**：把 2026-10-09 与 2026-10-11 两条「未发布」内容线**一起收口**（TS 7 dev 刷新、README 排版重做、
 > 登录框「纸上语言」换装），并补上 README 宣传向重构、页面截图、`@/` 别名修复与文档绝对路径订正。
+
+## [0.14.0] - 2026-10-23
+
+### Added（新增）：左下角「个人信息」—— 摘要展示 + 自助改登录名 / 改口令
+
+背景：左下角用户菜单此前只有「Profile」（跳页）与「切换用户」两项，看不到「我是谁」的关键信息，
+更没有自己改登录名 / 口令的入口（管理员能在 `/users` 改别人的姓名邮箱，但改不了任何人的登录名与口令）。
+本版把这两件事收在左下角：**一段只读摘要 + 两个自助动作**。
+
+| 文件 | 改动 |
+| --- | --- |
+| `src/components/org/user-menu.tsx` | 新增「个人信息」区块：登录名（等宽字体）/ 显示名 / 全局角色 / **口令状态**四行只读摘要；下方两个入口「修改登录名」「修改口令」。口令**只报状态**（`passwordUpdatedAt` 时间戳或「未设置」），永不回显 |
+| `src/components/org/account-dialogs.tsx` | **新增**两个自助对话框：`ChangeUsernameDialog`（新登录名 + **当前口令**，校验唯一性与字符集）、`ChangePasswordDialog`（当前口令 + 新口令两次输入，最短 8 位，新口令框带眼睛按钮）。表单形状按真实后端设计（`PUT /api/me/username` / `PUT /api/me/password`），接后端时只换动作内部 |
+| `src/stores/org-store.ts` | `updateUser()` 的 patch 新增 `username` 通道，并在 store 内做唯一性兜底（大小写不敏感，`usernameIssue(..., excludeUserId)`，重复 / 非法字符**抛错**）；新增 `setOwnPassword()` 动作（与管理员重置的 `setUserPassword()` 同形状，只记时间戳） |
+| `src/i18n/locales/en-US/common.json` | `profile` 段新增 16 个 key：`personalInfo` / `passwordNotSet` / `currentPassword`(×3) / `changeUsername`(×3) / `changePassword`(×3) / `passwordMinHint` / `passwordSameAsCurrent` / `passwordConfirmHint` |
+| `src/stores/org-store.test.ts` | 新增 6 个单测：登录名大小写不敏感撞名被拒、**保留自己的登录名不算占用**、非法字符集被拒、合法新登录名落库且不动姓名派生的缩写、`setOwnPassword` 只记时间戳且账号对象无口令字段、只改指定账号 |
+| `scripts/check-account.mjs` | **新增** CDP 行为校验（`pnpm check:account`，6 用例）：摘要内容与「口令不回显」、改登录名不填口令被拦 / 撞名被拦 / 成功后落库且摘要同步、改口令两次不一致被拦 / 成功后**localStorage 里不出现任何口令文本** |
+| `package.json` / `.github/workflows/ci.yml` | 新增 `check:account` 脚本并加入 CI 的 ui-checks job |
+
+### Changed（变更）
+
+- **`/users` 的编辑弹窗仍然不给改登录名与口令** —— 那是管理员视角；登录名的自助修改统一走左下角「个人信息」，
+  两处入口刻意分开（管理员重置不需要旧口令，本人自助必须校验旧口令，语义不同）。
+- `docs/ui-conventions.md` §3 增补「复合控件 + 眼睛按钮」的接线范例（新口令输入框）。
+- `docs/org-rules.md` 增补「登录名的修改边界」一节：唯一性在 store 兜底、改登录名必须校验当前口令、
+  `OrgUser.username` 的注释同步说明缩写与登录名解耦。
+- 版本号 0.13.4 → **0.14.0**（`package.json` / `src/config/app.ts` / `README.md` / `README.en.md` / `Dockerfile` / `docs/deployment.md` / `PROGRESS.md` / `CHANGELOG.md`）。
+
+### 口令边界（本版刻意不做的事）
+
+- **口令不进前端状态**：与 v0.8.0 的管理员重置同一口径 —— 演示态只写 `passwordUpdatedAt` 时间戳，
+  明文口令既不渲染、也不落 localStorage。`check:account` 有一条用例**直接查 localStorage** 断言这一点。
+- **不伪造登录态**：当前口令在演示态无后端可校验，输入框照收（保持与真实后端一致的形状），
+  但界面上如实说明「真实后端在此校验」。
+
+### Verification（验证）
+
+| 验证 | 命令 | 结果 |
+| --- | --- | --- |
+| 单测 | `pnpm test` | 130 passed（12 文件，新增 6 个） |
+| 类型检查 | `pnpm typecheck` | 通过 |
+| Lint | `pnpm lint` | 0 error / 23 warning（与改动前基线一致，无新增） |
+| 静态校验 | `check:i18n` / `check:i18n:keys` / `check:routes` | 全绿；`--unused` 无新增死 key |
+| 生产构建 | `pnpm build` | 通过 |
+| 体积门禁 | `pnpm check:bundle` | 首屏 229.8 KB gzip（预算 260 KB） |
+| 新功能行为 | `pnpm check:account` | **6/6 通过**（连跑 3 次稳定） |
+| 回归 | `pnpm check:permissions` | 15/15 通过（左下角 Profile 入口未被破坏） |
 
 ## [0.13.4] - 2026-10-20
 

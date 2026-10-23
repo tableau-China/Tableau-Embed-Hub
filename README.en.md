@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/tableau-China/Tableau-Embed-Hub/actions/workflows/ci.yml/badge.svg)](https://github.com/tableau-China/Tableau-Embed-Hub/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
-[![Version](https://img.shields.io/badge/version-0.13.4-informational.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.14.0-informational.svg)](./CHANGELOG.md)
 [![React 19](https://img.shields.io/badge/React-19-087ea4.svg)](https://react.dev)
 [![TypeScript 7](https://img.shields.io/badge/TypeScript-7-3178c6.svg)](https://www.typescriptlang.org)
 [![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4-38bdf8.svg)](https://tailwindcss.com)
@@ -135,6 +135,7 @@ pnpm dev            # → http://127.0.0.1:5174
 | AI assistant | `/ai` | Sidebar → AI | All members (demo provider when no proxy is configured) |
 | Users / Teams / Permissions | `/users`, `/teams`, `/permissions` | Sidebar → Settings | Members (permissions page: system admins only) |
 | Profile | `/profile` | Sidebar footer user menu | All members (renamed from `/settings` in v0.7.0) |
+| Personal info (summary + change username / password) | Block inside the footer user menu | Sidebar footer user menu | All members (since v0.14.0; the password shows status only, never the value) |
 | SMTP | `/config/smtp` | Sidebar → Config | System admins only (fail-closed) |
 | Login page | `/login` | Direct / "Open preview" from the config page | **No permission needed** (pre-login, bare layout) |
 | Login page config | `/config/login` | Sidebar → Config | System admins only (fail-closed) |
