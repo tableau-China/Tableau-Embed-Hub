@@ -1,7 +1,7 @@
 {
   "name": "tableau-embed-hub",
   "private": true,
-  "version": "0.14.0",
+  "version": "0.14.1",
   "packageManager": "pnpm@12.9.1",
   "type": "module",
   "description": "开源的多团队管理后台 + Tableau 嵌入可视化起点：把 Tableau Cloud / Tableau Server 的工作簿与视图嵌进自己的产品（React 19 + shadcn/ui + Tailwind v4 + TanStack Router，含团队作用域路由与页面级权限）",

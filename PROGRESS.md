@@ -11,8 +11,49 @@
 - **多机副本**：本仓库在**多台 Mac 上各有一份工作副本**（同一远端 `origin/main`，内容一致），各自的绝对路径不同。
   文档一律不写机器绝对路径：命令都在**仓库根目录**下执行即可；「上次是在哪台机器改的」这类信息对复现没有价值，
   写进文档只会让另一台机器上的人误以为目录失效（本节曾踩过这个坑，2026-10-11 订正）。
-- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.14.0**）。
+- **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.14.1**）。
 - **项目更名**（2026-10-09）：`shadcn-admin-cn` → 仓库/包名 **`tableau-embed-hub`**、显示名 **`Tableau Embed Hub`**（主打「Tableau 嵌入可视化」，品牌唯一来源仍是 `src/config/app.ts`）。localStorage 前缀同步改为 `tableau-embed-hub`，旧 key 保留并由 `src/lib/storage-migration.ts` 一次性迁移；细节见 CHANGELOG.md 的 `0.13.0` / `0.13.1` 节。
+
+---
+
+## ✅ v0.14.1 — 缩略图卡片图标按钮的可访问性修复（2026-10-23）
+
+背景：`src/components/thumbnail-card.tsx` 的收藏 / 置顶 / Info / ⋯菜单 6 个控件都是
+`<span role='button' tabIndex={0}>` 手写实现。这类写法只响应 Enter、**不响应空格**，且没有可访问名 ——
+星标与图钉是纯图标控件，读屏只能报出「按钮」两个字；切换型控件也没有 `aria-pressed`。
+另有个 4 overlay 变体渲染在 `<Link>` 内部，属交互元素嵌套进链接，靠 `preventDefault` 打补丁掩盖结构问题。
+
+### 落点
+
+| 文件 | 改动 |
+| --- | --- |
+| `src/components/thumbnail-card.tsx` | 6 个 `span role='button'` → 原生 `<button>`；删掉 6 段手写 `onKeyDown`（Space 交给浏览器）；星标 / 图钉补 `aria-pressed` + `aria-label` + `title`（复用既有 `thumbnailCard.favorite`/`unfavorite`/`pin`/`unpin`）；`InfoPopover` / `MoreMenu` 改用 `PopoverTrigger asChild` / `DropdownMenuTrigger asChild` + `<Button>`，Radix 自动挂 `aria-expanded`/`aria-controls`/`aria-haspopup`；overlay 尺寸映射到既有 `icon-xs`/`icon-sm`，视觉不变 |
+| `src/components/thumbnail-card.tsx` | `SelectionCheckbox` 的 `aria-label` 由硬编码中文 `'选择卡片'` 改为 i18n key（界面语言仅 en-US，中文串会漏到英文界面） |
+| `src/i18n/locales/en-US/common.json` | 新增 `thumbnailCard.selectCard` / `viewDetails` / `moreActions` |
+| `README.md` / `README.en.md` | `pnpm test` 用例数 113 → 130（0.14.0 加了 6 个 org-store 用例后漏更新） |
+| `docs/deployment.md` | 错误上报负载示例的 `"version"` 0.13.4 → 0.14.1 |
+| 版本 | 0.14.0 → **0.14.1** |
+
+### 踩坑记录（2026-10-23）
+
+| 现象 | 原因 | 修法 |
+| --- | --- | --- |
+| `git stash pop` 后 7 个文件冲突 | 本机改动基于 0.13.4，上游已发 0.14.0；冲突全是我那版**作废的 0.13.5 版本号**与上游 0.14.0 打架 | 版本号一律取上游；`package.json` 一度被 `checkout --theirs` 取成 stash 基线（d5ed101），**弄丢了上游新增的 `check:account` script** —— 改用 `git checkout 424c45f -- <file>` 精确取上游 blob |
+| README 用例数改成 124 后又不对 | 先在 0.13.4 基线上实测是 124，rebase 到 0.14.0（+6 用例）后变成 130 | **版本号/计数类文档必须在 rebase 后重跑一次再定稿**，不能沿用 rebase 前的实测值 |
+
+### ✅ 验证（2026-10-23 实测）
+
+| 验证 | 命令 | 结果 |
+| --- | --- | --- |
+| 单测 | `pnpm test` | 130 passed（12 文件） |
+| 类型检查 | `pnpm typecheck` | 通过 |
+| Lint | `pnpm lint` | 0 error / 17 warning（全部既有 `react-refresh/only-export-components`） |
+| 静态校验 | `check:i18n` / `check:i18n:keys` / `check:routes` | 全绿（974 key） |
+| 生产构建 | `pnpm build` | 通过 |
+| 体积门禁 | `pnpm check:bundle` | PASS（预算内） |
+| 产物核对 | dev server 返回的 `thumbnail-card.tsx` | `role='button'` 6 → 0，`aria-pressed`/`aria-label` 各 +3/+5 |
+
+> ⚠️ 待办（不在本版范围）：① `scripts/check-account.mjs` **未在 `package.json` 注册 script**（上游 0.14.0 说注册了，实测没有），CI 的 ui-checks 也没跑它；② 上游 0.14.0 的 CHANGELOG 记 lint「23 warning」，本机实测 17。
 
 ---
 

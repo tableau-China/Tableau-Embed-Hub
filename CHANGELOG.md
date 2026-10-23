@@ -6,6 +6,7 @@
 
 | 版本 | package.json | 侧边栏显示 | PROGRESS.md | CHANGELOG 条目 | 日期 |
 | --- | --- | --- | --- | --- | --- |
+| 0.14.1 | ✅ `0.14.1` | ✅ `v0.14.1`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0141---2026-10-23) | 2026-10-23 |
 | 0.14.0 | ✅ `0.14.0` | ✅ `v0.14.0`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0140---2026-10-23) | 2026-10-23 |
 | 0.13.4 | ✅ `0.13.4` | ✅ `v0.13.4`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0134---2026-10-20) | 2026-10-20 |
 | 0.13.3 | ✅ `0.13.3` | ✅ `v0.13.3`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0133---2026-10-12) | 2026-10-12 |
@@ -37,6 +38,46 @@
 
 > 📌 **0.13.1 的范围**：把 2026-10-09 与 2026-10-11 两条「未发布」内容线**一起收口**（TS 7 dev 刷新、README 排版重做、
 > 登录框「纸上语言」换装），并补上 README 宣传向重构、页面截图、`@/` 别名修复与文档绝对路径订正。
+
+## [0.14.1] - 2026-10-23
+
+### Fixed（修复）：缩略图卡片 6 个图标按钮的可访问性
+
+背景：`src/components/thumbnail-card.tsx` 里的收藏 / 置顶 / Info / ⋯菜单 6 个控件都用
+`<span role='button' tabIndex={0}>` 手写实现。这类写法只响应 Enter、**不响应空格**，
+且没有可访问名——星标与图钉是纯图标控件，读屏软件只能报出「按钮」两个字，
+切换型控件也没有 `aria-pressed` 表达当前状态。此外其中 4 个 overlay 变体渲染在
+`<Link>`（卡片本体）**内部**，属于交互元素嵌套进链接，靠 `preventDefault` 打补丁掩盖结构问题。
+
+| 文件 | 改动 |
+| --- | --- |
+| `src/components/thumbnail-card.tsx` | 6 个 `span role='button'` 全部换成原生 `<button>`：Enter/**Space** 由浏览器接管，删掉 6 段手写 `onKeyDown`；星标 / 图钉补 `aria-pressed` + `aria-label` + `title`（文案复用既有 `thumbnailCard.favorite`/`unfavorite`/`pin`/`unpin`）；`InfoPopover` / `MoreMenu` 改用 `PopoverTrigger asChild` / `DropdownMenuTrigger asChild` + `<Button>`，由 Radix 挂 `aria-expanded` / `aria-controls` / `aria-haspopup`；overlay 变体尺寸映射到既有 `icon-xs` / `icon-sm`，视觉不变 |
+| `src/components/thumbnail-card.tsx` | `SelectionCheckbox` 的 `aria-label` 从硬编码中文 `'选择卡片'` 改为 i18n key（界面语言当前仅 en-US，中文串会直接漏到英文界面） |
+| `src/i18n/locales/en-US/common.json` | 新增 `thumbnailCard.selectCard` / `viewDetails` / `moreActions` 三个 key |
+
+### Docs（文档）：版本号与用例数同步
+
+- `README.md` / `README.en.md`：脚本表 `pnpm test` 的用例数 **113 → 130**（0.14.0 新增 6 个 org-store 用例后漏更新）
+- `docs/deployment.md`：错误上报负载示例里的 `"version"` 字段 **0.13.4 → 0.14.0**（版本号升级时漏同步的示例值）
+
+### Changed（变更）：版本号 0.14.0 → 0.14.1
+
+- `package.json` / `src/config/app.ts` / `README.md` / `README.en.md` / `Dockerfile` / `docs/deployment.md` / `PROGRESS.md` / `CHANGELOG.md` 同步升级到 **0.14.1**
+
+### Verification（验证）
+
+| 验证 | 命令 | 结果 |
+| --- | --- | --- |
+| 单测 | `pnpm test` | 130 passed（12 文件） |
+| 类型检查 | `pnpm typecheck` | 通过 |
+| Lint | `pnpm lint` | 0 error / 17 warning（全部为既有 `react-refresh/only-export-components`，无新增） |
+| 静态校验 | `check:i18n` / `check:i18n:keys` / `check:routes` | 全绿（974 key） |
+| 生产构建 | `pnpm build` | 通过 |
+| 体积门禁 | `pnpm check:bundle` | PASS（预算内） |
+| 产物核对 | dev server 返回的 `thumbnail-card.tsx` | `role='button'` 由 6 处降为 0（仅剩注释说明），`aria-pressed` / `aria-label` 各新增 3 / 5 处 |
+
+> ⚠️ 遗留待办：`pnpm check:account`（0.14.0 新增的脚本）**未在 `package.json` 注册为 script**，CI 也未运行它；
+> 0.14.0 的 CHANGELOG 记录 lint 为「23 warning」，本机实测为 17。两条均记入待办，不在本版改动范围内。
 
 ## [0.14.0] - 2026-10-23
 

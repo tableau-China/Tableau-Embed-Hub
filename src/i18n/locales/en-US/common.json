@@ -630,7 +630,10 @@
     "addedAt": "Added at",
     "accessedAt": "Last accessed",
     "project": "Project",
-    "id": "ID"
+    "id": "ID",
+    "selectCard": "Select card",
+    "viewDetails": "View details",
+    "moreActions": "More actions"
   },
   "components": {
     "subtitle": "Every shared building block: page shell, theme tokens, project composites and UI primitives",

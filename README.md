@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/tableau-China/Tableau-Embed-Hub/actions/workflows/ci.yml/badge.svg)](https://github.com/tableau-China/Tableau-Embed-Hub/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
-[![Version](https://img.shields.io/badge/version-0.14.0-informational.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.14.1-informational.svg)](./CHANGELOG.md)
 [![React 19](https://img.shields.io/badge/React-19-087ea4.svg)](https://react.dev)
 [![TypeScript 7](https://img.shields.io/badge/TypeScript-7-3178c6.svg)](https://www.typescriptlang.org)
 [![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4-38bdf8.svg)](https://tailwindcss.com)
@@ -228,7 +228,7 @@ DeepSeek / OpenAI / 多数网关都符合）即可换成真实模型。
 模板最容易腐烂的地方是「目录与代码各写一份」。所以这里把不变量都写成了可重跑的命令，并进 CI：
 
 ```bash
-pnpm test           # 113 个纯函数用例：权限语义 / 目录不变量 / SMTP 规则 / 环境变量口径
+pnpm test           # 130 个纯函数用例：权限语义 / 目录不变量 / SMTP 规则 / 环境变量口径
 pnpm check:routes   # 路由文件 ↔ 权限目录一致性（纯静态，阻塞 CI 的步骤）
 pnpm check:i18n:keys # 反向漏键：代码里在用的 key 是否都在词典里
 pnpm build && pnpm check:permissions   # 页面权限（真实 Chrome CDP 用例）

@@ -37,6 +37,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
 import { useQuery, type UndefinedInitialDataOptions } from '@tanstack/react-query'
@@ -199,65 +200,66 @@ function FavoriteButton({
   id,
   size = 'md',
   overlay = false,
+  label,
 }: {
   isFavorited: boolean
   onToggle: (id: string, isFavorited: boolean) => void
   id: string
   size?: 'sm' | 'md'
   overlay?: boolean
+  /** 可访问名（Toggle button 的 accessible name；aria-pressed 表达状态） */
+  label: string
 }) {
   const starColor = isFavorited ? 'fill-amber-500 text-amber-500' : 'text-muted-foreground'
   const iconSize = size === 'sm' ? 'h-3 w-3' : 'h-4 w-4'
 
+  // 原生 <button>：Enter/Space 由浏览器处理，toggle 语义用 aria-pressed 表达
+  // （原来是 span role='button' —— 不响应空格，也没有可访问名）
+  const shared = {
+    type: 'button' as const,
+    'aria-pressed': isFavorited,
+    'aria-label': label,
+    title: label,
+  }
+
   if (overlay) {
-    const posClasses = size === 'sm' ? 'top-1 left-1 p-1' : 'top-2 left-2 p-1.5'
+    const posClasses = size === 'sm' ? 'top-1 left-1' : 'top-2 left-2'
     return (
-      <span
-        role='button'
-        tabIndex={0}
-        className={`absolute ${posClasses} z-10 rounded-full cursor-pointer transition-all ${
+      <Button
+        {...shared}
+        variant='ghost'
+        size={size === 'sm' ? 'icon-xs' : 'icon-sm'}
+        className={`absolute ${posClasses} z-10 rounded-full p-1 transition-all ${
           isFavorited
-            ? 'bg-amber-500 text-white opacity-100'
+            ? 'bg-amber-500 text-white opacity-100 hover:bg-amber-500 hover:text-white'
             : 'bg-black/50 text-white/70 opacity-0 group-hover:opacity-100 hover:text-white hover:bg-black/70'
         }`}
         onClick={(e) => {
+          // 卡片本体是 <Link>：不拦住冒泡/默认行为会连跳转一起触发
           e.stopPropagation()
           e.preventDefault()
           onToggle(id, isFavorited)
         }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.stopPropagation()
-            e.preventDefault()
-            onToggle(id, isFavorited)
-          }
-        }}
       >
         <Star className={`${iconSize} ${isFavorited ? 'fill-current' : ''}`} />
-      </span>
+      </Button>
     )
   }
 
   return (
-    <span
-      role='button'
-      tabIndex={0}
-      className='flex-shrink-0 p-0.5 text-muted-foreground hover:text-foreground cursor-pointer transition-colors'
+    <Button
+      {...shared}
+      variant='ghost'
+      size={size === 'sm' ? 'icon-xs' : 'icon-sm'}
+      className='flex-shrink-0 p-1 text-muted-foreground hover:text-foreground'
       onClick={(e) => {
         e.stopPropagation()
         e.preventDefault()
         onToggle(id, isFavorited)
       }}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') {
-          e.stopPropagation()
-          e.preventDefault()
-          onToggle(id, isFavorited)
-        }
-      }}
     >
       <Star className={`${iconSize} ${starColor}`} />
-    </span>
+    </Button>
   )
 }
 
@@ -268,65 +270,65 @@ function PinButton({
   id,
   size = 'md',
   overlay = false,
+  label,
 }: {
   isPinned: boolean
   onToggle: (id: string, isPinned: boolean) => void
   id: string
   size?: 'sm' | 'md'
   overlay?: boolean
+  /** 可访问名（aria-pressed 表达状态） */
+  label: string
 }) {
   const iconSize = size === 'sm' ? 'h-3 w-3' : 'h-4 w-4'
 
+  // 原生 <button>：Enter/Space 由浏览器处理（原来是 span role='button'，空格无效）
+  const shared = {
+    type: 'button' as const,
+    'aria-pressed': isPinned,
+    'aria-label': label,
+    title: label,
+  }
+
   if (overlay) {
-    const posClasses = size === 'sm' ? 'top-1 right-1 p-1' : 'top-2 right-2 p-1.5'
+    const posClasses = size === 'sm' ? 'top-1 right-1' : 'top-2 right-2'
     return (
-      <span
-        role='button'
-        tabIndex={0}
-        className={`absolute ${posClasses} z-10 rounded-full cursor-pointer transition-all ${
+      <Button
+        {...shared}
+        variant='ghost'
+        size={size === 'sm' ? 'icon-xs' : 'icon-sm'}
+        className={`absolute ${posClasses} z-10 rounded-full p-1 transition-all ${
           isPinned
-            ? 'bg-primary text-primary-foreground opacity-100'
-            : 'bg-black/50 text-white/70 opacity-0 group-hover:opacity-100 hover:text-white'
+            ? 'bg-primary text-primary-foreground opacity-100 hover:bg-primary hover:text-primary-foreground'
+            : 'bg-black/50 text-white/70 opacity-0 group-hover:opacity-100 hover:text-white hover:bg-black/70'
         }`}
         onClick={(e) => {
+          // 卡片本体是 <Link>：不拦住冒泡/默认行为会连跳转一起触发
           e.stopPropagation()
           e.preventDefault()
           onToggle(id, isPinned)
         }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.stopPropagation()
-            e.preventDefault()
-            onToggle(id, isPinned)
-          }
-        }}
       >
         <Pin className={iconSize} />
-      </span>
+      </Button>
     )
   }
 
   const pinColor = isPinned ? 'text-primary' : 'text-muted-foreground'
   return (
-    <span
-      role='button'
-      tabIndex={0}
-      className='flex-shrink-0 p-0.5 text-muted-foreground hover:text-foreground cursor-pointer transition-colors'
+    <Button
+      {...shared}
+      variant='ghost'
+      size={size === 'sm' ? 'icon-xs' : 'icon-sm'}
+      className='flex-shrink-0 p-1 text-muted-foreground hover:text-foreground'
       onClick={(e) => {
         e.stopPropagation()
         e.preventDefault()
         onToggle(id, isPinned)
       }}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') {
-          e.stopPropagation()
-          e.preventDefault()
-          onToggle(id, isPinned)
-        }
-      }}
     >
       <Pin className={`${iconSize} ${pinColor}`} />
-    </span>
+    </Button>
   )
 }
 
@@ -335,15 +337,19 @@ function SelectionCheckbox({
   id,
   isSelected,
   onToggle,
+  label,
 }: {
   id: string
   isSelected: boolean
   onToggle: (id: string, isSelected: boolean) => void
+  /** 可访问名（i18n，不写死中文） */
+  label: string
 }) {
   return (
     <div
       className='absolute top-2 left-2 z-10'
       onClick={(e) => {
+        // 卡片本体是 <Link>：这一层只挡事件，Checkbox 自己照常响应点击
         e.stopPropagation()
         e.preventDefault()
       }}
@@ -351,7 +357,7 @@ function SelectionCheckbox({
       <Checkbox
         checked={isSelected}
         onCheckedChange={() => onToggle(id, isSelected)}
-        aria-label='选择卡片'
+        aria-label={label}
       />
     </div>
   )
@@ -362,10 +368,13 @@ function InfoPopover({
   title,
   description,
   metaRows,
+  triggerLabel,
 }: {
   title: string
   description?: React.ReactNode
   metaRows?: MetaRow[]
+  /** 触发器的可访问名 */
+  triggerLabel: string
 }) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
@@ -373,16 +382,18 @@ function InfoPopover({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <span
-          role='button'
-          tabIndex={0}
-          className='flex-shrink-0 p-0.5 text-muted-foreground hover:text-foreground cursor-pointer transition-colors'
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') setOpen(true)
-          }}
+        {/* 原生 <button>：Radix 的 asChild 会把 aria-expanded / aria-controls 挂到它上面。
+            原来是 span role='button' + 手写 onKeyDown，Space 无效且状态不外露。 */}
+        <Button
+          type='button'
+          variant='ghost'
+          size='icon-sm'
+          aria-label={triggerLabel}
+          title={triggerLabel}
+          className='flex-shrink-0 p-1 text-muted-foreground hover:text-foreground'
         >
           <Info className='h-4 w-4' />
-        </span>
+        </Button>
       </PopoverTrigger>
       <PopoverContent
         align='start'
@@ -419,17 +430,22 @@ function InfoPopover({
 }
 
 /** 更多菜单 */
-function MoreMenu({ items }: { items: MenuItemConfig[] }) {
+function MoreMenu({ items, triggerLabel }: { items: MenuItemConfig[]; triggerLabel: string }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <span
-          role='button'
-          tabIndex={0}
-          className='flex-shrink-0 p-0.5 text-muted-foreground hover:text-foreground cursor-pointer transition-colors'
+        {/* 原生 <button>：Radix 的 asChild 会把 aria-expanded / aria-haspopup 挂到它上面。
+            原来是 span role='button' —— Space 无效，也没有可访问名。 */}
+        <Button
+          type='button'
+          variant='ghost'
+          size='icon-sm'
+          aria-label={triggerLabel}
+          title={triggerLabel}
+          className='flex-shrink-0 p-1 text-muted-foreground hover:text-foreground'
         >
           <MoreHorizontal className='h-4 w-4' />
-        </span>
+        </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end'>
         {items.map((item, i) => (
@@ -557,10 +573,24 @@ export function ThumbnailCard({
             <p className='text-white text-sm font-medium truncate'>{name}</p>
           </div>
           {showFavorite && onToggleFavorite && (
-            <FavoriteButton id={id} isFavorited={isFavorited} onToggle={onToggleFavorite} size={btnSize} overlay />
+            <FavoriteButton
+              id={id}
+              isFavorited={isFavorited}
+              onToggle={onToggleFavorite}
+              size={btnSize}
+              overlay
+              label={t(isFavorited ? 'thumbnailCard.unfavorite' : 'thumbnailCard.favorite')}
+            />
           )}
           {showPin && onTogglePin && (
-            <PinButton id={id} isPinned={isPinned} onToggle={onTogglePin} size={btnSize} overlay />
+            <PinButton
+              id={id}
+              isPinned={isPinned}
+              onToggle={onTogglePin}
+              size={btnSize}
+              overlay
+              label={t(isPinned ? 'thumbnailCard.unpin' : 'thumbnailCard.pin')}
+            />
           )}
           {isHot && (
             <div className='absolute top-1.5 right-1.5 bg-amber-500 text-white rounded shadow-sm p-0.5'>
@@ -580,13 +610,32 @@ export function ThumbnailCard({
         <div ref={thumbnailRef} className='bg-muted relative' style={{ aspectRatio: resolvedAspect }}>
           {thumbnailBody}
           {showFavorite && onToggleFavorite && (
-            <FavoriteButton id={id} isFavorited={isFavorited} onToggle={onToggleFavorite} size={btnSize} overlay />
+            <FavoriteButton
+              id={id}
+              isFavorited={isFavorited}
+              onToggle={onToggleFavorite}
+              size={btnSize}
+              overlay
+              label={t(isFavorited ? 'thumbnailCard.unfavorite' : 'thumbnailCard.favorite')}
+            />
           )}
           {showSelection && onToggleSelected && (
-            <SelectionCheckbox id={id} isSelected={isSelected} onToggle={onToggleSelected} />
+            <SelectionCheckbox
+              id={id}
+              isSelected={isSelected}
+              onToggle={onToggleSelected}
+              label={t('thumbnailCard.selectCard')}
+            />
           )}
           {showPin && onTogglePin && (
-            <PinButton id={id} isPinned={isPinned} onToggle={onTogglePin} size={btnSize} overlay />
+            <PinButton
+              id={id}
+              isPinned={isPinned}
+              onToggle={onTogglePin}
+              size={btnSize}
+              overlay
+              label={t(isPinned ? 'thumbnailCard.unpin' : 'thumbnailCard.pin')}
+            />
           )}
         </div>
       </Link>
@@ -606,9 +655,12 @@ export function ThumbnailCard({
               title={infoTitle || name}
               description={infoDescription}
               metaRows={infoMetaRows}
+              triggerLabel={t('thumbnailCard.viewDetails')}
             />
           )}
-          {allMenuItems.length > 0 && <MoreMenu items={allMenuItems} />}
+          {allMenuItems.length > 0 && (
+            <MoreMenu items={allMenuItems} triggerLabel={t('thumbnailCard.moreActions')} />
+          )}
         </div>
 
         {/* 第二行：subtitle */}
