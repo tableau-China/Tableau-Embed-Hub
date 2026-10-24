@@ -281,7 +281,7 @@ font rendering and have not been measured on Linux yet).
 | Layer | Choice | Version |
 | --- | --- | --- |
 | UI | React | 19.x |
-| Language | TypeScript | 7.1.0-dev.20261009.1 (native compiler, `next` channel; lint uses a TS 6 API alias — see below) |
+| Language | TypeScript | 7.1.0-dev.20261023.1 (native compiler, `next` channel; lint uses a TS 6 API alias — see below) |
 | Build | Vite | 8.x |
 | Styling | Tailwind CSS v4 + shadcn/ui (radix-nova preset) | 4.x |
 | Primitives | Radix UI | latest |
@@ -296,7 +296,7 @@ font rendering and have not been measured on Linux yet).
 
 | Package | Actually points at | Used by |
 | --- | --- | --- |
-| `@typescript/native` | `npm:typescript@7.1.0-dev.20261009.1` (`next` channel) | `tsc` — `pnpm typecheck` / `pnpm build` |
+| `@typescript/native` | `npm:typescript@7.1.0-dev.20261023.1` (`next` channel) | `tsc` — `pnpm typecheck` / `pnpm build` |
 | `typescript` | `npm:@typescript/typescript6@6.0.2` | `tsc6` — **only** typescript-eslint |
 
 typescript-eslint's peer range is still `>=4.8.4 <6.1.0`, so it **does not support TS 7**
@@ -366,7 +366,8 @@ cp .env.example .env      # .env is gitignored
 | `pnpm check:filters` | List filters (static self-check + 7 page cases incl. geometry; needs `pnpm build`) |
 | `pnpm check:smtp` | SMTP configuration (rule assertions + 6 page cases; needs `pnpm build`) |
 | `pnpm check:login` | Login page (domain assertions + 7 page cases: style switch, provider toggles, validation blocking, reset to defaults; needs `pnpm build`) |
-| `pnpm check:versions` | Dependency drift check against the registry `latest` tag (`--md` / `--json` / `--strict`) |
+| `pnpm check:versions` | Dependency drift check against the registry `latest` tag; prereleases (`-dev.` / `-beta.` / `-rc.`) are also compared against the `next` channel (`--md` / `--json` / `--strict`) |
+| `pnpm check:shadcn-drift` | Component drift check: compares every `src/components/ui/*` primitive against the upstream registry, auto-filtering local conventions (`cn` import path, no `"use client"`) so only real diffs are reported (read-only, ~2-3 min) |
 | `node scripts/capture-readme-shots.mjs` | Regenerate this README's four screenshots (needs `pnpm build`; writes to `docs/images/`) |
 
 CDP suites locate Chrome automatically (`CHROME_PATH` overrides), so they run on macOS and Linux/CI.

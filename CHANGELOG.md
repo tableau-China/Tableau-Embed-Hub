@@ -6,8 +6,7 @@
 
 | 版本 | package.json | 侧边栏显示 | PROGRESS.md | CHANGELOG 条目 | 日期 |
 | --- | --- | --- | --- | --- | --- |
-| 0.14.8 | ✅ `0.14.8` | ✅ `v0.14.8`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0148---2026-10-23) | 2026-10-23 |
-| 0.14.7 | ✅ `0.14.7` | ✅ `v0.14.7`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0147---2026-10-23) | 2026-10-23 |
+| 0.14.8 | ✅ `0.14.8` | ✅ `v0.14.8`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0148---2026-10-23) | 2026-10-23 || 0.14.7 | ✅ `0.14.7` | ✅ `v0.14.7`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0147---2026-10-23) | 2026-10-23 |
 | 0.14.6 | ✅ `0.14.6` | ✅ `v0.14.6`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0146---2026-10-23) | 2026-10-23 |
 | 0.14.5 | ✅ `0.14.5` | ✅ `v0.14.5`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0145---2026-10-23) | 2026-10-23 |
 | 0.14.4 | ✅ `0.14.4` | ✅ `v0.14.4`（`src/config/app.ts`） | ✅ 已同步 | ✅ [本节](#0144---2026-10-23) | 2026-10-23 |
@@ -47,6 +46,41 @@
 > 登录框「纸上语言」换装），并补上 README 宣传向重构、页面截图、`@/` 别名修复与文档绝对路径订正。
 
 ## [0.14.8] - 2026-10-23
+
+### Changed（依赖）：21 项依赖全量升级 + 修 nightly 巡检盲区 + 新增组件漂移巡检
+
+背景：`check:versions` 巡检报出 20 项待升级，另有 1 项 nightly 因脚本盲区被漏报。逐项核对上游
+changelog 确认无破坏性变更后一次升完，并补上两处巡检能力缺口。
+
+### 落点
+
+| 文件 | 改动 |
+| --- | --- |
+| `package.json` | 21 项依赖升级：radix-ui 1.6.7→1.8.1、lucide-react 1.49.0→**1.61.0**（12 个 minor，纯新增图标）、react/react-dom 19.3.1、react-i18next 17.1.5、i18next 26.5.7、shadcn 4.22.1、eslint 10.13.0、vite 8.3.5、globals 17.13.0、@tanstack/react-query / -devtools / eslint-plugin-query 5.104.5、@tanstack/react-router 1.170.46、@tanstack/router-plugin 1.168.48、zustand 5.0.16、jose 6.2.13、i18next-browser-languagedetector 8.2.2；跨范围 2 项改精确锁定（typescript-eslint 8.71.0→8.72.0、vitest 5.0.3→5.0.5，均无 major 跨越）；`@typescript/native` → `npm:typescript@7.1.0-dev.20261023.1`。`@types/node` 保持 `^24.19.0` 不动（登记暂缓：类型线不高于 Node 24 运行时） |
+| `scripts/check-versions.mjs` | **修 nightly 盲区**：本地装的是预发布版（`-dev.` / `-beta.` / `-rc.`）时，不再只比 `latest` dist-tag（该 tag 指向稳定线，semver 上预发布号必然更大，于是 nightly 永远被误判为「本地高于 latest」），改为额外查 `next` tag，且仅在同一条预发布线（major/minor/patch 与 `-` 前缀都相同）时才比对。修复后 `@typescript/native` 从「已最新」变为正确报出 14 个 nightly 的差距 |
+| `scripts/shadcn-drift.mjs` | **新增**（`pnpm check:shadcn-drift`）：把 `src/components/ui/*` 26 个原语逐个与上游 registry 比对，并自动过滤本项目**故意的本地约定**（`cn` 从 `@/lib/utils` 导入而非上游的 `cn` 包、无 `"use client"` 指令），只报实质漂移。当前 26 个组件零漂移 |
+| `src/components/org/team-switcher.tsx`、`src/routes/t.$teamSlug.tsx`、`src/routes/teams.tsx` | 冻结徽章图标 `PauseCircle` → `Snowflake`（lucide 1.x 的图标改名，与 lucide-react 1.61.0 配套） |
+| 版本 | 依赖线升级，应用版本 **0.14.8 不变** |
+
+### 设计说明
+
+| 决策 | 理由 |
+| --- | --- |
+| 不用 `pnpm update -r --latest` | 该命令会连带升 `@types/node` 到 26.6.5，违背已登记的暂缓理由（类型线高于运行时会写出「类型通过、运行时炸」的代码）。改用**精确包清单**逐项升级，暂缓项与跨范围项都可控 |
+| nightly 升级只动 `@typescript/native` 不动 `typescript` | `typescript`（TS 6 稳定线）是 typescript-eslint 的 peer 依赖（`>=4.8.4 <6.1.0`），越过 6.1 会直接破坏 lint；README「TypeScript 为什么装了两份」写明的两阶段路线不变 |
+| 升级前逐项核对上游 changelog | radix-ui 1.8.0 的 breaking 仅限 `unstable` 系列内部 API（本项目无使用）；lucide-react 1.50→1.61 全是新增图标；i18next / react-i18next 的破坏性变更都在 major（v25→v26 移除 `interpolation.format` 等），26.x / 17.x 线内无破坏 |
+| 组件漂移脚本必须过滤本地约定 | 不过滤时 26 个组件**全部**报「有差异」，逐条人工筛 `cn` 导入噪音不现实；过滤后才能真正看出有没有功能性漂移 |
+
+### 本地验证
+
+`tsc -b`（TS 7 nightly）与 `tsc6 -b`（TS 6 稳定线）双线 0 error；`eslint` 0 error（17 个既有 warning）；
+`vite build` 通过；`vitest` 130 passed（12 个文件）；`check:i18n` / `check:i18n:keys` / `check:routes` /
+`check:team-routes`(16/16) / `check:filters`(7/7) / `check:smtp`(6/6) / `check:bundle` 全绿；
+`check:versions` 巡检 40 个依赖**待升级 0**；`shadcn add <组件> --diff` 复查 26 个组件零实质漂移。
+
+> ⚠️ `check:permissions`(12/14) 与 `check:account`(5/8) 有失败项，**已用 stash 退回升级前依赖复跑验证为既有问题**，
+> 与本次升级无关（permissions：Help 页默认授权 + Config 分组缺 `/help`；account：/profile 三项页面用例）。
+
 
 ### Refined（版式）：/profile 视觉收尾 —— 去掉信息重复、统一四行表单节奏
 

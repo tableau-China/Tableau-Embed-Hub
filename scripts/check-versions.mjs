@@ -308,7 +308,6 @@ async function main() {
       installedVersion(dep.name),
       fetchJson(`${registry}/${dep.fetchName.startsWith('@') ? dep.fetchName.replace('/', '%2F') : dep.fetchName}/latest`),
     ])
-
     const row = {
       name: dep.name,
       section: dep.section,
@@ -341,6 +340,43 @@ async function main() {
     }
 
     const cmp = compare(vi, vl)
+    if (cmp > 0 && vi.pre) {
+      // 本地装的是预发布版（dev / beta / rc）。semver 上预发布号大于稳定版，
+      // 直接比 latest 会误判成"本地更高"。这类包要跟自己的发布线比：
+      // 查 next dist-tag（nightly/dev 线），拿同前缀的最新版比。
+      row.prerelease = true
+      const nextMeta = await fetchJson(
+        `${registry}/${dep.fetchName.startsWith('@') ? dep.fetchName.replace('/', '%2F') : dep.fetchName}/next`,
+      )
+      const nextVersion = nextMeta.ok ? (nextMeta.data.version ?? null) : null
+      const vn = parseVersion(nextVersion ?? '')
+      if (nextMeta.ok && nextVersion && vn && nextVersion !== installed) {
+        // next tag 是否和本地同一条预发布线？不同线（例如 next 指向别的 major）不比较。
+        const sameLine =
+          vi.pre.join('.').split('.')[0] === vn.pre?.join('.').split('.')[0] &&
+          vi.major === vn.major &&
+          vi.minor === vn.minor &&
+          vi.patch === vn.patch
+        if (sameLine) {
+          const cmpNext = compare(vi, vn)
+          if (cmpNext < 0) {
+            row.status = 'outdated'
+            row.latest = nextVersion
+            row.level = levelOf(vi, vn)
+            row.prereleaseChannel = 'next'
+            row.inRange = satisfiesRange(dep.range, nextVersion)
+            if (row.inRange === true) row.note = '预发布线有新 nightly，可升级（注意未经稳定线验证）'
+            else if (row.inRange === false) row.note = '预发布线有新 nightly，需改 package.json'
+            else row.note = '预发布线有新 nightly，范围无法解析，请人工确认'
+            return row
+          }
+        }
+      }
+      row.status = 'current'
+      row.note = `本地版本高于 registry latest（预发布/固定版${nextVersion && vn ? `，next=${nextVersion} 已是最新` : ''}）`
+      return row
+    }
+
     if (cmp >= 0) {
       row.status = 'current'
       if (cmp > 0) row.note = '本地版本高于 registry latest（预发布/固定版）'

@@ -242,7 +242,7 @@ CI 分两个 job：`ci` 跑路径守卫 / i18n / 路由目录 / 单测 / lint / 
 | 层 | 选型 | 版本 |
 | --- | --- | --- |
 | 框架 | React | 19.x |
-| 语言 | TypeScript | 7.1.0-dev.20261009.1（原生编译器，next 通道；lint 另走 TS 6 API 别名，见下） |
+| 语言 | TypeScript | 7.1.0-dev.20261023.1（原生编译器，next 通道；lint 另走 TS 6 API 别名，见下） |
 | 构建 | Vite | 8.x |
 | 样式 | Tailwind CSS v4 + shadcn/ui（radix-nova 预设） | 4.x |
 | 组件底层 | Radix UI | 最新 |
@@ -257,7 +257,7 @@ CI 分两个 job：`ci` 跑路径守卫 / i18n / 路由目录 / 单测 / lint / 
 
 | 包名 | 实际指向 | 谁在用 |
 | --- | --- | --- |
-| `@typescript/native` | `npm:typescript@7.1.0-dev.20261009.1`（next 通道） | `tsc` —— `pnpm typecheck` / `pnpm build` |
+| `@typescript/native` | `npm:typescript@7.1.0-dev.20261023.1`（next 通道） | `tsc` —— `pnpm typecheck` / `pnpm build` |
 | `typescript` | `npm:@typescript/typescript6@6.0.2` | `tsc6` —— **只**给 typescript-eslint 解析用 |
 
 typescript-eslint 的 peer 范围仍是 `>=4.8.4 <6.1.0`，**不支持 TS 7**
@@ -323,7 +323,8 @@ cp .env.example .env      # .env 已被 .gitignore 排除
 | `pnpm check:filters` | 列表筛选栏校验（i18n/选项来源静态自检 + 7 项页面用例，含宽窄屏几何断言；需先 `pnpm build`） |
 | `pnpm check:smtp` | SMTP 配置校验（规则断言 + 6 项页面用例；需先 `pnpm build`） |
 | `pnpm check:login` | 登录页校验（领域层规则断言 + 7 项页面用例：换样式 / provider 开关 / 校验拦截 / 恢复默认；需先 `pnpm build`） |
-| `pnpm check:versions` | 依赖版本巡检：对比 registry 的 latest，区分「`pnpm update` 即可」与「需改 package.json」；支持 `--md` / `--json` / `--strict` |
+| `pnpm check:versions` | 依赖版本巡检：对比 registry 的 latest，区分「`pnpm update` 即可」与「需改 package.json」；预发布版（`-dev.` / `-beta.` / `-rc.`）额外比对 `next` 通道；支持 `--md` / `--json` / `--strict` |
+| `pnpm check:shadcn-drift` | 组件漂移巡检：`src/components/ui/*` 逐个比对上游 registry，自动过滤本地约定（`cn` 导入路径、无 `"use client"`），只报实质差异（只读，约 2-3 分钟） |
 | `node scripts/capture-readme-shots.mjs` | 重新生成本文档的四张截图（需先 `pnpm build`；产物写入 `docs/images/`） |
 
 ## 文档地图

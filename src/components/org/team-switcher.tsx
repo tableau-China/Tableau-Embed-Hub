@@ -4,9 +4,9 @@ import {
   Building2,
   Check,
   ChevronsUpDown,
-  PauseCircle,
   Plus,
   ShieldAlert,
+  Snowflake,
 } from 'lucide-react'
 import { Link, useLocation, useNavigate } from '@tanstack/react-router'
 import { toast } from '@/components/ui/sonner'
@@ -173,7 +173,7 @@ export function TeamSwitcher() {
                     className="inline-flex shrink-0 items-center gap-1 rounded-md border border-rose-400/40 bg-rose-400/10 px-1.5 py-0.5 text-[10px] font-medium text-rose-700 dark:text-rose-300"
                     title={t('teams.suspendHint')}
                   >
-                    <PauseCircle className="size-2.5" />
+                    <Snowflake className="size-2.5" />
                     {t('teams.suspended')}
                   </span>
                 )}

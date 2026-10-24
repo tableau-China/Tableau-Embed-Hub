@@ -1,11 +1,14 @@
 allowBuilds:
   '@swc/core': true
 minimumReleaseAgeExclude:
-  - '@typescript/typescript-darwin-arm64@7.1.0-dev.20261009.1'
-  - '@typescript/typescript-darwin-x64@7.1.0-dev.20261009.1'
-  - '@typescript/typescript-linux-arm64@7.1.0-dev.20261009.1'
-  - '@typescript/typescript-linux-arm@7.1.0-dev.20261009.1'
-  - '@typescript/typescript-linux-x64@7.1.0-dev.20261009.1'
-  - '@typescript/typescript-win32-arm64@7.1.0-dev.20261009.1'
-  - '@typescript/typescript-win32-x64@7.1.0-dev.20261009.1'
-  - typescript@7.1.0-dev.20261009.1
+  - '@typescript/typescript-darwin-arm64@7.1.0-dev.20261009.1 || 7.1.0-dev.20261023.1'
+  - '@typescript/typescript-darwin-x64@7.1.0-dev.20261009.1 || 7.1.0-dev.20261023.1'
+  - '@typescript/typescript-linux-arm64@7.1.0-dev.20261009.1 || 7.1.0-dev.20261023.1'
+  - '@typescript/typescript-linux-arm@7.1.0-dev.20261009.1 || 7.1.0-dev.20261023.1'
+  - '@typescript/typescript-linux-x64@7.1.0-dev.20261009.1 || 7.1.0-dev.20261023.1'
+  - '@typescript/typescript-win32-arm64@7.1.0-dev.20261009.1 || 7.1.0-dev.20261023.1'
+  - '@typescript/typescript-win32-x64@7.1.0-dev.20261009.1 || 7.1.0-dev.20261023.1'
+  - typescript@7.1.0-dev.20261009.1 || 7.1.0-dev.20261023.1
+  - i18next-browser-languagedetector@8.2.2
+  - i18next@26.5.7
+  - react-i18next@17.1.5

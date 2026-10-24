@@ -5,10 +5,10 @@ import { toast } from '@/components/ui/sonner'
 import {
   Building2,
   Info,
-  PauseCircle,
   Pencil,
   Play,
   Plus,
+  Snowflake,
   Trash2,
   Users,
 } from 'lucide-react'
@@ -192,7 +192,7 @@ function TeamsPage() {
                               className="gap-1 border-rose-400/50 bg-rose-400/10 text-rose-700 dark:text-rose-300"
                               title={t('teams.suspendHint')}
                             >
-                              <PauseCircle className="size-3" />
+                              <Snowflake className="size-3" />
                               {t('teams.suspended')}
                             </Badge>
                           )}
@@ -272,7 +272,7 @@ function TeamsPage() {
                             {team.suspended ? (
                               <Play className="size-4" />
                             ) : (
-                              <PauseCircle className="size-4" />
+                              <Snowflake className="size-4" />
                             )}
                           </Button>
                           <Button

@@ -1,7 +1,7 @@
 import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AlertTriangle, Building2, PauseCircle, ShieldAlert } from 'lucide-react'
+import { AlertTriangle, Building2, ShieldAlert, Snowflake } from 'lucide-react'
 
 import { GuardCard, RouteForbidden } from '@/components/route-guard'
 import { Button } from '@/components/ui/button'
@@ -120,7 +120,7 @@ function TeamSuspended({ name }: { name: string }) {
 
   return (
     <GuardCard
-      icon={<PauseCircle className="size-6" />}
+      icon={<Snowflake className="size-6" />}
       title={t('teamRoute.suspendedTitle')}
       description={t('teamRoute.suspendedMessage', { name })}
     >
