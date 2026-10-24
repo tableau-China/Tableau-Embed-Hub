@@ -281,7 +281,7 @@ font rendering and have not been measured on Linux yet).
 | Layer | Choice | Version |
 | --- | --- | --- |
 | UI | React | 19.x |
-| Language | TypeScript | 7.1.0-dev.20261023.1 (native compiler, `next` channel; lint uses a TS 6 API alias — see below) |
+| Language | TypeScript | 7.1.0-beta (native compiler, `beta` channel; lint uses a TS 6 API alias — see below) |
 | Build | Vite | 8.x |
 | Styling | Tailwind CSS v4 + shadcn/ui (radix-nova preset) | 4.x |
 | Primitives | Radix UI | latest |
@@ -296,7 +296,7 @@ font rendering and have not been measured on Linux yet).
 
 | Package | Actually points at | Used by |
 | --- | --- | --- |
-| `@typescript/native` | `npm:typescript@7.1.0-dev.20261023.1` (`next` channel) | `tsc` — `pnpm typecheck` / `pnpm build` |
+| `@typescript/native` | `npm:typescript@7.1.0-beta` (`beta` channel) | `tsc` — `pnpm typecheck` / `pnpm build` |
 | `typescript` | `npm:@typescript/typescript6@6.0.2` | `tsc6` — **only** typescript-eslint |
 
 typescript-eslint's peer range is still `>=4.8.4 <6.1.0`, so it **does not support TS 7**
@@ -308,7 +308,7 @@ peer range alone would not make it work.
 **Roadmap (two phases)**
 
 1. **Once TypeScript 7.1 stable ships**: point `@typescript/native` at `npm:typescript@7.1.x` and leave
-   the `next` channel — still two installs, only the first moves from dev to stable.
+   the prerelease channels — still two installs, only the first moves from prerelease to stable.
 2. **Once upstream supports TS 7**: retire the TS 6 line, leaving a single TypeScript. Three conditions,
    all required: ① typescript-eslint's peer upper bound is ≥ 7; ② #10940 has landed in a stable release;
    ③ verified locally by running `pnpm typecheck` **and** `pnpm lint` on that single TypeScript.

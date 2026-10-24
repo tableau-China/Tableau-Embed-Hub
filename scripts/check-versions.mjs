@@ -373,7 +373,10 @@ async function main() {
         }
       }
       row.status = 'current'
-      row.note = `本地版本高于 registry latest（预发布/固定版${nextVersion && vn ? `，next=${nextVersion} 已是最新` : ''}）`
+      // next tag 与本地不是同一条预发布线时（例如本地 beta、next 指向 nightly），
+      // 那是不同通道，不能说"已是最新" —— 只说明本地在哪条线上、next 指向哪。
+      const channelHint = nextVersion && vn ? `，next=${nextVersion}（不同通道，不作比较）` : ''
+      row.note = `本地版本高于 registry latest（预发布/固定版${channelHint}）`
       return row
     }
 

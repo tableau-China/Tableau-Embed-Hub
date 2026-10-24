@@ -242,7 +242,7 @@ CI 分两个 job：`ci` 跑路径守卫 / i18n / 路由目录 / 单测 / lint / 
 | 层 | 选型 | 版本 |
 | --- | --- | --- |
 | 框架 | React | 19.x |
-| 语言 | TypeScript | 7.1.0-dev.20261023.1（原生编译器，next 通道；lint 另走 TS 6 API 别名，见下） |
+| 语言 | TypeScript | 7.1.0-beta（原生编译器，beta 通道；lint 另走 TS 6 API 别名，见下） |
 | 构建 | Vite | 8.x |
 | 样式 | Tailwind CSS v4 + shadcn/ui（radix-nova 预设） | 4.x |
 | 组件底层 | Radix UI | 最新 |
@@ -257,7 +257,7 @@ CI 分两个 job：`ci` 跑路径守卫 / i18n / 路由目录 / 单测 / lint / 
 
 | 包名 | 实际指向 | 谁在用 |
 | --- | --- | --- |
-| `@typescript/native` | `npm:typescript@7.1.0-dev.20261023.1`（next 通道） | `tsc` —— `pnpm typecheck` / `pnpm build` |
+| `@typescript/native` | `npm:typescript@7.1.0-beta`（beta 通道） | `tsc` —— `pnpm typecheck` / `pnpm build` |
 | `typescript` | `npm:@typescript/typescript6@6.0.2` | `tsc6` —— **只**给 typescript-eslint 解析用 |
 
 typescript-eslint 的 peer 范围仍是 `>=4.8.4 <6.1.0`，**不支持 TS 7**
@@ -267,7 +267,7 @@ typescript-eslint 的 peer 范围仍是 `>=4.8.4 <6.1.0`，**不支持 TS 7**
 
 **后续计划（两阶段）**
 
-1. **TS 7.1 正式版发布后**：把 `@typescript/native` 换成稳定版 `npm:typescript@7.1.x`，不再跟 next 通道 —— 此时**仍是两份**，只是第一份从 dev 换成 stable。
+1. **TS 7.1 正式版发布后**：把 `@typescript/native` 换成稳定版 `npm:typescript@7.1.x`，不再跟预发布通道 —— 此时**仍是两份**，只是第一份从 prerelease 换成 stable。
 2. **等上游支持 TS 7 后**：**逐步替换掉 TS 6 这条线**，最终只留一份 TypeScript。判据三条，缺一不可：
    ① typescript-eslint 的 peer 上限 ≥ 7；② #10940 已合入并随 stable 发布；③ 实测用同一份 TS 跑
    `pnpm typecheck` + `pnpm lint` 全绿（peer 只是声明，跑得通才算）。

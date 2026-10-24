@@ -47,6 +47,24 @@
 
 ## [0.14.8] - 2026-10-23
 
+### Changed（依赖）：TS 7 切到 beta 通道 + i18next 新 patch
+
+`@typescript/native` 从 nightly `7.1.0-dev.20261023.1` 切到 `7.1.0-beta`（10-20 发布）。beta 比 nightly
+平台覆盖更全（21 vs 7 个原生二进制，多出 aix/sunos/loong64/riscv64 等 14 个），是临近发布的补全信号；
+代价是比 nightly 少 4 天修复。另升 i18next 26.5.10 / react-i18next 17.1.8。应用版本仍为 0.14.8。
+
+| 文件 | 改动 |
+| --- | --- |
+| `package.json` | `@typescript/native` → `npm:typescript@7.1.0-beta`（nightly → beta 通道切换）；i18next 26.5.7→26.5.10、react-i18next 17.1.5→17.1.8 |
+| `scripts/check-versions.mjs` | 订正预发布线提示：本地 beta 而 `next` 指向 nightly 时，原输出「next=… 已是最新」有误导——那是不同通道。改为「next=…（不同通道，不作比较）」 |
+| `README.md` / `README.en.md` / `PROGRESS.md` | TS 版本号与通道描述同步为 beta；两阶段路线「不再跟 next 通道」→「不再跟预发布通道」 |
+
+验证：`tsc --version` = `7.1.0-beta`；`tsc -b`（beta）与 `tsc6 -b`（TS 6）双线 0 error；`eslint` 0 error；
+`vite build` 通过；`vitest` 130 passed；check:i18n / check:i18n:keys / check:routes / check:team-routes(16/16) /
+check:filters(7/7) / check:smtp(6/6) / check:bundle 全绿；`check:versions` 40 个依赖待升级 0。
+
+> `pnpm-workspace.yaml` 无需再为 TS 7 加 release-age 豁免：beta 已发布 4 天，越过 pnpm 12 默认 1440 分钟门槛。
+
 ### Changed（依赖）：21 项依赖全量升级 + 修 nightly 巡检盲区 + 新增组件漂移巡检
 
 背景：`check:versions` 巡检报出 20 项待升级，另有 1 项 nightly 因脚本盲区被漏报。逐项核对上游
