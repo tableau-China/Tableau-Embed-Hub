@@ -16,6 +16,27 @@
 
 ---
 
+## 🔧 2026-10-27 — 修两条自检脚本的失效断言（不涉应用代码）
+
+背景：`check:account` 5/8、`check:permissions` 12/14 长期红着。查下来**不是应用回归**，
+而是 v0.14.2–v0.14.8 改版后脚本断言/harness 没跟着改（脚本最后修改停在 `5fce6c7`）。
+
+| 文件 | 问题 | 修法 |
+| --- | --- | --- |
+| `scripts/check-permissions.mjs` | 仍断言 `/help` 在侧边栏 Config 分组里 | `/help` 自 v0.14.4 起 `navHidden`（入口在左下角用户菜单）：去掉 `linkPresent: '/help'`，Config 顺序期望改为 `SMTP → 登录页 → Components`，并断言 `/help` **不应**出现在该分组 |
+| `scripts/check-account.mjs` | ① `order` 先 map 成 `el.id` 字符串，外层又对字符串调 `.getAttribute()` → `TypeError`；② `clickProfileSave` 用「含 input 的行」当展开区判据，把范围错误锁到口令行，卡片底部的 Save 永远找不到；③ 用 `textContent` 读只读 `<input>` 的登录名，恒为空串 | ① 按选择器 + 文档顺序取 id；② 优先折叠区内按钮、兜底全页找 Save；③ 改读 `.value` |
+
+### 本地验证
+
+`check:account` **8/8**、`check:permissions` **15/15**、`check:team-routes` 16/16、
+`check:versions` 正常、`check:shadcn-drift` 26 组件 0 实质漂移；
+`tsc -b`、`eslint`（0 error / 17 既有 warning）、`vitest` 130/130 全通过。
+
+> 教训：改「侧边栏 / 表单结构」这类 UI 时，同一提交里就把对应 `check:*` 断言一起改掉，
+> 否则脚本会静默变成"描述旧界面"的文档，红着也没人分清是应用坏了还是脚本旧了。
+
+---
+
 ## ✅ v0.14.8 — /profile 视觉收尾（2026-10-23）
 
 背景：功能已通，但还有三处「像没做完」：横幅重复 username/email；口令区是唯一不走的 `field` 块，

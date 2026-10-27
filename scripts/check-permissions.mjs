@@ -615,7 +615,8 @@ const CASES = [
       await switchUser(page, 'Alice Chen')
     },
     contains: [APP_NAME, 'Core features', APP_AUTHOR, APP_WEBSITE_LABEL, 'v', 'Third-party notices', 'Salesforce'],
-    linkPresent: '/help',
+    // v0.14.4 起 /help 是 navHidden：入口在左下角用户菜单，不在侧边栏；
+    // 因此不再断言侧边栏 linkPresent，可达性与内容由 path/contains/custom 保证。
     custom: async (page) => {
       const failures = []
       const version = await page.evaluate(
@@ -744,11 +745,11 @@ const CASES = [
   },
   {
     // 侧边栏顺序属于「产品决定」而非样式细节，用用例钉住整个 Config 分组：
-    // **系统配置在前（SMTP → 登录页）、说明书在后（Components → Help）**。
-    // 顺序沿革：v0.12.0 加入登录页；2026-10-09 起 Help 从「紧跟 SMTP」挪到分组最末
-    //（Help 是收尾页：核心功能 / 版本 / 第三方版权，排在 Components 之后读起来更顺）。
+    // **系统配置在前（SMTP → 登录页）、组件页在后（Components）**。
+    // 顺序沿革：v0.12.0 加入登录页；v0.14.4 起 Help 移出侧边栏、改挂左下角用户菜单
+    //（Help 是收尾页：核心功能 / 版本 / 第三方版权），故分组只剩三项。
     // 组内其它条目（将来新增的）不影响结论，但顺序错位会立刻报出来。
-    name: '侧边栏 Config 分组顺序：SMTP → 登录页 → Components → Help',
+    name: '侧边栏 Config 分组顺序：SMTP → 登录页 → Components',
     path: '/t/acme_hq',
     custom: async (page) => {
       const order = await page.evaluate(`(() => {
@@ -760,10 +761,11 @@ const CASES = [
         return [...target.querySelectorAll('a[href]')].map((a) => a.getAttribute('href'))
       })()`)
       if (order === null) return ['侧边栏里未找到 Config 分组']
-      const expected = ['/config/smtp', '/config/login', '/components', '/help']
-      const picked = order.filter((href) => expected.includes(href))
+      const expected = ['/config/smtp', '/config/login', '/components']
+      // /help 自 v0.14.4 起 navHidden（入口在左下角用户菜单），不在侧边栏 Config 分组内
+      const picked = order.filter((href) => expected.includes(href) || href === '/help')
       if (JSON.stringify(picked) !== JSON.stringify(expected)) {
-        return [`Config 分组顺序应为 ${JSON.stringify(expected)}，实际：${JSON.stringify(order)}`]
+        return [`Config 分组顺序应为 ${JSON.stringify(expected)}（/help 已移入用户菜单，不应在此），实际：${JSON.stringify(order)}`]
       }
       return []
     },

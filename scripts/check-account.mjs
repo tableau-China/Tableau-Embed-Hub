@@ -300,11 +300,20 @@ async function readPersistedOrg(page) {
  * 所以作用域取「展开的那一行」优先，找不到再退回整页的 Save。
  */
 async function clickProfileSave(page) {
+  /**
+   * 优先点「当前展开的那一行」里的保存按钮（改登录名的表单把按钮放在折叠区内），
+   * 但展开区的判据必须是**折叠容器本身**（[data-profile-row]），不能是「含 input」——
+   * 登录名行的 #profile-username 是常驻只读输入框，用它做判据会把范围错误地锁到
+   * 口令行，导致卡片底部的「Save changes」永远找不到（曾因此误报「未找到保存按钮」）。
+   * 兜底：全页找 Save 按钮（显示名称 / 邮箱的保存条在卡片底部，不在任何折叠区内）。
+   */
   const clicked = await page.evaluate(`(() => {
-    const openRow = [...document.querySelectorAll('[data-profile-row]')].find((r) => r.querySelector('input'))
-    const scope = openRow ?? document
-    const buttons = [...scope.querySelectorAll('button')]
-    const save = buttons.filter((b) => /save/i.test(b.textContent ?? '')).pop()
+    const inRow = [...document.querySelectorAll('[data-profile-row]')]
+      .flatMap((r) => [...r.querySelectorAll('button')])
+      .filter((b) => /save/i.test(b.textContent ?? '')).pop()
+    const anywhere = [...document.querySelectorAll('button')]
+      .filter((b) => /save/i.test(b.textContent ?? '')).pop()
+    const save = inRow ?? anywhere
     if (!save) return 'missing'
     save.click()
     return 'ok'
@@ -411,7 +420,8 @@ const CASES = [
         return {
           path: location.pathname,
           displayName: q('[data-profile="display-name"]')?.textContent?.trim() ?? null,
-          username: q('[data-user-menu="username"]')?.textContent?.trim() ?? null,
+          // [data-user-menu="username"] 是只读 <input>：值在 .value，textContent 恒为空串
+          username: q('[data-user-menu="username"]')?.value?.trim() || null,
           passwordState: q('[data-user-menu="password-state"]')?.textContent?.trim() ?? null,
           hasNameInput: !!q('#profile-name'),
           hasEmailInput: !!q('#profile-email'),
@@ -426,9 +436,15 @@ const CASES = [
           hasManageUsers: /Manage users/i.test(text),
           /** 卡片数：四块资料必须同在一张卡里（v0.14.3 合并），页面只该剩下「Your details」+「Teams」两张 */
           cardTitles: [...document.querySelectorAll('[data-slot="card-title"]')].map((el) => el.textContent.trim()),
-          /** 页面里字段/动作的 DOM 顺序（用于断言「显示名称 → 登录名 → 邮箱 → 口令」） */
-          order: [...new Set([...document.querySelectorAll('#profile-username, #profile-name, #profile-email')].map((el) => el.id))]
-            .map((el) => el.id || el.getAttribute('data-profile-action').replace('edit-', 'edit-')),
+          /**
+           * 页面里字段的 DOM 顺序（用于断言「登录名 → 显示名称 → 邮箱」）。
+           * 不能先 map 成 id 再对字符串调 getAttribute —— 那样必然抛 TypeError。
+           * 这里直接按「选择器列出的元素 + 文档顺序」取 id。
+           */
+          order: ['profile-username', 'profile-name', 'profile-email']
+            .map((id) => document.getElementById(id))
+            .filter((el) => el !== null)
+            .map((el) => el.id),
           // 折叠态下不应已经渲染表单输入框
           hasUsernameForm: !!q('#account-username'),
           text,
@@ -536,7 +552,8 @@ const CASES = [
       }, { timeout: 5000 }).catch(() => false)
       if (!collapsed) failures.push('保存成功后折叠区未收起')
 
-      const shown = await page.evaluate(`document.querySelector('[data-user-menu="username"]')?.textContent?.trim() ?? null`)
+      // 只读 <input> 的值在 .value，textContent 恒为空串
+      const shown = await page.evaluate(`document.querySelector('[data-user-menu="username"]')?.value?.trim() || null`)
       if (shown !== 'admin.root') failures.push(`详情应显示新登录名 admin.root，实际：${shown}`)
 
       const persisted = (await readPersistedOrg(page)) ?? ''
