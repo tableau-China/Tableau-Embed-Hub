@@ -19,6 +19,10 @@
  *
  * 已知暂缓的包写在 package.json 的 checkVersions.hold 里（包名 → 理由），
  * 这类包不再出现在「待升级」清单里，改为单独列出，避免每周重复误报。
+ *
+ * ⚠️ 暂缓**只挡跨 major**（如 @types/node 24 → 26）：那才是「类型/接口面换了一代」的
+ * 跳跃，需要人工评估运行时对齐。同一个 major 内的 patch/minor 属于同代修正，照常报出来
+ * —— 否则整条被屏蔽，连 24.19.0 → 24.19.2 这种范围内补丁都永远看不见（2026-10-29 修）。
  */
 
 import { readFile } from 'node:fs/promises'
@@ -312,6 +316,7 @@ async function main() {
       name: dep.name,
       section: dep.section,
       spec: dep.spec,
+      range: dep.range,
       fetchName: dep.fetchName,
       alias: dep.fetchName !== dep.name ? dep.fetchName : null,
       installed,
@@ -395,20 +400,47 @@ async function main() {
     return row
   })
 
-  // package.json → checkVersions.hold 里登记的包：已知暂缓，不当作待升级重复报
+  // package.json → checkVersions.hold 里登记的包：已知暂缓，不当作待升级重复报。
+  // 只挡跨 major —— 同 major 的 patch/minor 是同一代的修正，必须照常报出来，
+  // 否则整条被屏蔽，连范围内补丁（如 @types/node 24.19.0 → 24.19.2）都永远看不见。
   const holds = pkg.checkVersions?.hold ?? {}
   for (const row of results) {
-    if (row.status === 'outdated' && holds[row.name]) {
-      row.status = 'held'
-      row.holdReason = holds[row.name]
-      row.note = `已登记暂缓：${holds[row.name]}`
+    if (row.status !== 'outdated' || !holds[row.name]) continue
+    if (row.level !== 'major') {
+      // 同 major：不暂缓，但要说明为什么这条没被 hold 挡住
+      row.note = `${row.note}（暂缓只挡跨 major，本项属同代修正）`
+      continue
     }
+    row.status = 'held'
+    row.holdReason = holds[row.name]
+    row.note = `已登记暂缓：${holds[row.name]}`
   }
 
   const outdated = results.filter((r) => r.status === 'outdated')
   const held = results.filter((r) => r.status === 'held')
   const inRange = outdated.filter((r) => r.inRange === true)
   const outOfRange = outdated.filter((r) => r.inRange !== true)
+
+  /**
+   * 暂缓包只挡跨 major，但上面只查了 /latest —— 对 @types/node 这类「latest 永远是下一个
+   * major」的包，范围内的补丁（24.19.0 → 24.19.2）会被永久遮住。这里为**暂缓包**额外拉一次
+   * 版本清单，算出「声明范围内可升到的最高版本」，让同代修正照常可见。
+   * 只对暂缓包发请求（当前就 1 个），不拖慢整体巡检。
+   */
+  await mapPool(held, Math.min(concurrency, 4), async (row) => {
+    const range = row.range
+    const url = `${registry}/${row.fetchName.startsWith('@') ? row.fetchName.replace('/', '%2F') : row.fetchName}`
+    const res = await fetchJson(url)
+    if (!res.ok) return
+    const best = Object.keys(res.data.versions ?? {})
+      .filter((v) => !v.includes('-') && satisfiesRange(range, v))
+      .sort((a, b) => compare(parseVersion(a), parseVersion(b)))
+      .pop()
+    if (best && compare(parseVersion(best), parseVersion(row.installed)) > 0) {
+      row.inRangeMax = best
+    }
+  })
+
   const summary = {
     total: results.length,
     outdated: outdated.length,
@@ -456,7 +488,10 @@ async function main() {
     ]
     if (held.length) {
       lines.push('', '**已登记暂缓**（不算待升级）：', '')
-      for (const r of held) lines.push(`- \`${r.name}\` ${r.installed} → ${r.latest}：${r.holdReason}`)
+      for (const r of held) {
+        const sameMajor = r.inRangeMax ? `（同 major 可升到 ${r.inRangeMax}）` : ''
+        lines.push(`- \`${r.name}\` ${r.installed} → ${r.latest}：${r.holdReason}${sameMajor}`)
+      }
     }
     if (summary.unknown) {
       lines.push('', '**未能判定：**', '', ...results.filter((r) => r.status === 'unknown').map((r) => `- \`${r.name}\`：${r.note}`))
@@ -490,7 +525,10 @@ async function main() {
     }
     if (held.length) {
       lines.push('', '已登记暂缓（不算待升级）：')
-      for (const r of held) lines.push(`  - ${r.name}：${r.installed} → ${r.latest} — ${r.holdReason}`)
+      for (const r of held) {
+        const sameMajor = r.inRangeMax ? `（同 major 可升到 ${r.inRangeMax}）` : ''
+        lines.push(`  - ${r.name}：${r.installed} → ${r.latest} — ${r.holdReason}${sameMajor}`)
+      }
     }
     if (summary.unknown) {
       lines.push('', '未能判定：')

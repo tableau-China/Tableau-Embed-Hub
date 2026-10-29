@@ -251,7 +251,7 @@ CI 分两个 job：`ci` 跑路径守卫 / i18n / 路由目录 / 单测 / lint / 
 | 国际化 | i18next + react-i18next | 26.x（当前仅 en-US，后期扩展） |
 | 状态 | zustand（本地持久化） | 5.x |
 | 包管理 | pnpm | 12.9.1（`package.json` 的 `packageManager` 锁定，CI 同版本） |
-| 运行时 | Node.js | 24（本地与 CI 一致，`@types/node` 对齐 24 线） |
+| 运行时 | Node.js | 24（本地与 CI 一致，`package.json` 的 `engines.node` 锁 `>=24 <25`，`@types/node` 对齐 24 线） |
 
 ### TypeScript 为什么装了两份
 

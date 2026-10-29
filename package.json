@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.14.8",
   "packageManager": "pnpm@12.9.1",
+  "engines": {
+    "node": ">=24 <25"
+  },
   "type": "module",
   "description": "开源的多团队管理后台 + Tableau 嵌入可视化起点：把 Tableau Cloud / Tableau Server 的工作簿与视图嵌进自己的产品（React 19 + shadcn/ui + Tailwind v4 + TanStack Router，含团队作用域路由与页面级权限）",
   "scripts": {
@@ -27,7 +30,7 @@
   },
   "checkVersions": {
     "hold": {
-      "@types/node": "与 Node 24 运行时对齐：类型线不高于最低支持的运行时（见 PROGRESS 2026-10-01）"
+      "@types/node": "类型线必须与 Node 运行时同一 major（engines: >=24 <25）：@types/node 的 major 就是目标 Node 版本，26.x 声明了 node:quic / node:vfs / node:ffi 等 Node 24 没有的内置模块，升上去会「编译通过、运行时崩」。暂缓只挡跨 major，同 major 补丁照常升级。"
     }
   },
   "dependencies": {
@@ -58,7 +61,7 @@
     "@tanstack/eslint-plugin-query": "^5.104.5",
     "@tanstack/react-query-devtools": "^5.104.5",
     "@tanstack/router-plugin": "^1.168.48",
-    "@types/node": "^24.19.0",
+    "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@typescript/native": "npm:typescript@7.1.0-beta",

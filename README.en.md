@@ -290,7 +290,7 @@ font rendering and have not been measured on Linux yet).
 | i18n | i18next + react-i18next | 26.x (en-US only for now) |
 | State | zustand (locally persisted) | 5.x |
 | Package manager | pnpm | 12.9.1 (pinned via `packageManager`, same in CI) |
-| Runtime | Node.js | 24 (`@types/node` tracks the 24 line) |
+| Runtime | Node.js | 24 (`engines.node` pinned to `>=24 <25`; `@types/node` tracks the 24 line) |
 
 ### Why TypeScript is installed twice
 

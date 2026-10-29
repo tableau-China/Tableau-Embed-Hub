@@ -7,12 +7,50 @@
 
 - **目标**：从零构建管理后台模板（React 19 + TypeScript 7 + Vite 8 + Tailwind CSS v4 + shadcn/ui(Radix) + TanStack Router），包含 shadcn-admin 的全部基础功能，**含 Tableau 页面**（favorites / recents / workbooks / views —— 浏览器内签发 Connected App JWT 嵌入真实视图，凭据见 README「凭据配置」），**不含 AI 功能**；也不含内部流程页（flows / amro / clean-layer / sql-icon-map，那些只存在于本地开发线），v0.4.0 起含**多团队 + 全局用户**（参照 pg-explorer，无部门管理），v0.5.0 起**团队身份进入 URL**（`/t/{slug}/...`，对齐 pg-explorer 的 `/t/{slug}` + `/admin/*` 划分），v0.6.0 起**页面级权限**（角色 × 路由，权限页勾选；按钮级权限仅预留命名空间），v0.7.0 起**个人资料归位**（`/settings` → `/profile`，入口在左下角用户菜单）+ **Config 分组与 SMTP 配置页** + **帮助页** + **前端通用件**，v0.9.0 起**团队冻结 + 用户冻结 + 用户必须归属团队**，v0.10.0 起**列表筛选栏公共件**（`/users` 先行），v0.11.1 起**组件总览页**（`/components`：公共件清单 + 实时预览），v0.12.0 起**登录页模板**（`/login`：三种样式 + 第三方联合登录入口；`/config/login` 配置样式与 provider 公开参数），v0.13.0 起**更名为 tableau-embed-hub**（显示名 Tableau Embed Hub）+ **Tableau 站点用户与角色 / 定时计划运行情况**两页 + **Help 页第三方版权与商标说明**（Help 同时挪到 Config 分组最末），v0.13.4 起**Toast 支持一键复制**，v0.14.0 起**左下角「个人信息」**（摘要 + 自助改登录名 / 改口令），v0.14.2 起**账号信息收敛到 /profile**（左下角只留 Profile 入口），v0.14.3 起四项资料合并为一张 **Your details** 卡（显示名称 → 登录名 → 邮箱 → 口令，后两项折叠）并移除 Manage users，v0.14.4 起**精简 config 页提示词**、删除空泛说明，并把 **Help 入口移到用户菜单（Profile 下面）**，v0.14.5 起**显示名称/邮箱改为行内排布**、**改口令改为输入框 + 按钮直接改**，v0.14.6 起显示名称 / 邮箱改为 **GitHub Settings 式表单行**（标签在上、说明 + 控件在下）并调整字段顺序，v0.14.7 起标签与输入框同行、说明挂在下方，username 前置且只读，v0.14.8 起 /profile 视觉收尾（横幅去重、四行表单统一节奏）；i18n 当前仅 **en-US**，中文/日文后期扩展。
 - **关键决策**：跳过 shadcn-admin 模板（无 Sat Naing 署名义务）、TypeScript 7.1.0-beta（beta 通道，验证未来升级，正式版发布后直接升级；**现锁 7.1.0-beta**；**两阶段路线**：先换 7.1 stable，再等上游支持 TS 7 后替换 TS 6 线，见 README「TypeScript 为什么装了两份」）、Vite 8 最新稳定、i18n 当前仅 en-US（zh-CN / zh-TW / ja-JP 后期扩展）。
-- **工具链锁定**：pnpm **12.9.1**（`package.json` 的 `packageManager` 字段，CI 同版本）、Node **24**（本地与 CI 一致，`@types/node` 对齐 **24 线**——类型线高于运行时会写出跑不起来的代码）。⚠️ 2026-10-05 pnpm 由 11.28.2 升级到 12.9.1：pnpm 12 要求 lock 头部带 `packageManagerDependencies` 文档（+158 行，含 pnpm 自身各平台 `@pnpm/exe.*`），**不提交这份 lock，CI 的 `--frozen-lockfile` 会直接失败**；迁移后已实测 12.6.0 / 12.9.1 的 `--frozen-lockfile` 通过。
+- **工具链锁定**：pnpm **12.9.1**（`package.json` 的 `packageManager` 字段，CI 同版本）、Node **24**（本地与 CI 一致，`package.json` 的 `engines.node` 锁 `>=24 <25`，`@types/node` 对齐 **24 线**——类型线高于运行时会写出跑不起来的代码）。⚠️ 2026-10-05 pnpm 由 11.28.2 升级到 12.9.1：pnpm 12 要求 lock 头部带 `packageManagerDependencies` 文档（+158 行，含 pnpm 自身各平台 `@pnpm/exe.*`），**不提交这份 lock，CI 的 `--frozen-lockfile` 会直接失败**；迁移后已实测 12.6.0 / 12.9.1 的 `--frozen-lockfile` 通过。
 - **多机副本**：本仓库在**多台 Mac 上各有一份工作副本**（同一远端 `origin/main`，内容一致），各自的绝对路径不同。
   文档一律不写机器绝对路径：命令都在**仓库根目录**下执行即可；「上次是在哪台机器改的」这类信息对复现没有价值，
   写进文档只会让另一台机器上的人误以为目录失效（本节曾踩过这个坑，2026-10-11 订正）。
 - **版本记录**：每个版本的变更/问题/待办记入 **CHANGELOG.md**（含版本对照表）；版本号需与 package.json、侧边栏显示、PROGRESS.md 交叉核对（当前 **0.14.8**）。
 - **项目更名**（2026-10-09）：`shadcn-admin-cn` → 仓库/包名 **`tableau-embed-hub`**、显示名 **`Tableau Embed Hub`**（主打「Tableau 嵌入可视化」，品牌唯一来源仍是 `src/config/app.ts`）。localStorage 前缀同步改为 `tableau-embed-hub`，旧 key 保留并由 `src/lib/storage-migration.ts` 一次性迁移；细节见 CHANGELOG.md 的 `0.13.0` / `0.13.1` 节。
+
+---
+
+## 🔧 2026-10-29 — `@types/node` 暂缓改成「只挡跨 major」+ 补 `engines`
+
+背景：巡检把 `@types/node` 整条登记暂缓后，连 **24.19.0 → 24.19.2** 这种同 major 补丁也
+永久不可见（脚本只查 `/latest`，而它的 latest 永远是下一个 major）。
+
+### 评估结论（实测，非推断）
+
+把 26.6.6 真装上去跑了一遍：`tsc -b`(TS7) / `tsc6 -b`(TS6) / eslint / build / vitest 130 全通过
+——**对当前代码零影响**。风险在别处，且已实证：
+
+| 证据 | 内容 |
+| --- | --- |
+| 类型面差异 | 26 独有 `node:ffi` / `node:quic` / `node:vfs` 三个模块声明，24 完全没有；`zlib.d.ts` +602 行、`process.d.ts` +168 行 |
+| 传递依赖 | `undici-types` 7.24.6 → ~8.9.0（fetch 类型面 major 跃迁） |
+| 端到端 | `import * as quic from 'node:quic'`：26 类型下**编译通过**，24 类型下报 `TS2591`，而 Node 24.22.1 运行时抛 `ERR_UNKNOWN_BUILTIN_MODULE` |
+
+即：类型给了虚假保证 —— 编译过、上线崩。
+
+### 落点
+
+| 文件 | 改动 |
+| --- | --- |
+| `scripts/check-versions.mjs` | 暂缓**只挡跨 major**；为暂缓包额外拉一次版本清单，算出「声明范围内最高版本」并在暂缓清单里标注「同 major 可升到 X」 |
+| `package.json` | 新增 `engines: { "node": ">=24 <25" }`（把「类型线 = 运行时 major」从注释变成机器可校验）；hold 理由改写为完整原理；`@types/node` `^24.19.0` → `^24.19.2` |
+| `README.md` / `README.en.md` | 运行时一行补上 `engines.node` |
+
+### 本地验证
+
+`--frozen-lockfile` 通过（lock 仅 `@types/node` 及其 peer 后缀传播）；
+`check:routes` / `check:i18n` / `check:i18n:keys` / `check:filters` / `check:smtp` / `check:login` /
+`check:account` 8/8 / `check:permissions` 15/15 / `check:team-routes` 16/16 全通过；
+`tsc -b`、`tsc6 -b`、eslint（0 error）、build、vitest 130/130 全通过。
+
+> 判断规则：`@types/node` 的 major 就是目标 Node 版本。升 Node 运行时（如换 26）时，
+> `engines.node` 与 `@types/node` 一起改，两处保持一致即可。
 
 ---
 
